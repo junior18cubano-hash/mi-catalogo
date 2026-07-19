@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Catálogo Digital - Descargas</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Courier New', monospace;
+            background: #000;
+            color: #fff;
+            min-height: 100vh;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* FONDO ANIMADO CON GRID */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                linear-gradient(rgba(0, 255, 255, 0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 255, 255, 0.05) 1px, transparent 1px);
+            background-size: 50px 50px;
+            animation: gridMove 20s linear infinite;
+            z-index: 0;
+        }
+
+        @keyframes gridMove {
+            0% { transform: translate(0, 0); }
+            100% { transform: translate(50px, 50px); }
+        }
+
+        /* EFECTO SCAN LINE */
+        body::after {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(
+                transparent 50%,
+                rgba(0, 255, 255, 0.02) 50%
+            );
+            background-size: 100% 4px;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        /* HERO */
+        .hero {
+            position: relative;
+            z-index: 2;
+            padding: 80px 20px;
+            text-align: center;
+            background: radial-gradient(circle at center, rgba(0, 255, 255, 0.1) 0%, transparent 70%);
+        }
+
+        .hero h1 {
+            font-size: 4rem;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 8px;
+            background: linear-gradient(90deg, #00ffff, #ff00ff, #00ffff);
+            background-size: 200% auto;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: gradientShift 3s linear infinite;
+            text-shadow: 0 0 30px rgba(0, 255, 255, 0.5);
+            margin-bottom: 20px;
+        }
+
+        @keyframes gradientShift {
+            0% { background-position: 0% center; }
+            100% { background-position: 200% center; }
+        }
+
+        .hero p {
+            font-size: 1.3rem;
+            color: #00ffff;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            opacity: 0.8;
+        }
+
+        /* CONTENEDOR PRINCIPAL */
+        .container {
+            position: relative;
+            z-index: 2;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 60px 20px;
+        }
+
+        /* GRID DE TARJETAS */
+        .cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 40px;
+            margin-top: 40px;
+        }
+
+        /* TARJETA */
+        .card {
+            position: relative;
+            background: rgba(10, 10, 20, 0.8);
+            backdrop-filter: blur(10px);
+            border: 2px solid transparent;
+            border-radius: 20px;
+            padding: 50px 40px;
+            transition: all 0.4s ease;
+            overflow: hidden;
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            background: linear-gradient(45deg, #00ffff, #ff00ff, #00ffff, #ff00ff);
+            background-size: 400% 400%;
+            border-radius: 20px;
+            z-index: -1;
+            animation: borderGlow 4s ease infinite;
+            opacity: 0;
+            transition: opacity 0.4s ease;
+        }
+
+        @keyframes borderGlow {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+
+        .card:hover::before {
+            opacity: 1;
+        }
+
+        .card:hover {
+            transform: translateY(-10px) scale(1.02);
+            box-shadow: 
+                0 20px 60px rgba(0, 255, 255, 0.3),
+                0 0 40px rgba(255, 0, 255, 0.2);
+        }
+
+        /* ICONO */
+        .card-icon {
+            font-size: 5rem;
+            margin-bottom: 25px;
+            filter: drop-shadow(0 0 20px rgba(0, 255, 255, 0.8));
+            animation: iconFloat 3s ease-in-out infinite;
+        }
+
+        @keyframes iconFloat {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .card h2 {
+            font-size: 2rem;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            margin-bottom: 15px;
+            color: #00ffff;
+            text-shadow: 0 0 20px rgba(0, 255, 255, 0.8);
+        }
+
+        .card p {
+            color: #aaa;
+            font-size: 1rem;
+            margin-bottom: 30px;
+            line-height: 1.6;
+        }
+
+        /* BOTONES */
+        .buttons {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            flex: 1;
+            min-width: 140px;
+            padding: 15px 25px;
+            border: none;
+            border-radius: 10px;
+            font-family: 'Courier New', monospace;
+            font-size: 1rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            cursor: pointer;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.3);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+
+        .btn:hover::before {
+            width: 300px;
+            height: 300px;
+        }
+
+        .btn-mediafire {
+            background: linear-gradient(135deg, #1f75cb 0%, #0d5ba8 100%);
+            color: white;
+            box-shadow: 0 5px 20px rgba(31, 117, 203, 0.4);
+        }
+
+        .btn-mediafire:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 30px rgba(31, 117, 203, 0.6);
+        }
+
+        .btn-onedrive {
+            background: linear-gradient(135deg, #0078d4 0%, #005a9e 100%);
+            color: white;
+            box-shadow: 0 5px 20px rgba(0, 120, 212, 0.4);
+        }
+
+        .btn-onedrive:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 30px rgba(0, 120, 212, 0.6);
+        }
+
+        /* FOOTER */
+        footer {
+            position: relative;
+            z-index: 2;
+            text-align: center;
+            padding: 40px 20px;
+            border-top: 1px solid rgba(0, 255, 255, 0.2);
+            color: #666;
+            font-size: 0.9rem;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+
+        /* RESPONSIVE */
+        @media (max-width: 768px) {
+            .hero h1 {
+                font-size: 2.5rem;
+                letter-spacing: 4px;
+            }
+
+            .hero p {
+                font-size: 1rem;
+            }
+
+            .cards-grid {
+                grid-template-columns: 1fr;
+                gap: 30px;
+            }
+
+            .card {
+                padding: 40px 30px;
+            }
+
+            .card-icon {
+                font-size: 4rem;
+            }
+
+            .card h2 {
+                font-size: 1.5rem;
+            }
+
+            .buttons {
+                flex-direction: column;
+            }
+
+            .btn {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- HERO -->
+    <section class="hero">
+        <h1>Catálogo Digital</h1>
+        <p>Descarga nuestra app en tu plataforma</p>
+    </section>
+
+    <!-- TARJETAS -->
+    <div class="container">
+        <div class="cards-grid">
+
+            <!-- ANDROID -->
+            <div class="card">
+                <div class="card-icon">🤖</div>
+                <h2>Android</h2>
+                <p>Descarga el catálogo completo para dispositivos Android. Compatible con todas las versiones.</p>
+                <div class="buttons">
+                    <a href="https://www.mediafire.com/TU_ENLACE_ANDROID" target="_blank" class="btn btn-mediafire">
+                        ⬇️ MediaFire
+                    </a>
+                    <a href="https://1drv.ms/TU_ENLACE_ANDROID" target="_blank" class="btn btn-onedrive">
+                        ☁️ OneDrive
+                    </a>
+                </div>
+            </div>
+
+            <!-- iOS -->
+            <div class="card">
+                <div class="card-icon">🍎</div>
+                <h2>iOS</h2>
+                <p>Disponible para iPhone y iPad. Optimizado para dispositivos Apple.</p>
+                <div class="buttons">
+                    <a href="https://www.mediafire.com/TU_ENLACE_IOS" target="_blank" class="btn btn-mediafire">
+                        ⬇️ MediaFire
+                    </a>
+                    <a href="https://1drv.ms/TU_ENLACE_IOS" target="_blank" class="btn btn-onedrive">
+                        ☁️ OneDrive
+                    </a>
+                </div>
+            </div>
+
+            <!-- PC -->
+            <div class="card">
+                <div class="card-icon">💻</div>
+                <h2>PC</h2>
+                <p>Versión de escritorio para Windows. Experimenta el catálogo completo en tu ordenador.</p>
+                <div class="buttons">
+                    <a href="https://www.mediafire.com/TU_ENLACE_PC" target="_blank" class="btn btn-mediafire">
+                        ⬇️ MediaFire
+                    </a>
+                    <a href="https://1drv.ms/TU_ENLACE_PC" target="_blank" class="btn btn-onedrive">
+                        ☁️ OneDrive
+                    </a>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- FOOTER -->
+    <footer>
+        <p>© 2026 Catálogo Digital · Todos los derechos reservados</p>
+    </footer>
+
+</body>
+</html>
