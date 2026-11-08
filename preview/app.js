@@ -103,7 +103,7 @@
  function itemYear(item){return Number(item.year||item.ano||item.año||item.release_year||0)||0}
  function itemViews(item){return Number(item.views||item.view_count||item.visitas||item.vistos||item.popularity_count||0)||0}
  function itemRating(item){return Number(item.rating||item.vote_average||item.valoracion||item.puntuacion||0)||0}
- function itemDate(item){const value=item.updated_at||item.created_at||item.added_at||item.release_date||item.fecha||item.date||itemYear(item);const n=Date.parse(value);return Number.isFinite(n)?n:(Number(value)||0)}
+ function itemDate(item){const value=item.added_at||item.date_added||item.fecha_agregado||item.imported_at||item.created_at||item.updated_at||item.fecha||item.date||item.timestamp||"";const n=Date.parse(value);return Number.isFinite(n)?n:(Number(value)||0)}
  function sortedItems(){
    const filtered=catalogItems.filter(item=>{
      const group=categoryFor(itemCategoryValue(item));
@@ -170,73 +170,129 @@
  }
  function renderCatalog(){
    const grid=$("#content-grid");if(!grid)return;
-   const filtered=sortedItems(),totalPages=Math.max(1,Math.ceil(filtered.length/pageSize));
-   currentPage=Math.min(currentPage,totalPages);
-   const shown=filtered.slice((currentPage-1)*pageSize,currentPage*pageSize);
-   grid.innerHTML="";
-   shown.forEach(item=>{
+   const filtered=sortedItems();grid.innerHTML="";
+   const appendCard=item=>{
      const article=document.createElement("button");article.type="button";article.className="content-card catalog-live-card";article.setAttribute("aria-label","Ver detalles de "+itemTitle(item));
-     const poster=document.createElement("div");poster.className="poster";
-     const cover=resolveCover(itemCover(item));
-     if(cover){const img=document.createElement("img");img.src=cover;img.alt="";img.loading="lazy";img.decoding="async";img.onerror=()=>{img.remove();poster.textContent=itemTitle(item).slice(0,32)};poster.append(img)}
-     else poster.textContent=itemTitle(item).slice(0,32);
+     const poster=document.createElement("div");poster.className="poster";const cover=resolveCover(itemCover(item));
+     if(cover){const img=document.createElement("img");img.src=cover;img.alt="";img.loading="lazy";img.decoding="async";img.onerror=()=>{img.remove();poster.textContent=itemTitle(item).slice(0,32)};poster.append(img)}else poster.textContent=itemTitle(item).slice(0,32);
      const body=document.createElement("div"),title=document.createElement("b");title.textContent=itemTitle(item);body.append(title);article.append(poster,body);
      article.addEventListener("click",()=>openCatalogDetail(item));grid.append(article);
-   });
-   $("#results-title").textContent=activeCategory?({juego:"Juegos",pelicula:"Películas",serie:"Series TV",anime:"Anime",novela:"Telenovelas",software:"Software",musica:"Música",otros:"Otros"}[activeCategory]||"Catálogo"):searchTerm?"Resultados de búsqueda":"Catálogo JOA";
+   };
+   if(activeCategory==="recent_updates"){
+     const labels={juego:"Juegos",pelicula:"Películas",serie:"Series TV",anime:"Anime",novela:"Telenovelas",software:"Software",musica:"Música",otros:"Otros"};
+     const groups=Object.keys(labels).map(key=>[key,filtered.filter(item=>categoryFor(itemCategoryValue(item))===key).sort((a,b)=>itemDate(b)-itemDate(a))]).filter(([,items])=>items.length);
+     groups.forEach(([key,items])=>{
+       const section=document.createElement("section");section.className="recent-category-group";
+       const heading=document.createElement("h4");heading.className="recent-category-title";heading.textContent=labels[key]+" · "+items.length+" novedades";section.append(heading);
+       const row=document.createElement("div");row.className="recent-category-grid";
+       const previous=grid;grid.append(section);section.append(row);
+       items.slice(0,8).forEach(item=>{
+         const holder=document.createElement("div");holder.className="recent-card-holder";row.append(holder);
+         const article=document.createElement("button");article.type="button";article.className="content-card catalog-live-card";article.setAttribute("aria-label","Ver detalles de "+itemTitle(item));
+         const poster=document.createElement("div");poster.className="poster";const cover=resolveCover(itemCover(item));
+         if(cover){const img=document.createElement("img");img.src=cover;img.alt="";img.loading="lazy";img.decoding="async";img.onerror=()=>{img.remove();poster.textContent=itemTitle(item).slice(0,32)};poster.append(img)}else poster.textContent=itemTitle(item).slice(0,32);
+         const body=document.createElement("div"),title=document.createElement("b");title.textContent=itemTitle(item);body.append(title);article.append(poster,body);article.addEventListener("click",()=>openCatalogDetail(item));holder.append(article);
+       });
+     });
+   }else{
+     const totalPages=Math.max(1,Math.ceil(filtered.length/pageSize));currentPage=Math.min(currentPage,totalPages);
+     filtered.slice((currentPage-1)*pageSize,currentPage*pageSize).forEach(appendCard);
+     renderPagination(totalPages);
+   }
+   const labels={juego:"Juegos",pelicula:"Películas",serie:"Series TV",anime:"Anime",novela:"Telenovelas",software:"Software",musica:"Música",otros:"Otros"};
+   $("#results-title").textContent=activeCategory==="recent_updates"?"Actualizaciones recientes":activeCategory?(labels[activeCategory]||"Catálogo"):searchTerm?"Resultados de búsqueda":"Catálogo JOA";
    const tag=$(".demo-tag");if(tag)tag.textContent=filtered.length.toLocaleString("es")+" ELEMENTOS";
-   if(!shown.length)grid.innerHTML='<p class="catalog-empty">No encontramos contenido con esos criterios.</p>';
-   const count=$("#catalog-count");if(count)count.textContent=filtered.length.toLocaleString("es")+" resultados · Página "+currentPage+" de "+totalPages;
-   renderPagination(totalPages);
+   if(!filtered.length)grid.innerHTML='<p class="catalog-empty">No encontramos contenido con esos criterios.</p>';
+   const count=$("#catalog-count");if(count)count.textContent=filtered.length.toLocaleString("es")+(activeCategory==="recent_updates"?" novedades agrupadas por categoría":" resultados");
+   if(activeCategory==="recent_updates"){$("#catalog-pagination").innerHTML="";$("#catalog-pagination-bottom").innerHTML=""}
  }
- async function readCachedCatalog(){
+ const CATALOG_DB_NAME="joa-catalog-db",CATALOG_DB_VERSION=1,CATALOG_STORE="catalogs",CATALOG_RECORD_KEY="main";
+ let catalogLoadPromise=null;
+ function openCatalogDB(){
+   return new Promise((resolve,reject)=>{
+     if(!("indexedDB" in window)){reject(new Error("IndexedDB no disponible"));return}
+     const request=indexedDB.open(CATALOG_DB_NAME,CATALOG_DB_VERSION);
+     request.onupgradeneeded=()=>{const db=request.result;if(!db.objectStoreNames.contains(CATALOG_STORE))db.createObjectStore(CATALOG_STORE,{keyPath:"id"})};
+     request.onsuccess=()=>resolve(request.result);request.onerror=()=>reject(request.error||new Error("No se pudo abrir la base local"));
+   });
+ }
+ async function readCachedRecord(){
+   try{const db=await openCatalogDB();return await new Promise((resolve,reject)=>{const tx=db.transaction(CATALOG_STORE,"readonly"),req=tx.objectStore(CATALOG_STORE).get(CATALOG_RECORD_KEY);req.onsuccess=()=>resolve(req.result||null);req.onerror=()=>reject(req.error);tx.oncomplete=()=>db.close();tx.onerror=()=>{db.close();reject(tx.error)}})}catch(error){console.warn("JOA: no se pudo leer IndexedDB",error);return null}
+ }
+ async function saveCachedRecord(record){
+   const db=await openCatalogDB();
+   return new Promise((resolve,reject)=>{
+     const tx=db.transaction(CATALOG_STORE,"readwrite");
+     tx.objectStore(CATALOG_STORE).put({id:CATALOG_RECORD_KEY,...record});
+     tx.oncomplete=()=>{db.close();resolve(true)};
+     tx.onerror=tx.onabort=()=>{const error=tx.error||new Error("No se pudo guardar el catálogo");db.close();reject(error)};
+   });
+ }
+ async function readLegacyCatalog(){
    if(!("caches" in window))return null;
-   try{const cache=await caches.open(CATALOG_CACHE),response=await cache.match(CATALOG_DATA_URL);if(!response)return null;return await response.json()}catch(_){return null}
+   try{const cache=await caches.open(CATALOG_CACHE),response=await cache.match(CATALOG_DATA_URL);return response?await response.json():null}catch(_){return null}
  }
- async function cacheCatalog(data){
-   if(!("caches" in window))return;
-   try{const cache=await caches.open(CATALOG_CACHE);await cache.put(CATALOG_DATA_URL,new Response(JSON.stringify(data),{headers:{"Content-Type":"application/json"}}))}catch(error){console.warn("No se pudo guardar el catálogo localmente",error)}
+ function catalogFingerprint(v){return [v.version||"",v.hash||"",v.generated_at||"",v.item_count||""].join("|")}
+ function validateCatalog(data,remoteVersion){
+   if(!data||!Array.isArray(data.items))throw new Error("El JSON no contiene la lista esperada «items».");
+   const expected=Number(remoteVersion?.item_count||0);
+   if(expected>0&&data.items.length!==expected)throw new Error("El catálogo recibido está incompleto: se esperaban "+expected+" elementos y llegaron "+data.items.length+".");
+ }
+ function applyCatalog(data,remoteVersion,offline=false){
+   catalogItems=data.items;catalogMeta=data;updateSubcategoryControls();
+   catalogMeta.version=remoteVersion?.version||data.version||"";
+   const generated=data.generated_at||remoteVersion?.generated_at;
+   const date=generated?new Date(generated).toLocaleDateString("es",{day:"2-digit",month:"short",year:"numeric"}):"fecha no disponible";
+   setCatalogStatus((offline?"Copia local · ":"Catálogo sincronizado · ")+catalogItems.length.toLocaleString("es")+" elementos · "+date,offline?"offline":"ready");
+   renderCatalog();
  }
  async function loadCatalog(force=false){
-   const versionKey="joa_web_catalog_version";
-   try{
-     setCatalogStatus("Comprobando actualizaciones del catálogo…","loading");
-     const versionResponse=await fetch(CATALOG_VERSION_URL,{cache:"no-store"});
-     if(!versionResponse.ok)throw new Error("No se pudo consultar version.json");
-     const remoteVersion=await versionResponse.json();
-     const remoteFingerprint=[remoteVersion.version||"",remoteVersion.hash||"",remoteVersion.generated_at||"",remoteVersion.item_count||""].join("|");
-     const savedVersion=localStorage.getItem(versionKey);
-     let data=null;
-     if(!force&&savedVersion===remoteFingerprint)data=await readCachedCatalog();
-     if(!data){
-       setCatalogStatus("Descargando catálogo actualizado…","loading");
-       const response=await fetch(CATALOG_DATA_URL,{cache:"no-store"});
+   if(catalogLoadPromise&&!force)return catalogLoadPromise;
+   const task=(async()=>{
+     let record=await readCachedRecord();
+     if(!record){
+       const legacy=await readLegacyCatalog();
+       if(legacy&&Array.isArray(legacy.items)){
+         const oldVersion=localStorage.getItem("joa_web_catalog_version")||"";
+         record={fingerprint:oldVersion,data:legacy,cachedAt:Date.now()};
+         try{await saveCachedRecord(record)}catch(error){console.warn("JOA: migración de caché no disponible",error)}
+       }
+     }
+     if(record?.data&&Array.isArray(record.data.items)&&!force){
+       catalogMeta=record.data;catalogItems=record.data.items;updateSubcategoryControls();renderCatalog();
+       setCatalogStatus("Catálogo guardado en este dispositivo · comprobando versión…","loading");
+     }else if(!record&&!force){
+       setCatalogStatus("Preparando la primera descarga del catálogo…","loading");
+     }else setCatalogStatus(force?"Actualizando catálogo manualmente…":"Comprobando actualizaciones…","loading");
+     try{
+       const versionResponse=await fetch(CATALOG_VERSION_URL+"?v="+Date.now(),{cache:"no-store"});
+       if(!versionResponse.ok)throw new Error("No se pudo consultar version.json");
+       const remoteVersion=await versionResponse.json();
+       const fingerprint=catalogFingerprint(remoteVersion);
+       if(!force&&record&&record.fingerprint===fingerprint&&Array.isArray(record.data?.items)){
+         applyCatalog(record.data,remoteVersion,false);
+         setCatalogStatus("Al día · "+catalogItems.length.toLocaleString("es")+" elementos · no fue necesario descargar el JSON","ready");
+         return;
+       }
+       setCatalogStatus(force?"Descargando catálogo solicitado…":"Hay una versión nueva · descargando catálogo…","loading");
+       const response=await fetch(CATALOG_DATA_URL+"?v="+encodeURIComponent(remoteVersion.hash||remoteVersion.version||Date.now()),{cache:"no-store"});
        if(!response.ok)throw new Error("No se pudo descargar Update.json");
-       data=await response.json();
+       const data=await response.json();validateCatalog(data,remoteVersion);
+       const nextRecord={fingerprint,data,cachedAt:Date.now()};
+       await saveCachedRecord(nextRecord);
+       localStorage.setItem("joa_web_catalog_version",fingerprint);
+       applyCatalog(data,remoteVersion,false);
+     }catch(error){
+       console.error("JOA catalog:",error);
+       const fallback=record?.data&&Array.isArray(record.data.items)?record.data:await readLegacyCatalog();
+       if(fallback&&Array.isArray(fallback.items)){
+         if(!catalogItems.length){catalogItems=fallback.items;catalogMeta=fallback;updateSubcategoryControls();renderCatalog()}
+         setCatalogStatus("Sin conexión · mostrando catálogo guardado ("+catalogItems.length.toLocaleString("es")+" elementos)","offline");
+       }else setCatalogStatus("No se pudo conectar con el catálogo. Intenta actualizar.","error");
      }
-     if(!data||!Array.isArray(data.items))throw new Error("El JSON no contiene la lista esperada «items».");
-     const expectedCount=Number(remoteVersion.item_count||0);
-     if(expectedCount>0&&data.items.length!==expectedCount)throw new Error("El catálogo recibido está incompleto: se esperaban "+expectedCount+" elementos y llegaron "+data.items.length+".");
-     if(savedVersion!==remoteFingerprint||force){
-       await cacheCatalog(data);
-       localStorage.setItem(versionKey,remoteFingerprint);
-     }
-     catalogItems=data.items;
-     catalogMeta=data;
-     updateSubcategoryControls();
-     catalogMeta.version=remoteVersion.version||data.version||"";
-     const generated=data.generated_at||remoteVersion.generated_at;
-     const date=generated?new Date(generated).toLocaleDateString("es",{day:"2-digit",month:"short",year:"numeric"}):"fecha no disponible";
-     setCatalogStatus("Catálogo sincronizado · "+catalogItems.length.toLocaleString("es")+" elementos · "+date,"ready");
-     const sync=$("#catalog-refresh");if(sync)sync.disabled=false;
-     renderCatalog();
-   }catch(error){
-     console.error("JOA catalog:",error);
-     const cached=await readCachedCatalog();
-     if(cached&&Array.isArray(cached.items)){
-       catalogItems=cached.items;catalogMeta=cached;setCatalogStatus("Mostrando copia guardada · "+catalogItems.length.toLocaleString("es")+" elementos","offline");renderCatalog();
-     }else setCatalogStatus("No se pudo conectar con el catálogo. Intenta actualizar.","error");
-   }
+   })();
+   catalogLoadPromise=task;
+   try{return await task}finally{if(catalogLoadPromise===task)catalogLoadPromise=null}
  }
  $("#catalog-refresh")?.addEventListener("click",()=>{const b=$("#catalog-refresh");b.disabled=true;loadCatalog(true).finally(()=>{b.disabled=false})});
  $("#catalog-sort")?.addEventListener("change",e=>{sortMode=e.target.value;currentPage=1;renderCatalog()});
