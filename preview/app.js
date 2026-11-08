@@ -510,9 +510,34 @@
    catch(error){toast(authError(error))}
  });
  async function oauth(provider){
-   if(!supabase){toast("El servicio de acceso aún no está disponible.");return}
-   try{const {error}=await supabase.auth.signInWithOAuth({provider,options:{redirectTo:window.JOA_CONFIG.authRedirectUrl,queryParams:provider==="google"?{access_type:"offline",prompt:"consent"}:undefined}});if(error)throw error}
-   catch(error){$("#auth-message").textContent=authError(error);toast(authError(error))}
+   const button=provider==="google"?$("#auth-google"):$("#auth-facebook");
+   const originalText=button?.textContent||"Continuar";
+   if(!supabase){
+     $("#auth-message").textContent="El acceso todavía se está preparando. Espera unos segundos y vuelve a intentarlo.";
+     toast("El servicio de acceso aún no está disponible.");
+     return;
+   }
+   if(button){button.disabled=true;button.textContent="Conectando…"}
+   try{
+     const {data,error}=await supabase.auth.signInWithOAuth({
+       provider,
+       options:{
+         redirectTo:window.JOA_CONFIG.authRedirectUrl,
+         skipBrowserRedirect:true,
+         queryParams:provider==="google"?{access_type:"offline",prompt:"select_account"}:undefined
+       }
+     });
+     if(error)throw error;
+     if(!data?.url)throw new Error("Supabase no devolvió la dirección de autenticación.");
+     $("#auth-message").textContent="Abriendo el acceso seguro…";
+     window.location.assign(data.url);
+   }catch(error){
+     console.error("JOA OAuth:",error);
+     const message=authError(error);
+     $("#auth-message").textContent=message;
+     toast(message);
+     if(button){button.disabled=false;button.textContent=originalText}
+   }
  }
  $("#auth-google").addEventListener("click",()=>oauth("google"));
  $("#auth-facebook").addEventListener("click",()=>oauth("facebook"));
