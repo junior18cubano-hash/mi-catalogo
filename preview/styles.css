@@ -74,3 +74,72 @@
   .auth-dialog .auth-submit{margin:12px 0 6px}
   .auth-dialog>small{line-height:1.5}
 }
+
+
+/* FIX DEFINITIVO DE DESBORDAMIENTO HORIZONTAL EN MÓVILES */
+@media (max-width: 650px) {
+  html, body {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden !important;
+  }
+  body {
+    position: relative;
+  }
+  #home, main, header, footer, section, .shell {
+    min-width: 0;
+    max-width: 100%;
+  }
+  .shell {
+    width: calc(100% - 30px);
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .hero, .hero-copy, .hero-art,
+  .community-layout, .community-copy, .social-preview,
+  .section-heading, .download-band, .footer-inner {
+    min-width: 0;
+    max-width: 100%;
+  }
+  .hero-art {
+    width: 100%;
+    overflow: hidden;
+  }
+  .ticker {
+    width: 100%;
+    max-width: 100%;
+    overflow: hidden;
+  }
+  .category-grid, .services-grid, .content-grid {
+    width: 100%;
+    min-width: 0;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .category-card, .service-card, .content-card {
+    min-width: 0;
+    max-width: 100%;
+  }
+  .content-card > div:last-child,
+  .service-card, .category-card {
+    overflow-wrap: anywhere;
+  }
+  .search-panel, .search-panel input {
+    min-width: 0;
+    max-width: 100%;
+  }
+  .download-band {
+    width: calc(100% - 30px);
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .mobile-nav {
+    width: auto;
+    max-width: calc(100% - 20px);
+    overflow: hidden;
+  }
+}
+@media (max-width: 350px) {
+  .category-grid, .services-grid, .content-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
