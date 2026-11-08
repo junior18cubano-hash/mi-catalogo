@@ -13,7 +13,7 @@
    oauth(button.id==="auth-google"?"google":"facebook");
  },true);
  const dialog=$("#auth-dialog"), toastEl=$("#toast");
- let authMode="signin", supabase=null, currentUser=null, authReadyPromise=Promise.resolve(false);
+ let authMode="signin", supabase=null, currentUser=null, authReadyPromise=Promise.resolve(false), authInitError=null;
  const toast=(message)=>{if(!toastEl)return;toastEl.textContent=message;toastEl.classList.add("show");clearTimeout(window.__joaToast);window.__joaToast=setTimeout(()=>toastEl.classList.remove("show"),3600)};
  function safeSessionGet(key){try{return window.sessionStorage?.getItem(key)||null}catch(error){console.warn("JOA: sessionStorage no disponible",error);return null}}
  function safeSessionSet(key,value){try{window.sessionStorage?.setItem(key,value);return true}catch(error){console.warn("JOA: no se pudo guardar el estado temporal",error);return false}}
@@ -562,7 +562,7 @@
    $("#auth-message").textContent="Preparando el acceso seguro…";
    try{
      const ready=await authReadyPromise;
-     if(!ready||!supabase)throw new Error("El servicio de acceso no terminó de inicializarse. Recarga la página e inténtalo otra vez.");
+     if(!ready||!supabase)throw authInitError||new Error("El cliente de acceso no está disponible. Revisa tu conexión e inténtalo de nuevo.");
      // Navegación explícita: evita que algunos navegadores embebidos dejen el diálogo abierto
      // después de que Supabase haya generado correctamente la URL OAuth.
      const {data,error}=await supabase.auth.signInWithOAuth({
@@ -608,27 +608,45 @@
  }
  function escapeHtml(value){return String(value).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
  async function loadSupabaseSdk(){
-   const sources=[
+   let lastError;
+   const moduleSources=[
+     "https://esm.sh/@supabase/supabase-js@2.119.0",
+     "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/+esm"
+   ];
+   for(const src of moduleSources){
+     try{
+       const mod=await Promise.race([
+         import(src),
+         new Promise((_,reject)=>setTimeout(()=>reject(new Error("Tiempo de espera agotado al cargar "+new URL(src).hostname)),15000))
+       ]);
+       const createClient=mod.createClient||mod.default?.createClient;
+       if(typeof createClient!=="function")throw new Error("El módulo descargado no exporta createClient.");
+       window.supabase={...mod,createClient};
+       console.info("JOA Auth: SDK cargado como módulo desde",new URL(src).hostname);
+       return true;
+     }catch(error){lastError=error;console.warn("JOA Auth módulo:",src,error)}
+   }
+   const scriptSources=[
      "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0",
      "https://unpkg.com/@supabase/supabase-js@2.119.0"
    ];
-   let lastError;
-   for(const src of sources){
+   for(const src of scriptSources){
      try{
        await new Promise((resolve,reject)=>{
          const script=document.createElement("script");
          let settled=false;
          const finish=(fn,value)=>{if(settled)return;settled=true;clearTimeout(timer);fn(value)};
-         const timer=setTimeout(()=>{script.remove();finish(reject,new Error("Tiempo de espera agotado al cargar "+new URL(src).hostname));},12000);
+         const timer=setTimeout(()=>{script.remove();finish(reject,new Error("Tiempo de espera agotado al cargar "+new URL(src).hostname));},15000);
          script.src=src;script.async=true;
-         script.onload=()=>window.supabase?.createClient?finish(resolve,true):finish(reject,new Error("El SDK de Supabase no quedó disponible."));
+         script.onload=()=>window.supabase?.createClient?finish(resolve,true):finish(reject,new Error("El CDN respondió, pero no expuso supabase.createClient."));
          script.onerror=()=>finish(reject,new Error("No se pudo descargar el SDK desde "+new URL(src).hostname));
          document.head.append(script);
        });
+       console.info("JOA Auth: SDK UMD cargado desde",new URL(src).hostname);
        return true;
-     }catch(error){lastError=error;console.warn("JOA Auth SDK:",src,error)}
+     }catch(error){lastError=error;console.warn("JOA Auth UMD:",src,error)}
    }
-   throw lastError||new Error("No se pudo cargar Supabase.");
+   throw lastError||new Error("No se pudo descargar el SDK de Supabase desde los CDN disponibles.");
  }
  function initSupabase(){
    authReadyPromise=(async()=>{
@@ -655,10 +673,11 @@
      if(!session?.user)$("#auth-message").textContent="Servicio de acceso listo. Puedes iniciar sesión o crear una cuenta.";
      return true;
    })().catch(error=>{
+     authInitError=error;
      console.error("JOA Auth initialization:",error);
      document.documentElement.dataset.supabase="error";
      $("#auth-message").textContent="No se pudo preparar el acceso: "+authError(error);
-     toast("El servicio de acceso no pudo inicializarse.");
+     toast("El servicio de acceso no pudo inicializarse: "+(error?.message||"error desconocido"));
      return false;
    });
    return authReadyPromise;
