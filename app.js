@@ -907,6 +907,7 @@
      roster.append(row);
    });
    wrap.append(roster);
+   if(mine){
    const chatCard=document.createElement("section");chatCard.className="community-group-chat-card";
    const chatHeading=document.createElement("div");chatHeading.className="community-group-chat-heading";
    const chatTitle=document.createElement("h4");chatTitle.textContent="Chat del grupo";
@@ -923,6 +924,7 @@
    chatLaunch.addEventListener("click",()=>{chatRoom.hidden=false;chatLaunch.hidden=true;openCommunityGroupChat(groupId,group.name,chatMessages,chatForm)});
    chatClose.addEventListener("click",()=>{chatRoom.hidden=true;chatLaunch.hidden=false;if(activeGroupChatChannel&&supabase){supabase.removeChannel(activeGroupChatChannel);activeGroupChatChannel=null;activeGroupChatId=null}});
    chatCard.append(chatHeading,chatLaunch,chatRoom);wrap.append(chatCard);
+   }
    if(owner){
      const modTitle=document.createElement("h4");modTitle.textContent="Administración";wrap.append(modTitle);
      const candidates=(members.data||[]).filter(m=>m.role==="member");
