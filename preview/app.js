@@ -3,7 +3,7 @@
  const $ = (s,root=document) => root.querySelector(s);
  const $$ = (s,root=document) => [...root.querySelectorAll(s)];
  const dialog=$("#auth-dialog"), toastEl=$("#toast");
- let authMode="signin", supabase=null, currentUser=null;
+ let authMode="signin", supabase=null, currentUser=null, authReadyPromise=Promise.resolve(false);
  const toast=(message)=>{if(!toastEl)return;toastEl.textContent=message;toastEl.classList.add("show");clearTimeout(window.__joaToast);window.__joaToast=setTimeout(()=>toastEl.classList.remove("show"),3600)};
  $("#year").textContent=new Date().getFullYear();
  const openAuth=()=>{communityRequested=true;sessionStorage.setItem("joa_community_requested","1");if(currentUser){openCommunity();return}if(dialog&&!dialog.open)dialog.showModal();renderAuthMode()};
@@ -486,10 +486,16 @@
  }
  $("#auth-switch").addEventListener("click",()=>{authMode=authMode==="signin"?"signup":"signin";renderAuthMode();$("#auth-message").textContent=""});
  $("#auth-form").addEventListener("submit",async e=>{
-   e.preventDefault();if(!supabase){toast("No se pudo conectar con el servicio de acceso. Recarga la página e inténtalo de nuevo.");return}
+   e.preventDefault();
+   const submit=$("#auth-submit");
+   submit.disabled=true;submit.textContent="Conectando…";
+   try{
+     const ready=await authReadyPromise;
+     if(!ready||!supabase)throw new Error("El servicio de acceso no ha podido inicializarse. Comprueba tu conexión e inténtalo otra vez.");
+   }catch(error){$("#auth-message").textContent=authError(error);toast(authError(error));submit.disabled=false;renderAuthMode();return}
    const email=$("#auth-email").value.trim(),password=$("#auth-password").value;
    if(!email||!password){toast("Escribe tu correo y contraseña.");return}
-   const submit=$("#auth-submit");submit.disabled=true;submit.textContent="Procesando…";
+   submit.textContent="Procesando…";
    try{
      let result;
      if(authMode==="signup"){
@@ -513,25 +519,20 @@
  async function oauth(provider){
    const button=provider==="google"?$("#auth-google"):$("#auth-facebook");
    const originalText=button?.textContent||"Continuar";
-   if(!supabase){
-     $("#auth-message").textContent="El acceso todavía se está preparando. Espera unos segundos y vuelve a intentarlo.";
-     toast("El servicio de acceso aún no está disponible.");
-     return;
-   }
    if(button){button.disabled=true;button.textContent="Conectando…"}
+   $("#auth-message").textContent="Preparando el acceso seguro…";
    try{
-     const {data,error}=await supabase.auth.signInWithOAuth({
+     const ready=await authReadyPromise;
+     if(!ready||!supabase)throw new Error("No se pudo cargar el servicio de acceso. Comprueba tu conexión y vuelve a intentarlo.");
+     const {error}=await supabase.auth.signInWithOAuth({
        provider,
        options:{
          redirectTo:window.JOA_CONFIG.authRedirectUrl,
-         skipBrowserRedirect:true,
          queryParams:provider==="google"?{access_type:"offline",prompt:"select_account"}:undefined
        }
      });
      if(error)throw error;
-     if(!data?.url)throw new Error("Supabase no devolvió la dirección de autenticación.");
-     $("#auth-message").textContent="Abriendo el acceso seguro…";
-     window.location.assign(data.url);
+     $("#auth-message").textContent="Redirigiendo al proveedor de acceso…";
    }catch(error){
      console.error("JOA OAuth:",error);
      const message=authError(error);
@@ -560,30 +561,55 @@
    if(user){Promise.resolve().then(async()=>{try{communityProfile=await ensureCommunityProfile(user);if(communityRequested)openCommunity()}catch(error){console.warn("No se pudo preparar el perfil social",error);toast("Tu sesión está activa, pero no se pudo cargar el perfil.")}})}
  }
  function escapeHtml(value){return String(value).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
- async function initSupabase(){
-   if(!window.JOA_CONFIG?.enableSupabase||!window.JOA_CONFIG.supabaseUrl||!window.JOA_CONFIG.supabasePublishableKey)return;
-   try{
-     const script=document.createElement("script");script.src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2";script.async=true;
-     script.onload=async()=>{
-       try{
-         supabase=window.supabase.createClient(window.JOA_CONFIG.supabaseUrl,window.JOA_CONFIG.supabasePublishableKey,{
-           auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true,flowType:"pkce"}
-         });
-         window.joaSupabase=supabase;
-         const {data:{session},error:sessionError}=await supabase.auth.getSession();
-         if(sessionError)throw sessionError;
-         currentSession=session||null;updateHeader(session?.user||null,session||null);
-         supabase.auth.onAuthStateChange((event,newSession)=>{
-           currentSession=newSession||null;
-           updateHeader(newSession?.user||null,newSession||null);
-           if(event==="SIGNED_IN"&&newSession?.user)toast("Sesión activa. ¡Bienvenido a JOA!");
-         });
-         document.documentElement.dataset.supabase="ready";
-       }catch(error){console.error("JOA Auth:",error);document.documentElement.dataset.supabase="error"}
-     };
-     script.onerror=()=>{document.documentElement.dataset.supabase="error";toast("No se pudo cargar el servicio de autenticación.")};
-     document.head.append(script);
-   }catch(error){console.error(error)}
+ async function loadSupabaseSdk(){
+   const sources=[
+     "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2",
+     "https://unpkg.com/@supabase/supabase-js@2"
+   ];
+   let lastError;
+   for(const src of sources){
+     try{
+       await new Promise((resolve,reject)=>{
+         const script=document.createElement("script");
+         script.src=src;script.async=true;
+         script.onload=()=>window.supabase?.createClient?resolve():reject(new Error("El SDK de Supabase no quedó disponible."));
+         script.onerror=()=>reject(new Error("No se pudo descargar el SDK desde "+new URL(src).hostname));
+         document.head.append(script);
+       });
+       return true;
+     }catch(error){lastError=error;console.warn("JOA Auth SDK:",src,error)}
+   }
+   throw lastError||new Error("No se pudo cargar Supabase.");
+ }
+ function initSupabase(){
+   authReadyPromise=(async()=>{
+     if(!window.JOA_CONFIG?.enableSupabase||!window.JOA_CONFIG.supabaseUrl||!window.JOA_CONFIG.supabasePublishableKey)throw new Error("Falta la configuración pública de Supabase.");
+     await loadSupabaseSdk();
+     supabase=window.supabase.createClient(window.JOA_CONFIG.supabaseUrl,window.JOA_CONFIG.supabasePublishableKey,{
+       auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true,flowType:"pkce"}
+     });
+     window.joaSupabase=supabase;
+     // Registrar primero el observador para no perder el evento de sesión durante la recuperación OAuth.
+     supabase.auth.onAuthStateChange((event,newSession)=>{
+       currentSession=newSession||null;
+       updateHeader(newSession?.user||null,newSession||null);
+       if(event==="SIGNED_IN"&&newSession?.user)toast("Sesión activa. ¡Bienvenido a JOA!");
+     });
+     const {data:{session},error}=await supabase.auth.getSession();
+     if(error)throw error;
+     currentSession=session||null;
+     updateHeader(session?.user||null,session||null);
+     document.documentElement.dataset.supabase="ready";
+     $("#auth-message").textContent="Servicio de acceso listo.";
+     return true;
+   })().catch(error=>{
+     console.error("JOA Auth initialization:",error);
+     document.documentElement.dataset.supabase="error";
+     $("#auth-message").textContent="No se pudo preparar el acceso: "+authError(error);
+     toast("El servicio de acceso no pudo inicializarse.");
+     return false;
+   });
+   return authReadyPromise;
  }
  loadCatalog();initSupabase();
 })();
