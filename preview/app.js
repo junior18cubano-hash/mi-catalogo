@@ -1,7 +1,17 @@
 (() => {
  "use strict";
  const $ = (s,root=document) => root.querySelector(s);
- const $$ = (s,root=document) => [...root.querySelectorAll(s)];
+ const $ = (s,root=document) => [...root.querySelectorAll(s)];
+ // Captura global temprana de los botones de acceso: evita depender de listeners tardíos.
+ document.addEventListener("click",event=>{
+   const target=event.target;
+   const button=target&&target.closest?target.closest("#auth-google,#auth-facebook"):null;
+   if(!button)return;
+   event.preventDefault();
+   event.stopImmediatePropagation();
+   console.info("JOA Auth: clic detectado",button.id);
+   oauth(button.id==="auth-google"?"google":"facebook");
+ },true);
  const dialog=$("#auth-dialog"), toastEl=$("#toast");
  let authMode="signin", supabase=null, currentUser=null, authReadyPromise=Promise.resolve(false);
  const toast=(message)=>{if(!toastEl)return;toastEl.textContent=message;toastEl.classList.add("show");clearTimeout(window.__joaToast);window.__joaToast=setTimeout(()=>toastEl.classList.remove("show"),3600)};
@@ -575,8 +585,7 @@
      if(button){button.disabled=false;button.textContent=originalText}
    }
  }
- $("#auth-google").addEventListener("click",()=>oauth("google"));
- $("#auth-facebook").addEventListener("click",()=>oauth("facebook"));
+ // Los botones OAuth se atienden desde el listener global de captura.
  function authError(error){
    const msg=String(error?.message||"");
    if(/invalid login credentials/i.test(msg))return "Correo o contraseña incorrectos.";
