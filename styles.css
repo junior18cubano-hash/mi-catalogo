@@ -542,6 +542,8 @@
 .notifications-wrap{position:relative;display:flex;align-items:center}
 .notification-bell{position:relative;width:40px;height:40px;border:1px solid #48e9ff55;border-radius:11px;background:#48e9ff0d;color:var(--cyan);font-size:22px;cursor:pointer;display:grid;place-items:center;transition:.2s}
 .notification-bell:hover{background:#48e9ff1c;box-shadow:0 0 20px #48e9ff22}
+.notification-bell svg{width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.notification-highlight{outline:1px solid var(--cyan);box-shadow:0 0 30px #48e9ff35!important;transition:box-shadow .25s,outline .25s}
 .notification-count{position:absolute;top:-6px;right:-6px;min-width:18px;height:18px;padding:0 5px;border-radius:20px;background:#ed4c9b;color:white;border:2px solid #070914;font:800 9px Inter,sans-serif;display:grid;place-items:center}
 .notification-count[hidden]{display:none}
 .notification-panel{position:absolute;top:calc(100% + 13px);right:-50px;width:min(370px,calc(100vw - 24px));max-height:min(560px,75vh);overflow:hidden;z-index:50;border:1px solid #48e9ff55;border-radius:16px;background:linear-gradient(150deg,#121c32,#080d1a);box-shadow:0 24px 70px #000b;display:flex;flex-direction:column}
