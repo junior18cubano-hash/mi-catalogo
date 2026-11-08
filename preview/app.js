@@ -191,19 +191,23 @@
      const versionResponse=await fetch(CATALOG_VERSION_URL,{cache:"no-store"});
      if(!versionResponse.ok)throw new Error("No se pudo consultar version.json");
      const remoteVersion=await versionResponse.json();
+     const remoteFingerprint=[remoteVersion.version||"",remoteVersion.hash||"",remoteVersion.generated_at||"",remoteVersion.item_count||""].join("|");
      const savedVersion=localStorage.getItem(versionKey);
      let data=null;
-     if(!force&&savedVersion===remoteVersion.version)data=await readCachedCatalog();
+     if(!force&&savedVersion===remoteFingerprint)data=await readCachedCatalog();
      if(!data){
        setCatalogStatus("Descargando catálogo actualizado…","loading");
        const response=await fetch(CATALOG_DATA_URL,{cache:"no-store"});
        if(!response.ok)throw new Error("No se pudo descargar Update.json");
        data=await response.json();
-       if(!data||!Array.isArray(data.items))throw new Error("El JSON no contiene la lista esperada «items».");
-       await cacheCatalog(data);
-       localStorage.setItem(versionKey,remoteVersion.version||data.version||"");
      }
-     if(!data||!Array.isArray(data.items))throw new Error("El catálogo no tiene el formato esperado.");
+     if(!data||!Array.isArray(data.items))throw new Error("El JSON no contiene la lista esperada «items».");
+     const expectedCount=Number(remoteVersion.item_count||0);
+     if(expectedCount>0&&data.items.length!==expectedCount)throw new Error("El catálogo recibido está incompleto: se esperaban "+expectedCount+" elementos y llegaron "+data.items.length+".");
+     if(savedVersion!==remoteFingerprint||force){
+       await cacheCatalog(data);
+       localStorage.setItem(versionKey,remoteFingerprint);
+     }
      catalogItems=data.items;
      catalogMeta=data;
      updateSubcategoryControls();
