@@ -12,9 +12,10 @@ const JOA_CONFIG = {
   // Nombre exacto del APK adjunto a la Release
   APK_ASSET_NAME: "Catalogo.Joa.apk",
 
-  // Respaldo directo de la Release actual v1.0.3
+  // Respaldo dinámico: siempre descarga el asset de la última Release publicada.
+  // Evita quedar anclado a una versión antigua cuando falla la consulta a la API.
   FALLBACK_APK_URL:
-    "https://github.com/junior18cubano-hash/Apk-JOA/releases/download/v1.0.3/Catalogo.Joa.apk",
+    "https://github.com/junior18cubano-hash/Apk-JOA/releases/latest/download/Catalogo.Joa.apk",
 
   // URL pública de ESTA página. Vacía = URL actual del navegador.
   SITE_URL: "",
