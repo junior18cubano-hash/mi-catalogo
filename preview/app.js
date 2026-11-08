@@ -12,8 +12,6 @@
  dialog.querySelector(".dialog-close").addEventListener("click",()=>dialog.close());
  $("#search-toggle").addEventListener("click",()=>{$("#search-panel").scrollIntoView({behavior:"smooth",block:"center"});$("#catalog-search").focus()});
  const cards=$$(".category-card");
- cards.forEach(card=>card.addEventListener("click",()=>{cards.forEach(c=>c.classList.remove("selected"));card.classList.add("selected");$("#results-title").textContent=card.querySelector("b").textContent+" · próximamente";$("#catalog-results").scrollIntoView({behavior:"smooth",block:"nearest"})}));
- $("#catalog-search").addEventListener("input",e=>{const q=e.target.value.trim().toLocaleLowerCase("es");let count=0;cards.forEach(card=>{const match=card.innerText.toLocaleLowerCase("es").includes(q);card.hidden=!!q&&!match;if(match)count++});$("#results-title").textContent=q?(count?("Categorías coincidentes: "+count):"No encontramos esa categoría"):"En el radar"});
  const CATALOG_VERSION_URL="https://raw.githubusercontent.com/junior18cubano-hash/Actualizacion-Catalogo/main/version.json";
  const CATALOG_DATA_URL="https://raw.githubusercontent.com/junior18cubano-hash/Actualizacion-Catalogo/main/Update.json";
  const CATALOG_CACHE="joa-web-catalog-v1";
