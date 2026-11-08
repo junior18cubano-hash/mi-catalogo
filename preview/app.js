@@ -6,7 +6,7 @@
  let authMode="signin", supabase=null, currentUser=null;
  const toast=(message)=>{if(!toastEl)return;toastEl.textContent=message;toastEl.classList.add("show");clearTimeout(window.__joaToast);window.__joaToast=setTimeout(()=>toastEl.classList.remove("show"),3600)};
  $("#year").textContent=new Date().getFullYear();
- const openAuth=()=>{if(dialog&&!dialog.open)dialog.showModal();renderAuthMode()};
+ const openAuth=()=>{if(currentUser){openCommunity();return}if(dialog&&!dialog.open)dialog.showModal();renderAuthMode()};
  $("#login-open").addEventListener("click",openAuth);
  $("#community-join").addEventListener("click",openAuth);
  dialog.querySelector(".dialog-close").addEventListener("click",()=>dialog.close());
@@ -238,6 +238,154 @@
    searchTerm=e.target.value.trim().toLocaleLowerCase("es");currentPage=1;renderCatalog();
    if(!catalogItems.length){const q=searchTerm;cards.forEach(card=>{card.hidden=!!q&&!card.innerText.toLocaleLowerCase("es").includes(q)})}
  });
+
+ let currentSession=null,communityProfile=null,communityTab="feed";
+ function openCommunity(){
+   if(!currentUser){openAuth();return}
+   const workspace=$("#community-workspace"),layout=$(".community-layout");
+   if(workspace)workspace.hidden=false;if(layout)layout.hidden=true;
+   $("#community-user-name").textContent=communityProfile?.display_name||currentUser.email?.split("@")[0]||"jugador";
+   $("#community-account-email").textContent=currentUser.email||"Cuenta JOA";
+   $("#community-profile-name").value=communityProfile?.display_name||"";
+   $("#community-profile-username").value=communityProfile?.username||"";
+   $("#community-profile-bio").value=communityProfile?.bio||"";
+   $("#community-avatar").textContent=(communityProfile?.display_name||"JG").slice(0,2).toUpperCase();
+   loadCommunityFeed();loadCommunityFriends();loadCommunityGroups();
+   $("#community").scrollIntoView({behavior:"smooth",block:"start"});
+ }
+ function closeCommunity(){
+   const workspace=$("#community-workspace"),layout=$(".community-layout");
+   if(workspace)workspace.hidden=true;if(layout)layout.hidden=false;
+ }
+ function communityError(error){console.error("JOA Social:",error);return error?.message||"No se pudo completar la operación."}
+ async function ensureCommunityProfile(user){
+   if(!user||!supabase)return null;
+   const {data,error}=await supabase.from("profiles").select("*").eq("id",user.id).maybeSingle();
+   if(error)throw error;
+   if(data)return data;
+   const meta=user.user_metadata||{},display=meta.full_name||meta.name||user.email?.split("@")[0]||"Jugador JOA";
+   const username="joa_"+user.id.replace(/-/g,"").slice(0,10);
+   const {data:created,error:insertError}=await supabase.from("profiles").insert({id:user.id,username,display_name:display,avatar_url:meta.avatar_url||meta.picture||null}).select().single();
+   if(insertError)throw insertError;return created;
+ }
+ function communityInitials(name){return String(name||"JG").trim().split(/\s+/).slice(0,2).map(x=>x[0]||"").join("").toUpperCase()||"JG"}
+ async function loadCommunityFeed(){
+   const host=$("#community-feed-list");if(!host||!supabase)return;
+   host.innerHTML='<p class="community-loading">Cargando publicaciones…</p>';
+   try{
+     const {data:posts,error}=await supabase.from("posts").select("id,author_id,body,media_url,created_at").order("created_at",{ascending:false}).limit(40);
+     if(error)throw error;
+     if(!posts?.length){host.innerHTML='<div class="community-empty"><span>✦</span><h3>El feed está esperando su primera historia</h3><p>Publica algo y abre la conversación en JOA.</p></div>';return}
+     const ids=[...new Set(posts.map(p=>p.author_id))],postIds=posts.map(p=>p.id);
+     const [profilesRes,reactionsRes,commentsRes]=await Promise.all([
+       supabase.from("profiles").select("id,username,display_name,avatar_url").in("id",ids),
+       supabase.from("post_reactions").select("post_id,user_id,reaction").in("post_id",postIds),
+       supabase.from("post_comments").select("id,post_id,author_id,body,created_at").in("post_id",postIds).order("created_at",{ascending:true})
+     ]);
+     if(profilesRes.error)throw profilesRes.error;if(reactionsRes.error)throw reactionsRes.error;if(commentsRes.error)throw commentsRes.error;
+     const profiles=new Map((profilesRes.data||[]).map(p=>[p.id,p]));
+     const reactions=reactionsRes.data||[],comments=commentsRes.data||[];
+     const commentAuthors=[...new Set(comments.map(c=>c.author_id))].filter(id=>!profiles.has(id));
+     if(commentAuthors.length){const extra=await supabase.from("profiles").select("id,username,display_name,avatar_url").in("id",commentAuthors);if(!extra.error)(extra.data||[]).forEach(p=>profiles.set(p.id,p))}
+     host.innerHTML="";
+     posts.forEach(post=>{
+       const profile=profiles.get(post.author_id)||{},mine=post.author_id===currentUser.id;
+       const ownReaction=reactions.find(r=>r.post_id===post.id&&r.user_id===currentUser.id);
+       const postReactions=reactions.filter(r=>r.post_id===post.id);
+       const postComments=comments.filter(c=>c.post_id===post.id);
+       const card=document.createElement("article");card.className="community-post-card";
+       const head=document.createElement("div");head.className="community-post-head";
+       const avatar=document.createElement("span");avatar.className="community-avatar";avatar.textContent=communityInitials(profile.display_name||profile.username);
+       const who=document.createElement("div");who.className="community-post-author";
+       const name=document.createElement("b");name.textContent=profile.display_name||profile.username||"Jugador JOA";
+       const handle=document.createElement("small");handle.textContent="@"+(profile.username||"jugador")+" · "+new Date(post.created_at).toLocaleString("es",{dateStyle:"medium",timeStyle:"short"});
+       who.append(name,handle);head.append(avatar,who);
+       if(mine){const del=document.createElement("button");del.className="community-post-delete";del.textContent="Eliminar";del.addEventListener("click",()=>deleteCommunityPost(post.id));head.append(del)}
+       const body=document.createElement("p");body.className="community-post-body";body.textContent=post.body;
+       card.append(head,body);
+       if(post.media_url){const link=document.createElement("a");link.href=post.media_url;link.target="_blank";link.rel="noopener";link.textContent="Ver contenido adjunto ↗";card.append(link)}
+       const actions=document.createElement("div");actions.className="community-post-actions";
+       const react=document.createElement("button");react.className=ownReaction?"is-reacted":"";react.textContent=(ownReaction?.reaction==="love"?"♥":"♡")+" Me gusta · "+postReactions.length;react.addEventListener("click",()=>toggleCommunityReaction(post.id,ownReaction));
+       const commentToggle=document.createElement("button");commentToggle.textContent="▢ Comentar · "+postComments.length;
+       actions.append(react,commentToggle);card.append(actions);
+       const commentsBox=document.createElement("div");commentsBox.className="community-comments";commentsBox.hidden=true;
+       postComments.forEach(comment=>{const line=document.createElement("p");const author=profiles.get(comment.author_id);const b=document.createElement("b");b.textContent=(author?.display_name||author?.username||"Jugador")+": ";line.append(b,document.createTextNode(comment.body));commentsBox.append(line)});
+       const form=document.createElement("form");form.className="community-comment-form";const input=document.createElement("input");input.placeholder="Escribe un comentario…";input.maxLength=3000;input.required=true;const send=document.createElement("button");send.textContent="Enviar";form.append(input,send);form.addEventListener("submit",async e=>{e.preventDefault();send.disabled=true;try{const {error}=await supabase.from("post_comments").insert({post_id:post.id,author_id:currentUser.id,body:input.value.trim()});if(error)throw error;loadCommunityFeed()}catch(err){toast(communityError(err))}finally{send.disabled=false}});
+       commentsBox.append(form);commentToggle.addEventListener("click",()=>{commentsBox.hidden=!commentsBox.hidden;if(!commentsBox.hidden)input.focus()});card.append(commentsBox);host.append(card);
+     });
+   }catch(error){host.innerHTML='<div class="community-empty"><h3>No se pudo cargar el feed</h3><p></p></div>';host.querySelector("p").textContent=communityError(error)}
+ }
+ async function toggleCommunityReaction(postId,existing){
+   try{
+     if(existing){const {error}=await supabase.from("post_reactions").delete().eq("post_id",postId).eq("user_id",currentUser.id);if(error)throw error}
+     else{const {error}=await supabase.from("post_reactions").insert({post_id:postId,user_id:currentUser.id,reaction:"like"});if(error)throw error}
+     loadCommunityFeed();
+   }catch(error){toast(communityError(error))}
+ }
+ async function deleteCommunityPost(postId){
+   if(!confirm("¿Eliminar esta publicación?"))return;
+   const {error}=await supabase.from("posts").delete().eq("id",postId).eq("author_id",currentUser.id);
+   if(error)toast(communityError(error));else{toast("Publicación eliminada.");loadCommunityFeed()}
+ }
+ $("#community-post-form").addEventListener("submit",async e=>{
+   e.preventDefault();if(!currentUser)return;const field=$("#community-post-body"),button=e.submitter;const body=field.value.trim();if(!body)return;
+   button.disabled=true;
+   try{const {error}=await supabase.from("posts").insert({author_id:currentUser.id,body});if(error)throw error;field.value="";toast("¡Publicación compartida!");loadCommunityFeed()}
+   catch(error){toast(communityError(error))}finally{button.disabled=false}
+ });
+ $("#community-feed-refresh").addEventListener("click",loadCommunityFeed);
+ $("#community-signout").addEventListener("click",async()=>{
+   if(!supabase)return;const {error}=await supabase.auth.signOut({scope:"local"});if(error){toast(communityError(error));return}
+   closeCommunity();toast("Sesión cerrada en este dispositivo.");
+ });
+ $("#community-profile-form").addEventListener("submit",async e=>{
+   e.preventDefault();const button=e.submitter;button.disabled=true;
+   const username=$("#community-profile-username").value.trim().replace(/^@/,"");
+   try{
+     const {data,error}=await supabase.from("profiles").update({username,display_name:$("#community-profile-name").value.trim(),bio:$("#community-profile-bio").value.trim(),updated_at:new Date().toISOString()}).eq("id",currentUser.id).select().single();
+     if(error)throw error;communityProfile=data;$("#community-user-name").textContent=data.display_name;$("#community-avatar").textContent=communityInitials(data.display_name);$("#community-profile-status").textContent="Perfil actualizado correctamente.";toast("Perfil guardado.");
+   }catch(error){$("#community-profile-status").textContent=communityError(error)}finally{button.disabled=false}
+ });
+ $("[data-community-tab]").forEach(button=>button.addEventListener("click",()=>{
+   communityTab=button.dataset.communityTab;$("[data-community-tab]").forEach(b=>b.classList.toggle("active",b===button));
+   ["feed","friends","messages","groups","profile"].forEach(tab=>$("#community-"+tab+"-panel").hidden=tab!==communityTab);
+ }));
+ async function loadCommunityFriends(){
+   if(!currentUser||!supabase)return;const host=$("#community-friend-list");if(!host)return;
+   const {data,error}=await supabase.from("friendships").select("*").or("requester_id.eq."+currentUser.id+",addressee_id.eq."+currentUser.id).order("created_at",{ascending:false});
+   if(error){host.textContent=communityError(error);return}
+   if(!data?.length){host.textContent="Todavía no tienes amistades ni solicitudes.";return}
+   const others=[...new Set(data.map(x=>x.requester_id===currentUser.id?x.addressee_id:x.requester_id))];
+   const p=await supabase.from("profiles").select("id,username,display_name").in("id",others);const map=new Map((p.data||[]).map(x=>[x.id,x]));
+   host.innerHTML="";data.forEach(row=>{const other=row.requester_id===currentUser.id?row.addressee_id:row.requester_id,profile=map.get(other)||{},line=document.createElement("div");line.className="community-list-row";const label=document.createElement("span");label.textContent=(profile.display_name||profile.username||"Jugador")+" · "+row.status;line.append(label);
+     if(row.status==="pending"&&row.addressee_id===currentUser.id){const accept=document.createElement("button");accept.textContent="Aceptar";accept.addEventListener("click",async()=>{const {error}=await supabase.from("friendships").update({status:"accepted",updated_at:new Date().toISOString()}).eq("id",row.id);if(error)toast(communityError(error));else loadCommunityFriends()});line.append(accept)}
+     host.append(line);
+   });
+ }
+ $("#community-friend-search").addEventListener("submit",async e=>{
+   e.preventDefault();const host=$("#community-friend-results");host.textContent="Buscando…";
+   const query=$("#community-friend-query").value.trim().replace(/^@/,"");
+   const {data,error}=await supabase.from("profiles").select("id,username,display_name").ilike("username","%"+query+"%").neq("id",currentUser.id).limit(12);
+   if(error){host.textContent=communityError(error);return}host.innerHTML="";
+   if(!data?.length){host.textContent="No encontramos jugadores con ese nombre.";return}
+   data.forEach(profile=>{const row=document.createElement("div");row.className="community-list-row";const label=document.createElement("span");label.textContent=(profile.display_name||profile.username)+" · @"+profile.username;const add=document.createElement("button");add.textContent="Añadir";add.addEventListener("click",async()=>{const {error}=await supabase.from("friendships").insert({requester_id:currentUser.id,addressee_id:profile.id,status:"pending"});if(error)toast(communityError(error));else{add.disabled=true;add.textContent="Enviada";loadCommunityFriends()}});row.append(label,add);host.append(row)})
+ });
+ async function loadCommunityGroups(){
+   const host=$("#community-group-list");if(!host||!supabase)return;
+   const {data,error}=await supabase.from("community_groups").select("id,name,slug,description,created_by,is_public,created_at").eq("is_public",true).order("created_at",{ascending:false}).limit(30);
+   if(error){host.textContent=communityError(error);return}host.innerHTML="";
+   if(!data?.length){host.textContent="Todavía no hay grupos públicos. ¡Crea el primero!";return}
+   const {data:members}=await supabase.from("group_members").select("group_id,user_id").eq("user_id",currentUser.id);
+   const joined=new Set((members||[]).map(x=>x.group_id));
+   data.forEach(group=>{const row=document.createElement("div");row.className="community-list-row";const label=document.createElement("span");label.textContent=group.name+" — "+(group.description||"Grupo JOA");const action=document.createElement("button");action.textContent=joined.has(group.id)?"Miembro":"Unirme";action.disabled=joined.has(group.id);action.addEventListener("click",async()=>{const {error}=await supabase.from("group_members").insert({group_id:group.id,user_id:currentUser.id,role:"member"});if(error)toast(communityError(error));else loadCommunityGroups()});row.append(label,action);host.append(row)})
+ }
+ $("#community-group-form").addEventListener("submit",async e=>{
+   e.preventDefault();const button=e.submitter;button.disabled=true;
+   try{const name=$("#community-group-name").value.trim(),slug=name.toLocaleLowerCase("es").normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"")+"-"+Math.random().toString(36).slice(2,6);
+     const {error}=await supabase.from("community_groups").insert({name,slug,description:$("#community-group-description").value.trim(),created_by:currentUser.id,is_public:true});if(error)throw error;
+     $("#community-group-name").value="";$("#community-group-description").value="";toast("Grupo creado.");loadCommunityGroups()
+   }catch(error){toast(communityError(error))}finally{button.disabled=false}
+ });
  function renderAuthMode(){
    $("#auth-title").innerHTML=authMode==="signin"?'Entra en tu <span>universo.</span>':'Crea tu <span>cuenta JOA.</span>';
    $("#auth-description").textContent=authMode==="signin"?"Accede para participar en la comunidad JOA.":"Regístrate para crear tu perfil y conectar con otros jugadores.";
@@ -289,12 +437,13 @@
    if(/user already registered/i.test(msg))return "Ese correo ya tiene una cuenta. Inicia sesión.";
    return msg||"No se pudo completar el acceso. Inténtalo de nuevo.";
  }
- function updateHeader(user){
-   currentUser=user;
+ function updateHeader(user,session=null){
+   currentUser=user;currentSession=session||currentSession;
    const btn=$("#login-open");
-   if(user){btn.innerHTML='<span class="user-status">● '+escapeHtml(user.email||"Mi cuenta")+'</span>';btn.title="Abrir tu cuenta";$("#community-join").textContent="Ir a mi comunidad"}
-   else{btn.innerHTML='Entrar <span>↗</span>';btn.title="Iniciar sesión";$("#community-join").textContent="Entrar a la comunidad"}
+   if(user){btn.innerHTML='<span class="user-status">● '+escapeHtml(user.email||"Mi cuenta")+'</span>';btn.title="Abrir comunidad y cuenta";$("#community-join").textContent="Ir a mi comunidad";$("#community-join").querySelector("b")?.remove()}
+   else{btn.innerHTML='Entrar <span>↗</span>';btn.title="Iniciar sesión";$("#community-join").textContent="Entrar a la comunidad";closeCommunity();communityProfile=null}
    renderAuthMode();
+   if(user){Promise.resolve().then(async()=>{try{communityProfile=await ensureCommunityProfile(user);if(!$(".community-layout").hidden)openCommunity()}catch(error){console.warn("No se pudo preparar el perfil social",error);toast("Tu sesión está activa, pero no se pudo cargar el perfil.")}})}
  }
  function escapeHtml(value){return String(value).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
  async function initSupabase(){
@@ -303,10 +452,18 @@
      const script=document.createElement("script");script.src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2";script.async=true;
      script.onload=async()=>{
        try{
-         supabase=window.supabase.createClient(window.JOA_CONFIG.supabaseUrl,window.JOA_CONFIG.supabasePublishableKey);
+         supabase=window.supabase.createClient(window.JOA_CONFIG.supabaseUrl,window.JOA_CONFIG.supabasePublishableKey,{
+           auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true,flowType:"pkce"}
+         });
          window.joaSupabase=supabase;
-         const {data:{session}}=await supabase.auth.getSession();updateHeader(session?.user||null);
-         supabase.auth.onAuthStateChange((_event,newSession)=>updateHeader(newSession?.user||null));
+         const {data:{session},error:sessionError}=await supabase.auth.getSession();
+         if(sessionError)throw sessionError;
+         currentSession=session||null;updateHeader(session?.user||null,session||null);
+         supabase.auth.onAuthStateChange((event,newSession)=>{
+           currentSession=newSession||null;
+           updateHeader(newSession?.user||null,newSession||null);
+           if(event==="SIGNED_IN"&&newSession?.user)toast("Sesión activa. ¡Bienvenido a JOA!");
+         });
          document.documentElement.dataset.supabase="ready";
        }catch(error){console.error("JOA Auth:",error);document.documentElement.dataset.supabase="error"}
      };
