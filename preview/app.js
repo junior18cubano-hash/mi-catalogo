@@ -52,13 +52,15 @@
  }
  function itemSubcategory(item){
  const raw=normalizeType(item.type||item.tipo||"");
- if(subtypeLabels[categoryFor(raw)]&&subtypeLabels[categoryFor(raw)][raw])return raw;
- const other=normalizeType(item.subcategory||item.subcategoria||item.sub_type||item.subtipo||"");
- if(other.includes("anim"))return categoryFor(raw)==="serie"?"serie_animada":"pelicula_animada";
- if(other.includes("movie")||other.includes("pelicula"))return categoryFor(raw)==="anime"?"anime_movie":"pelicula";
- if(other.includes("serie"))return categoryFor(raw)==="anime"?"anime":"serie";
- if(categoryFor(raw)==="novela")return "novela_tv";
- return raw;
+ const explicit=normalizeType(item.subcategory||item.subcategoria||item.sub_type||item.subtipo||item.category||item.categoria||"");
+ const group=categoryFor(raw||explicit);
+ if(subtypeLabels[group]&&subtypeLabels[group][explicit])return explicit;
+ if(subtypeLabels[group]&&subtypeLabels[group][raw])return raw;
+ if(explicit.includes("anim"))return group==="serie"?"serie_animada":"pelicula_animada";
+ if(explicit.includes("movie")||explicit.includes("pelicula"))return group==="anime"?"anime_movie":"pelicula";
+ if(explicit.includes("serie"))return group==="anime"?"anime":"serie";
+ if(group==="novela")return "novela_tv";
+ return raw||explicit;
  }
  function itemPlatform(item){return String(item.console||item.consola||item.platform||item.plataforma||item.emulator||item.emulador||"").trim()}
  function itemCategoryValue(item){return normalizeType(item.type||item.tipo||item.category||item.categoria||"otros")}
@@ -118,13 +120,16 @@
    const cover=resolveCover(itemCover(item)),hero=document.createElement("div");hero.className="detail-hero";
    if(cover){const img=document.createElement("img");img.src=cover;img.alt="Portada de "+itemTitle(item);img.onerror=()=>img.remove();hero.append(img)}
    const info=document.createElement("div");info.className="detail-info";
-   const tag=document.createElement("small");tag.textContent=String(item.type||item.tipo||item.category||item.categoria||"CATÁLOGO").replace(/_/g," ").toUpperCase();
+   const tag=document.createElement("small");
+   const group=categoryFor(itemCategoryValue(item)),sub=itemSubcategory(item);
+   tag.textContent=(subtypeLabels[group]?.[sub]||sub.replace(/_/g," ")||"CATÁLOGO").toUpperCase();
    const title=document.createElement("h2");title.textContent=itemTitle(item);
    const description=document.createElement("p");description.className="detail-description";description.textContent=itemDescription(item);
    info.append(tag,title,description);
+   addDetailLine(info,"Subcategoría",subtypeLabels[group]?.[sub]||sub.replace(/_/g," "));
    addDetailLine(info,"Año",item.year||item.ano||item.año||item.release_year);
    addDetailLine(info,"Género",item.genre||item.genres||item.generos||item.genero);
-   addDetailLine(info,"Plataforma",item.console||item.consola||item.platform||item.plataforma);
+   addDetailLine(info,"Consola / plataforma",itemPlatform(item));
    addDetailLine(info,"Valoración",item.rating||item.vote_average||item.valoracion);
    addDetailLine(info,"Vistas",item.views||item.view_count||item.visitas||item.vistos);
    addDetailLine(info,"Temporadas",item.seasons||item.temporadas);
