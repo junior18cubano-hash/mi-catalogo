@@ -499,3 +499,41 @@
 .community-general-message button{border:1px solid #48e9ff55;border-radius:7px;padding:6px 10px;background:#123448;color:#9cecff;font-size:9px;cursor:pointer}
 #community-chat-messages:has(.community-general-message){gap:8px}
 @media(max-width:700px){.community-chat-layout>#community-chat-list{max-height:230px}.community-general-head{align-items:flex-start;flex-direction:column;gap:4px}}
+
+/* Comunidad JOA: directorio y administración de grupos */
+#community-groups-panel{display:grid;grid-template-columns:minmax(0,.85fr) minmax(0,1.15fr);align-items:start;gap:16px}
+#community-groups-panel .community-group-detail{grid-column:1/-1}
+.community-group-create-form{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:10px!important}
+.community-group-create-form label,.community-group-editor label{display:block;font-size:10px;color:#b8c8e2}
+.community-group-create-form label input,.community-group-create-form label textarea,.community-group-create-form select,.community-group-editor input,.community-group-editor textarea,.community-group-editor select{display:block;width:100%;margin-top:7px;padding:11px;border:1px solid #ffffff20;border-radius:8px;background:#080e1d;color:#edf4ff;font:11px Inter,sans-serif}
+.community-group-create-form>button{grid-column:1/-1}
+.community-group-discovery-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:10px 0}
+.community-group-discovery-head p{margin:0}
+.community-group-discovery-head button,.community-group-actions button,.community-group-member button,.community-group-detail-head button,.community-group-inviter button{border:1px solid #48e9ff55;border-radius:8px;padding:8px 11px;background:#10354a;color:#9cecff;font-size:10px;cursor:pointer}
+.community-group-card{padding:14px;margin:10px 0;border:1px solid var(--line);border-radius:12px;background:linear-gradient(145deg,#111d32,#0a1222)}
+.community-group-card-top,.community-group-detail-head{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.community-group-card h4{margin:0;color:#f0f6ff;font-size:13px}
+.community-group-privacy{padding:4px 7px;border:1px solid #48e9ff44;border-radius:5px;color:#80eaff;font-size:8px}
+.community-group-card>p,.community-group-detail-card>p{font-size:11px;line-height:1.6;color:#b6c6df}
+.community-group-meta{display:flex;flex-wrap:wrap;gap:7px;margin:10px 0}
+.community-group-meta span{padding:5px 7px;border-radius:5px;background:#ffffff08;color:#9eb2d1;font-size:9px}
+.community-group-tags{display:block;color:#a996ff;font-size:9px}
+.community-group-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:12px}
+.community-group-actions button.primary,.community-group-inviter button.primary{background:linear-gradient(110deg,#126078,#433078);color:#b8f5ff}
+.community-group-actions button.danger{border-color:#ff7f9a55;background:#421c31;color:#ffb4c6}
+.community-group-member-state{font-size:9px;color:#80eaff}
+.community-group-detail-card{padding:17px;border:1px solid #48e9ff44;border-radius:13px;background:linear-gradient(145deg,#121f38,#0a1121)}
+.community-group-detail-head h3{margin:0}
+.community-group-detail-card h4,.community-group-inviter h4{margin:18px 0 8px;color:#e7f2ff;font-size:12px}
+.community-group-rules{padding:10px;border-radius:8px;background:#ffffff08;white-space:pre-wrap}
+.community-group-roster{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+.community-group-member{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:9px;border:1px solid var(--line);border-radius:8px;background:#ffffff05}
+.community-group-member span{font-size:10px;color:#dceaff;overflow-wrap:anywhere}
+.community-group-member small{font-size:8px;color:#8cecff;white-space:nowrap}
+.community-group-member button{padding:5px 7px;font-size:8px}
+.community-group-editor{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:10px!important}
+.community-group-editor .community-group-actions{grid-column:1/-1}
+.community-group-inviter{display:grid;gap:10px;padding:14px;border:1px solid var(--line);border-radius:10px}
+.community-group-inviter select{padding:10px;border:1px solid var(--line);border-radius:8px;background:#080e1d;color:#fff}
+@media(max-width:800px){#community-groups-panel{grid-template-columns:1fr}#community-groups-panel .community-group-detail{grid-column:auto}}
+@media(max-width:560px){.community-group-create-form,.community-group-editor{grid-template-columns:1fr!important}.community-group-roster{grid-template-columns:1fr}.community-group-create-form>button,.community-group-editor .community-group-actions{grid-column:auto}}
