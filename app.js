@@ -348,7 +348,7 @@
    try{
      const {data:posts,error}=await supabase.from("posts").select("id,author_id,body,media_url,created_at").order("created_at",{ascending:false}).limit(40);
      if(error)throw error;
-     if(!posts?.length){host.innerHTML='<div class="community-empty"><span>✦</span><h3>El feed está esperando su primera historia</h3><p>Publica algo y abre la conversación en JOA.</p></div>';return}
+     if(!posts?.length){host.innerHTML='<div class="community-empty"><span>✦</span><h3>La comunidad espera su primera publicación</h3><p>Publica algo y abre la conversación en JOA.</p></div>';return}
      const ids=[...new Set(posts.map(p=>p.author_id))],postIds=posts.map(p=>p.id);
      const [profilesRes,reactionsRes,commentsRes]=await Promise.all([
        supabase.from("profiles").select("id,username,display_name,avatar_url").in("id",ids),
@@ -386,7 +386,7 @@
        const form=document.createElement("form");form.className="community-comment-form";const input=document.createElement("input");input.placeholder="Escribe un comentario…";input.maxLength=3000;input.required=true;const send=document.createElement("button");send.textContent="Enviar";form.append(input,send);form.addEventListener("submit",async e=>{e.preventDefault();send.disabled=true;try{const {error}=await supabase.from("post_comments").insert({post_id:post.id,author_id:currentUser.id,body:input.value.trim()});if(error)throw error;loadCommunityFeed()}catch(err){toast(communityError(err))}finally{send.disabled=false}});
        commentsBox.append(form);commentToggle.addEventListener("click",()=>{commentsBox.hidden=!commentsBox.hidden;if(!commentsBox.hidden)input.focus()});card.append(commentsBox);host.append(card);
      });
-   }catch(error){host.innerHTML='<div class="community-empty"><h3>No se pudo cargar el feed</h3><p></p></div>';host.querySelector("p").textContent=communityError(error)}
+   }catch(error){host.innerHTML='<div class="community-empty"><h3>No se pudieron cargar las publicaciones</h3><p></p></div>';host.querySelector("p").textContent=communityError(error)}
  }
  async function toggleCommunityReaction(postId,existing){
    try{
