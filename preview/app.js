@@ -14,7 +14,138 @@
  const cards=$$(".category-card");
  cards.forEach(card=>card.addEventListener("click",()=>{cards.forEach(c=>c.classList.remove("selected"));card.classList.add("selected");$("#results-title").textContent=card.querySelector("b").textContent+" · próximamente";$("#catalog-results").scrollIntoView({behavior:"smooth",block:"nearest"})}));
  $("#catalog-search").addEventListener("input",e=>{const q=e.target.value.trim().toLocaleLowerCase("es");let count=0;cards.forEach(card=>{const match=card.innerText.toLocaleLowerCase("es").includes(q);card.hidden=!!q&&!match;if(match)count++});$("#results-title").textContent=q?(count?("Categorías coincidentes: "+count):"No encontramos esa categoría"):"En el radar"});
- async function loadCatalog(){const url=window.JOA_CONFIG?.catalogJsonUrl;if(!url)return;try{const response=await fetch(url,{cache:"no-store"});if(!response.ok)throw new Error("No se pudo leer el catálogo");const data=await response.json();const items=Array.isArray(data)?data:(data.items||[]);if(!items.length)return;const grid=$("#content-grid");grid.innerHTML="";items.slice(0,12).forEach(item=>{const article=document.createElement("article");article.className="content-card";const poster=document.createElement("div");poster.className="poster";poster.textContent=(item.title||item.name||"JOA").slice(0,32);const body=document.createElement("div");const type=document.createElement("small");type.textContent=String(item.type||"CATÁLOGO").toUpperCase();const title=document.createElement("b");title.textContent=item.title||item.name||"Sin título";const desc=document.createElement("p");desc.textContent=item.synopsis||item.description||"Contenido del catálogo JOA";body.append(type,title,desc);article.append(poster,body);grid.append(article)});$("#results-title").textContent="Contenido del catálogo"}catch(error){console.warn("JOA catalog:",error)}}
+ const CATALOG_VERSION_URL="https://raw.githubusercontent.com/junior18cubano-hash/Actualizacion-Catalogo/main/version.json";
+ const CATALOG_DATA_URL="https://raw.githubusercontent.com/junior18cubano-hash/Actualizacion-Catalogo/main/Update.json";
+ const CATALOG_CACHE="joa-web-catalog-v1";
+ let catalogItems=[],catalogMeta={},activeCategory="",visibleCount=18,searchTerm="";
+ const categoryAliases={
+   juego:["juego","game","games","videojuego","videojuegos"],
+   pelicula:["pelicula","película","peliculas","películas","movie","movies","film","pelicula_animada"],
+   serie:["serie","series","serie_tv","tv","show"],
+   anime:["anime","anime_movie","anime_series"],
+   novela:["novela","novelas","novela_tv","novelas_tv","telenovela","telenovelas"],
+   software:["software","app","apps","programa","programas"],
+   musica:["musica","música","music","audio"],
+   otros:["otros","other","misc"]
+ };
+ const normalizeType=value=>String(value||"").toLocaleLowerCase("es").normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[ -]/g,"_");
+ const itemType=item=>normalizeType(item.type||item.tipo||item.category||item.categoria||"otros");
+ const itemTitle=item=>String(item.title||item.name||item.titulo||item.nombre||item.game||"Contenido JOA");
+ const itemDescription=item=>String(item.synopsis||item.sinopsis||item.description||item.descripcion||item.overview||item.summary||item.resumen||item.details||"Descubre este contenido en JOA GAMERs.");
+ const itemCover=item=>item.cover||item.image||item.poster||item.caratula||item.img||item.thumbnail||item.image_url||item.poster_url||"";
+ function resolveCover(value){
+   if(!value)return "";
+   if(typeof value==="object")value=value.url||value.src||value.path||"";
+   const raw=String(value).trim();if(!raw)return "";
+   if(/^(https?:|data:|blob:)/i.test(raw))return raw;
+   const base=catalogMeta.source_url||"";
+   try{return base?new URL(raw,base).href:raw}catch(_){return raw}
+ }
+ function categoryFor(type){
+   const t=normalizeType(type);
+   for(const [key,aliases] of Object.entries(categoryAliases))if(aliases.map(normalizeType).includes(t))return key;
+   if(t.includes("novela")||t.includes("telenovela"))return "novela";
+   if(t.includes("anime"))return "anime";
+   if(t.includes("pelicula")||t.includes("movie"))return "pelicula";
+   if(t.includes("serie"))return "serie";
+   if(t.includes("juego")||t.includes("game"))return "juego";
+   if(t.includes("software"))return "software";
+   if(t.includes("music")||t.includes("musica"))return "musica";
+   return "otros";
+ }
+ function setCatalogStatus(message,state=""){
+   const el=$("#catalog-status");if(!el)return;
+   el.textContent=message;el.dataset.state=state;
+ }
+ function visibleItems(){
+   return catalogItems.filter(item=>{
+     const categoryOk=!activeCategory||categoryFor(itemType(item))===activeCategory;
+     const q=searchTerm;
+     const text=[itemTitle(item),itemDescription(item),itemType(item),item.genre,item.genres,item.generos,item.console,item.consola,item.platform,item.plataforma].flat().join(" ").toLocaleLowerCase("es");
+     return categoryOk&&(!q||text.includes(q));
+   });
+ }
+ function renderCatalog(){
+   const grid=$("#content-grid");if(!grid)return;
+   const filtered=visibleItems(),shown=filtered.slice(0,visibleCount);
+   grid.innerHTML="";
+   shown.forEach(item=>{
+     const article=document.createElement("article");article.className="content-card catalog-live-card";
+     const poster=document.createElement("div");poster.className="poster";
+     const cover=resolveCover(itemCover(item));
+     if(cover){const img=document.createElement("img");img.src=cover;img.alt="Portada de "+itemTitle(item);img.loading="lazy";img.decoding="async";img.onerror=()=>{img.remove();poster.textContent=itemTitle(item).slice(0,32)};poster.append(img)}
+     else poster.textContent=itemTitle(item).slice(0,32);
+     const body=document.createElement("div"),type=document.createElement("small"),title=document.createElement("b"),desc=document.createElement("p");
+     type.textContent=String(item.type||item.tipo||"CATÁLOGO").replace(/_/g," ").toUpperCase();
+     title.textContent=itemTitle(item);
+     const year=item.year||item.ano||item.año;
+     if(year)type.textContent+=" · "+year;
+     desc.textContent=itemDescription(item);
+     body.append(type,title,desc);article.append(poster,body);grid.append(article);
+   });
+   $("#results-title").textContent=activeCategory?({juego:"Juegos",pelicula:"Películas",serie:"Series TV",anime:"Anime",novela:"Telenovelas",software:"Software",musica:"Música",otros:"Otros"}[activeCategory]||"Catálogo"):searchTerm?"Resultados de búsqueda":"Catálogo JOA";
+   const tag=$(".demo-tag");if(tag)tag.textContent=filtered.length.toLocaleString("es")+" ELEMENTOS";
+   let more=$("#catalog-load-more");
+   if(more)more.hidden=shown.length>=filtered.length;
+   if(!shown.length)grid.innerHTML='<p class="catalog-empty">No encontramos contenido con esos criterios.</p>';
+   const count=$("#catalog-count");if(count)count.textContent=filtered.length.toLocaleString("es")+" resultados";
+ }
+ async function readCachedCatalog(){
+   if(!("caches" in window))return null;
+   try{const cache=await caches.open(CATALOG_CACHE),response=await cache.match(CATALOG_DATA_URL);if(!response)return null;return await response.json()}catch(_){return null}
+ }
+ async function cacheCatalog(data){
+   if(!("caches" in window))return;
+   try{const cache=await caches.open(CATALOG_CACHE);await cache.put(CATALOG_DATA_URL,new Response(JSON.stringify(data),{headers:{"Content-Type":"application/json"}}))}catch(error){console.warn("No se pudo guardar el catálogo localmente",error)}
+ }
+ async function loadCatalog(force=false){
+   const versionKey="joa_web_catalog_version";
+   try{
+     setCatalogStatus("Comprobando actualizaciones del catálogo…","loading");
+     const versionResponse=await fetch(CATALOG_VERSION_URL,{cache:"no-store"});
+     if(!versionResponse.ok)throw new Error("No se pudo consultar version.json");
+     const remoteVersion=await versionResponse.json();
+     const savedVersion=localStorage.getItem(versionKey);
+     let data=null;
+     if(!force&&savedVersion===remoteVersion.version)data=await readCachedCatalog();
+     if(!data){
+       setCatalogStatus("Descargando catálogo actualizado…","loading");
+       const response=await fetch(CATALOG_DATA_URL,{cache:"no-store"});
+       if(!response.ok)throw new Error("No se pudo descargar Update.json");
+       data=await response.json();
+       if(!data||!Array.isArray(data.items))throw new Error("El JSON no contiene la lista esperada «items».");
+       await cacheCatalog(data);
+       localStorage.setItem(versionKey,remoteVersion.version||data.version||"");
+     }
+     if(!data||!Array.isArray(data.items))throw new Error("El catálogo no tiene el formato esperado.");
+     catalogItems=data.items;
+     catalogMeta=data;
+     catalogMeta.version=remoteVersion.version||data.version||"";
+     const generated=data.generated_at||remoteVersion.generated_at;
+     const date=generated?new Date(generated).toLocaleDateString("es",{day:"2-digit",month:"short",year:"numeric"}):"fecha no disponible";
+     setCatalogStatus("Catálogo sincronizado · "+catalogItems.length.toLocaleString("es")+" elementos · "+date,"ready");
+     const sync=$("#catalog-refresh");if(sync)sync.disabled=false;
+     renderCatalog();
+   }catch(error){
+     console.error("JOA catalog:",error);
+     const cached=await readCachedCatalog();
+     if(cached&&Array.isArray(cached.items)){
+       catalogItems=cached.items;catalogMeta=cached;setCatalogStatus("Mostrando copia guardada · "+catalogItems.length.toLocaleString("es")+" elementos","offline");renderCatalog();
+     }else setCatalogStatus("No se pudo conectar con el catálogo. Intenta actualizar.","error");
+   }
+ }
+ $("#catalog-refresh")?.addEventListener("click",()=>{const b=$("#catalog-refresh");b.disabled=true;loadCatalog(true).finally(()=>{b.disabled=false})});
+ $("#catalog-load-more")?.addEventListener("click",()=>{visibleCount+=18;renderCatalog()});
+ cards.forEach(card=>card.addEventListener("click",()=>{
+   cards.forEach(c=>c.classList.remove("selected"));card.classList.add("selected");
+   activeCategory=card.dataset.category||"";visibleCount=18;renderCatalog();
+   $("#catalog-results").scrollIntoView({behavior:"smooth",block:"nearest"});
+ }));
+ $("#catalog-search").addEventListener("input",e=>{
+   searchTerm=e.target.value.trim().toLocaleLowerCase("es");visibleCount=18;renderCatalog();
+   if(!catalogItems.length){const q=searchTerm;cards.forEach(card=>{card.hidden=!!q&&!card.innerText.toLocaleLowerCase("es").includes(q)})}
+ });
+ loadCatalog();
  function renderAuthMode(){
    $("#auth-title").innerHTML=authMode==="signin"?'Entra en tu <span>universo.</span>':'Crea tu <span>cuenta JOA.</span>';
    $("#auth-description").textContent=authMode==="signin"?"Accede para participar en la comunidad JOA.":"Regístrate para crear tu perfil y conectar con otros jugadores.";
