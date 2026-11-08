@@ -5,13 +5,13 @@
 <meta name="theme-color" content="#070914"><meta name="description" content="JOA GAMERs: descubre juegos, cine, anime, series y conecta con la comunidad.">
 <title>JOA GAMERs — Tu universo digital</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;600;700;800;900&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=20261108-rootmain1">
+<link rel="stylesheet" href="styles.css?v=20261108-notifications1">
 </head>
 <body>
 <div class="ambient ambient-a"></div><div class="ambient ambient-b"></div>
 <header class="topbar"><a class="brand" href="#home"><span class="brand-mark">J</span><span>JOA <b>GAMERs</b><small>JUEGA · DESCUBRE · CONECTA</small></span></a>
 <nav class="desktop-nav"><a class="active" href="#home">Inicio</a><a href="#catalog">Catálogo</a><a href="#community">Comunidad</a><a href="#services">Servicios</a></nav>
-<div class="top-actions"><button class="icon-btn" id="search-toggle" aria-label="Buscar">⌕</button><button class="login-btn" id="login-open">Entrar <span>↗</span></button></div></header>
+<div class="top-actions"><button class="icon-btn" id="search-toggle" aria-label="Buscar">⌕</button><div class="notifications-wrap" id="notifications-wrap"><button class="notification-bell" id="notifications-toggle" type="button" aria-label="Notificaciones" aria-expanded="false">♧<span id="notification-count" class="notification-count" hidden>0</span></button><section class="notification-panel" id="notification-panel" hidden><div class="notification-panel-head"><div><b>Notificaciones</b><small>Tu actividad en JOA</small></div><button id="notifications-mark-all" type="button">Leer todas</button></div><div id="notification-list" class="notification-list"><div class="notification-empty">Inicia sesión para ver tus notificaciones.</div></div></section></div><button class="login-btn" id="login-open">Entrar <span>↗</span></button></div></header>
 <main id="home">
 <section class="hero shell"><div class="hero-copy"><div class="eyebrow"><i></i> EL UNIVERSO DIGITAL ESTÁ AQUÍ</div><h1>SUBE DE<br><span>NIVEL.</span></h1><p>Descubre tu próximo juego, encuentra historias que te atrapen y conecta con personas que comparten tu pasión.</p><div class="hero-actions"><a class="button button-primary" href="#catalog">Explorar universo <b>↗</b></a><a class="button button-ghost" href="actualizacion/">Descargar APK <b>↓</b></a></div><div class="hero-proof"><div class="avatar-stack"><i>J</i><i>G</i><i>+</i></div><span><b>Una comunidad en construcción</b><small>Tu espacio. Tus gustos. Tu gente.</small></span></div></div>
 <div class="hero-art"><div class="orbit orbit-one"></div><div class="orbit orbit-two"></div><div class="hero-core"><div class="core-glow"></div><span class="core-j">JOA</span><span class="core-sub">GAMERS</span><div class="core-line"></div><span class="core-tag">TU PRÓXIMO NIVEL</span></div><div class="float-card float-top"><span>✦</span><div><b>DESCUBRE</b><small>Contenido sin límites</small></div></div><div class="float-card float-bottom"><span>⌁</span><div><b>CONECTA</b><small>Juega en comunidad</small></div></div></div></section>
@@ -81,5 +81,5 @@
  <small id="auth-message">También puedes continuar con Google.</small>
 </dialog>
 <dialog id="catalog-detail-dialog" class="catalog-detail-dialog"><button type="button" class="dialog-close catalog-detail-close" id="catalog-detail-close" aria-label="Cerrar">×</button><div id="catalog-detail-content"></div></dialog><div class="toast" id="toast" role="status"></div>
-<script src="config.js?v=20261108-authroot"></script><script src="app.js?v=20261108-groups2"></script>
+<script src="config.js?v=20261108-authroot"></script><script src="app.js?v=20261108-notifications1"></script>
 </body></html>
