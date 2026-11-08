@@ -376,3 +376,28 @@
 .community-hint{margin-top:12px}
 @media(min-width:900px){.community-panel#community-feed-panel{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.community-panel#community-feed-panel>.community-composer,.community-panel#community-feed-panel>.community-feed-heading,.community-panel#community-feed-panel>.community-feed-list{grid-column:1/-1}.community-workspace{max-width:1260px}}
 @media(max-width:650px){.community-workspace{margin-top:25px}.community-workspace-head{align-items:flex-start;flex-direction:column}.community-account{width:100%;justify-content:space-between}.community-composer,.community-feature-card,.community-post-card{padding:15px}.community-composer-actions{align-items:flex-start;flex-direction:column}.community-composer-actions .button{width:100%}.community-feature-card form{grid-template-columns:1fr}.community-feature-card form .button{width:100%}.community-tabs button{min-width:75px;padding:10px 8px}.community-post-actions{flex-wrap:wrap}}
+
+/* Chat y reseñas JOA */
+.community-chat-layout{display:grid;grid-template-columns:minmax(180px,.34fr) minmax(0,1fr);gap:14px;min-height:350px}
+.community-chat-entry{display:block;width:100%;text-align:left;padding:13px;margin:5px 0;border:1px solid var(--line);border-radius:9px;background:#0b1326;color:#dceaff;cursor:pointer;font-size:11px}
+.community-chat-entry.active{border-color:#48e9ff88;background:#123148}
+.community-chat-window{display:flex;flex-direction:column;min-width:0;border:1px solid var(--line);border-radius:12px;background:#080e1d;padding:12px}
+#community-chat-title{font-weight:800;font-size:12px;padding:8px;border-bottom:1px solid var(--line)}
+#community-chat-messages{display:flex;flex:1;flex-direction:column;gap:9px;min-height:240px;max-height:430px;overflow:auto;padding:12px}
+.community-message{align-self:flex-start;max-width:82%;padding:10px 12px;border-radius:12px 12px 12px 3px;background:#19243b;color:#e3edff}
+.community-message.mine{align-self:flex-end;border-radius:12px 12px 3px 12px;background:#153c54}
+.community-message p{font-size:11px;line-height:1.55;margin:0;white-space:pre-wrap;overflow-wrap:anywhere}
+.community-message small{display:block;text-align:right;color:#9fb2d1;font-size:8px;margin-top:6px}
+#community-chat-form{display:flex;gap:8px}
+#community-chat-form input{flex:1;min-width:0;margin:0;padding:11px;border:1px solid var(--line);border-radius:8px;background:#111a2e;color:#fff}
+#community-chat-form button{border:0;border-radius:8px;padding:0 15px;background:#16465c;color:#9ceeff}
+.community-review-match{display:block;width:100%;padding:10px;margin-top:6px;text-align:left;border:1px solid var(--line);border-radius:8px;background:#0d172b;color:#dceaff;cursor:pointer;font-size:10px}
+.community-review-selected{margin:12px 0;padding:12px;border:1px solid #48e9ff55;border-radius:9px;color:#83eaff;font-size:11px}
+.community-review-card{padding:13px 0;border-bottom:1px solid var(--line)}
+.community-review-card b{display:block;font-size:11px;color:#e9f1ff}
+.community-review-stars{display:block;margin-top:5px;color:#ffc86c;letter-spacing:.12em}
+.community-review-card p{margin:7px 0 0;font-size:11px;line-height:1.6;color:#b7c5df;white-space:pre-wrap}
+#community-reviews-panel{grid-template-columns:1fr 1fr}
+#community-reviews-panel form{display:block}
+#community-reviews-panel select{width:100%;padding:11px;border:1px solid var(--line);border-radius:8px;background:#080e1d;color:#fff;margin-top:8px}
+@media(max-width:700px){.community-chat-layout{grid-template-columns:1fr}.community-chat-window{min-height:330px}#community-reviews-panel{grid-template-columns:1fr}}
