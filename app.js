@@ -322,8 +322,9 @@
    $("#community-profile-name").value=communityProfile?.display_name||"";
    $("#community-profile-username").value=communityProfile?.username||"";
    $("#community-profile-bio").value=communityProfile?.bio||"";
+   $("#community-profile-games").value=communityProfile?.game_preferences||"";
    $("#community-avatar").textContent=(communityProfile?.display_name||"JG").slice(0,2).toUpperCase();
-   loadCommunityFeed();loadCommunityFriends();loadCommunityGroups();loadCommunityChats();loadCommunityReviews();
+   loadCommunityFeed();loadCommunityFriends();loadCommunityDirectory();loadCommunityGroups();loadCommunityChats();loadCommunityReviews();
    $("#community").scrollIntoView({behavior:"smooth",block:"start"});
  }
  function closeCommunity(){
@@ -428,13 +429,13 @@
    e.preventDefault();const button=e.submitter;button.disabled=true;
    const username=$("#community-profile-username").value.trim().replace(/^@/,"");
    try{
-     const {data,error}=await supabase.from("profiles").update({username,display_name:$("#community-profile-name").value.trim(),bio:$("#community-profile-bio").value.trim(),updated_at:new Date().toISOString()}).eq("id",currentUser.id).select().single();
+     const {data,error}=await supabase.from("profiles").update({username,display_name:$("#community-profile-name").value.trim(),bio:$("#community-profile-bio").value.trim(),game_preferences:$("#community-profile-games").value.trim(),updated_at:new Date().toISOString()}).eq("id",currentUser.id).select().single();
      if(error)throw error;communityProfile=data;$("#community-user-name").textContent=data.display_name;$("#community-avatar").textContent=communityInitials(data.display_name);$("#community-profile-status").textContent="Perfil actualizado correctamente.";toast("Perfil guardado.");
    }catch(error){$("#community-profile-status").textContent=communityError(error)}finally{button.disabled=false}
  });
  $$("[data-community-tab]").forEach(button=>button.addEventListener("click",()=>{
    communityTab=button.dataset.communityTab;$$("[data-community-tab]").forEach(b=>b.classList.toggle("active",b===button));
-   ["feed","friends","messages","groups","reviews","profile"].forEach(tab=>$("#community-"+tab+"-panel").hidden=tab!==communityTab);if(communityTab==="messages")loadCommunityChats();if(communityTab==="reviews")loadCommunityReviews();
+   ["feed","friends","messages","groups","reviews","profile"].forEach(tab=>$("#community-"+tab+"-panel").hidden=tab!==communityTab);if(communityTab==="messages")loadCommunityChats();if(communityTab==="friends")loadCommunityDirectory();if(communityTab==="reviews")loadCommunityReviews();
  }));
  async function loadCommunityFriends(){
    if(!currentUser||!supabase)return;const host=$("#community-friend-list");if(!host)return;
@@ -449,14 +450,55 @@
      host.append(line);
    });
  }
- $("#community-friend-search").addEventListener("submit",async e=>{
-   e.preventDefault();const host=$("#community-friend-results");host.textContent="Buscando…";
-   const query=$("#community-friend-query").value.trim().replace(/^@/,"");
-   const {data,error}=await supabase.from("profiles").select("id,username,display_name").ilike("username","%"+query+"%").neq("id",currentUser.id).limit(12);
-   if(error){host.textContent=communityError(error);return}host.innerHTML="";
-   if(!data?.length){host.textContent="No encontramos jugadores con ese nombre.";return}
-   data.forEach(profile=>{const row=document.createElement("div");row.className="community-list-row";const label=document.createElement("span");label.textContent=(profile.display_name||profile.username)+" · @"+profile.username;const add=document.createElement("button");add.textContent="Añadir";add.addEventListener("click",async()=>{const {error}=await supabase.from("friendships").insert({requester_id:currentUser.id,addressee_id:profile.id,status:"pending"});if(error)toast(communityError(error));else{add.disabled=true;add.textContent="Enviada";loadCommunityFriends()}});row.append(label,add);host.append(row)})
- });
+ async function loadCommunityDirectory(){
+   const host=$("#community-friend-results");if(!host||!currentUser||!supabase)return;
+   host.innerHTML='<p class="community-loading">Cargando jugadores…</p>';
+   const [people,relations]=await Promise.all([
+     supabase.from("profiles").select("id,username,display_name,avatar_url,bio,game_preferences,updated_at").neq("id",currentUser.id).order("updated_at",{ascending:false}).limit(100),
+     supabase.from("friendships").select("requester_id,addressee_id,status").or("requester_id.eq."+currentUser.id+",addressee_id.eq."+currentUser.id)
+   ]);
+   if(people.error){host.textContent=communityError(people.error);return}
+   if(relations.error){host.textContent=communityError(relations.error);return}
+   const profiles=people.data||[],friendships=relations.data||[];
+   const input=$("#community-friend-query");
+   const render=()=>{
+     const q=(input?.value||"").trim().toLocaleLowerCase("es");
+     const matches=profiles.filter(p=>[p.username,p.display_name,p.bio,p.game_preferences].some(v=>String(v||"").toLocaleLowerCase("es").includes(q))).slice(0,60);
+     host.innerHTML="";
+     if(!matches.length){host.innerHTML='<div class="community-empty"><h3>No encontramos jugadores</h3><p>Prueba con otro nombre, juego o plataforma.</p></div>';return}
+     matches.forEach(profile=>{
+       const relation=friendships.find(f=>(f.requester_id===currentUser.id&&f.addressee_id===profile.id)||(f.addressee_id===currentUser.id&&f.requester_id===profile.id));
+       const row=document.createElement("article");row.className="community-player-card";
+       const head=document.createElement("div");head.className="community-player-head";
+       const avatar=document.createElement("span");avatar.className="community-avatar";avatar.textContent=communityInitials(profile.display_name||profile.username);
+       const identity=document.createElement("div");identity.className="community-player-identity";
+       const name=document.createElement("b");name.textContent=profile.display_name||profile.username||"Jugador JOA";
+       const handle=document.createElement("small");handle.textContent="@"+(profile.username||"jugador");
+       identity.append(name,handle);head.append(avatar,identity);row.append(head);
+       if(profile.bio){const bio=document.createElement("p");bio.className="community-player-bio";bio.textContent=profile.bio;row.append(bio)}
+       if(profile.game_preferences){const games=document.createElement("p");games.className="community-player-games";games.textContent="🎮 Busca jugar: "+profile.game_preferences;row.append(games)}
+       const actions=document.createElement("div");actions.className="community-player-actions";
+       const action=document.createElement("button");action.type="button";
+       if(relation?.status==="accepted"){action.textContent="✓ Ya son amigos";action.disabled=true}
+       else if(relation?.status==="pending"&&relation.requester_id===currentUser.id){action.textContent="Solicitud enviada";action.disabled=true}
+       else if(relation?.status==="pending"){action.textContent="Responder solicitud";action.disabled=true}
+       else{
+         action.textContent="＋ Añadir amigo";
+         action.addEventListener("click",async()=>{
+           action.disabled=true;action.textContent="Enviando…";
+           const {error}=await supabase.from("friendships").insert({requester_id:currentUser.id,addressee_id:profile.id,status:"pending"});
+           if(error){action.disabled=false;action.textContent="＋ Añadir amigo";toast(communityError(error))}
+           else{action.textContent="Solicitud enviada";friendships.push({requester_id:currentUser.id,addressee_id:profile.id,status:"pending"});loadCommunityFriends()}
+         });
+       }
+       actions.append(action);row.append(actions);host.append(row);
+     });
+   };
+   if(input&&!input.dataset.directoryBound){input.dataset.directoryBound="1";input.addEventListener("input",render)}
+   render();
+ }
+ $("#community-friend-refresh").addEventListener("click",loadCommunityDirectory);
+
 
  async function startDirectChat(friendId,friendName){
    try{
