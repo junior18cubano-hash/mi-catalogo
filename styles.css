@@ -475,3 +475,14 @@
 #community-profile-form label{display:block;color:#aebfda;font-size:11px;margin-top:12px}
 #community-profile-form label input,#community-profile-form label textarea{display:block}
 @media(max-width:600px){.community-directory-heading{align-items:flex-start;flex-direction:column}.community-directory-heading .catalog-refresh{width:100%}}
+
+/* Chat JOA: lista legible, vista previa y mensajes en vivo */
+.community-chat-entry{display:flex;flex-direction:column;gap:5px;min-height:72px}
+.community-chat-entry strong{font-size:12px;color:#eff8ff}
+.community-chat-preview{display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#a9bdd8;font-size:10px}
+.community-chat-time{align-self:flex-end;color:#7e9ab9;font-size:9px}
+#community-chat-title{font-size:14px;color:#eaf8ff}
+#community-chat-messages{scroll-behavior:smooth;overscroll-behavior:contain}
+.community-message{animation:joaMessageIn .16s ease-out}
+@keyframes joaMessageIn{from{opacity:.35;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
+@media(max-width:700px){.community-chat-layout{gap:10px}.community-chat-entry{min-height:62px}}
