@@ -265,7 +265,7 @@
        setCatalogStatus("Preparando la primera descarga del catálogo…","loading");
      }else setCatalogStatus(force?"Actualizando catálogo manualmente…":"Comprobando actualizaciones…","loading");
      try{
-       const versionResponse=await fetch(CATALOG_VERSION_URL+"?v="+Date.now(),{cache:"no-store"});
+       const versionResponse=await fetch(CATALOG_VERSION_URL,{cache:"no-cache"});
        if(!versionResponse.ok)throw new Error("No se pudo consultar version.json");
        const remoteVersion=await versionResponse.json();
        const fingerprint=catalogFingerprint(remoteVersion);
