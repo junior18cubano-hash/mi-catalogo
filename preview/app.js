@@ -364,8 +364,8 @@
      if(error)throw error;communityProfile=data;$("#community-user-name").textContent=data.display_name;$("#community-avatar").textContent=communityInitials(data.display_name);$("#community-profile-status").textContent="Perfil actualizado correctamente.";toast("Perfil guardado.");
    }catch(error){$("#community-profile-status").textContent=communityError(error)}finally{button.disabled=false}
  });
- $("[data-community-tab]").forEach(button=>button.addEventListener("click",()=>{
-   communityTab=button.dataset.communityTab;$("[data-community-tab]").forEach(b=>b.classList.toggle("active",b===button));
+ $$("[data-community-tab]").forEach(button=>button.addEventListener("click",()=>{
+   communityTab=button.dataset.communityTab;$$("[data-community-tab]").forEach(b=>b.classList.toggle("active",b===button));
    ["feed","friends","messages","groups","reviews","profile"].forEach(tab=>$("#community-"+tab+"-panel").hidden=tab!==communityTab);if(communityTab==="messages")loadCommunityChats();if(communityTab==="reviews")loadCommunityReviews();
  }));
  async function loadCommunityFriends(){
@@ -401,7 +401,7 @@
        if(members.error)throw members.error;
      }
      activeConversationId=conversationId;communityTab="messages";
-     $("[data-community-tab]").forEach(b=>b.classList.toggle("active",b.dataset.communityTab==="messages"));
+     $$("[data-community-tab]").forEach(b=>b.classList.toggle("active",b.dataset.communityTab==="messages"));
      ["feed","friends","messages","groups","reviews","profile"].forEach(tab=>$("#community-"+tab+"-panel").hidden=tab!=="messages");
      await loadCommunityChats();await openCommunityChat(conversationId,friendName);
    }catch(error){toast(communityError(error))}
