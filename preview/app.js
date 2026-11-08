@@ -15,7 +15,7 @@
  const CATALOG_VERSION_URL="https://raw.githubusercontent.com/junior18cubano-hash/Actualizacion-Catalogo/main/version.json";
  const CATALOG_DATA_URL="https://raw.githubusercontent.com/junior18cubano-hash/Actualizacion-Catalogo/main/Update.json";
  const CATALOG_CACHE="joa-web-catalog-v1";
- let catalogItems=[],catalogMeta={},activeCategory="",visibleCount=18,searchTerm="";
+ let catalogItems=[],catalogMeta={},activeCategory="",searchTerm="",sortMode="name",pageSize=18,currentPage=1;
  const categoryAliases={
    juego:["juego","game","games","videojuego","videojuegos"],
    pelicula:["pelicula","película","peliculas","películas","movie","movies","film","pelicula_animada"],
@@ -55,38 +55,88 @@
    const el=$("#catalog-status");if(!el)return;
    el.textContent=message;el.dataset.state=state;
  }
- function visibleItems(){
-   return catalogItems.filter(item=>{
+ function itemYear(item){return Number(item.year||item.ano||item.año||item.release_year||0)||0}
+ function itemViews(item){return Number(item.views||item.view_count||item.visitas||item.vistos||item.popularity_count||0)||0}
+ function itemRating(item){return Number(item.rating||item.vote_average||item.valoracion||item.puntuacion||0)||0}
+ function itemDate(item){const value=item.updated_at||item.created_at||item.added_at||item.release_date||item.fecha||item.date||itemYear(item);const n=Date.parse(value);return Number.isFinite(n)?n:(Number(value)||0)}
+ function sortedItems(){
+   const filtered=catalogItems.filter(item=>{
      const categoryOk=!activeCategory||categoryFor(itemType(item))===activeCategory;
-     const q=searchTerm;
      const text=[itemTitle(item),itemDescription(item),itemType(item),item.genre,item.genres,item.generos,item.console,item.consola,item.platform,item.plataforma].flat().join(" ").toLocaleLowerCase("es");
-     return categoryOk&&(!q||text.includes(q));
+     return categoryOk&&(!searchTerm||text.includes(searchTerm));
+   });
+   return filtered.sort((a,b)=>{
+     if(sortMode==="recent")return itemDate(b)-itemDate(a)||itemTitle(a).localeCompare(itemTitle(b),"es");
+     if(sortMode==="views")return itemViews(b)-itemViews(a)||itemTitle(a).localeCompare(itemTitle(b),"es");
+     if(sortMode==="rating")return itemRating(b)-itemRating(a)||itemTitle(a).localeCompare(itemTitle(b),"es");
+     if(sortMode==="year")return itemYear(b)-itemYear(a)||itemTitle(a).localeCompare(itemTitle(b),"es");
+     return itemTitle(a).localeCompare(itemTitle(b),"es",{sensitivity:"base"});
+   });
+ }
+ function addDetailLine(parent,label,value){
+   if(value===undefined||value===null||value==="")return;
+   const p=document.createElement("p");p.className="detail-meta-line";
+   const strong=document.createElement("b");strong.textContent=label+": ";
+   p.append(strong,document.createTextNode(Array.isArray(value)?value.join(", "):String(value)));parent.append(p);
+ }
+ function openCatalogDetail(item){
+   const dialog=$("#catalog-detail-dialog"),content=$("#catalog-detail-content");if(!dialog||!content)return;
+   content.innerHTML="";
+   const cover=resolveCover(itemCover(item)),hero=document.createElement("div");hero.className="detail-hero";
+   if(cover){const img=document.createElement("img");img.src=cover;img.alt="Portada de "+itemTitle(item);img.onerror=()=>img.remove();hero.append(img)}
+   const info=document.createElement("div");info.className="detail-info";
+   const tag=document.createElement("small");tag.textContent=String(item.type||item.tipo||item.category||item.categoria||"CATÁLOGO").replace(/_/g," ").toUpperCase();
+   const title=document.createElement("h2");title.textContent=itemTitle(item);
+   const description=document.createElement("p");description.className="detail-description";description.textContent=itemDescription(item);
+   info.append(tag,title,description);
+   addDetailLine(info,"Año",item.year||item.ano||item.año||item.release_year);
+   addDetailLine(info,"Género",item.genre||item.genres||item.generos||item.genero);
+   addDetailLine(info,"Plataforma",item.console||item.consola||item.platform||item.plataforma);
+   addDetailLine(info,"Valoración",item.rating||item.vote_average||item.valoracion);
+   addDetailLine(info,"Vistas",item.views||item.view_count||item.visitas||item.vistos);
+   addDetailLine(info,"Temporadas",item.seasons||item.temporadas);
+   addDetailLine(info,"Episodios",item.episodes||item.capitulos||item.episodios);
+   addDetailLine(info,"Duración",item.duration||item.duracion||item.runtime);
+   addDetailLine(info,"Director",item.director);
+   addDetailLine(info,"Precio",item.price||item.precio);
+   content.append(hero,info);dialog.showModal();
+ }
+ function renderPagination(totalPages){
+   ["#catalog-pagination","#catalog-pagination-bottom"].forEach(selector=>{
+     const host=$(selector);if(!host)return;host.innerHTML="";
+     if(totalPages<=1)return;
+     const add=(label,page,disabled=false,active=false)=>{
+       const b=document.createElement("button");b.type="button";b.textContent=label;b.disabled=disabled;if(active)b.classList.add("active");
+       b.addEventListener("click",()=>{currentPage=page;renderCatalog();$("#catalog-results").scrollIntoView({behavior:"smooth",block:"start"})});host.append(b);
+     };
+     add("‹",Math.max(1,currentPage-1),currentPage===1);
+     let first=Math.max(1,currentPage-2),last=Math.min(totalPages,first+4);first=Math.max(1,last-4);
+     if(first>1){add("1",1);if(first>2){const dots=document.createElement("span");dots.textContent="…";host.append(dots)}}
+     for(let p=first;p<=last;p++)add(String(p),p,false,p===currentPage);
+     if(last<totalPages){if(last<totalPages-1){const dots=document.createElement("span");dots.textContent="…";host.append(dots)}add(String(totalPages),totalPages)}
+     add("›",Math.min(totalPages,currentPage+1),currentPage===totalPages);
    });
  }
  function renderCatalog(){
    const grid=$("#content-grid");if(!grid)return;
-   const filtered=visibleItems(),shown=filtered.slice(0,visibleCount);
+   const filtered=sortedItems(),totalPages=Math.max(1,Math.ceil(filtered.length/pageSize));
+   currentPage=Math.min(currentPage,totalPages);
+   const shown=filtered.slice((currentPage-1)*pageSize,currentPage*pageSize);
    grid.innerHTML="";
    shown.forEach(item=>{
-     const article=document.createElement("article");article.className="content-card catalog-live-card";
+     const article=document.createElement("button");article.type="button";article.className="content-card catalog-live-card";article.setAttribute("aria-label","Ver detalles de "+itemTitle(item));
      const poster=document.createElement("div");poster.className="poster";
      const cover=resolveCover(itemCover(item));
-     if(cover){const img=document.createElement("img");img.src=cover;img.alt="Portada de "+itemTitle(item);img.loading="lazy";img.decoding="async";img.onerror=()=>{img.remove();poster.textContent=itemTitle(item).slice(0,32)};poster.append(img)}
+     if(cover){const img=document.createElement("img");img.src=cover;img.alt="";img.loading="lazy";img.decoding="async";img.onerror=()=>{img.remove();poster.textContent=itemTitle(item).slice(0,32)};poster.append(img)}
      else poster.textContent=itemTitle(item).slice(0,32);
-     const body=document.createElement("div"),type=document.createElement("small"),title=document.createElement("b"),desc=document.createElement("p");
-     type.textContent=String(item.type||item.tipo||"CATÁLOGO").replace(/_/g," ").toUpperCase();
-     title.textContent=itemTitle(item);
-     const year=item.year||item.ano||item.año;
-     if(year)type.textContent+=" · "+year;
-     desc.textContent=itemDescription(item);
-     body.append(type,title,desc);article.append(poster,body);grid.append(article);
+     const body=document.createElement("div"),title=document.createElement("b");title.textContent=itemTitle(item);body.append(title);article.append(poster,body);
+     article.addEventListener("click",()=>openCatalogDetail(item));grid.append(article);
    });
    $("#results-title").textContent=activeCategory?({juego:"Juegos",pelicula:"Películas",serie:"Series TV",anime:"Anime",novela:"Telenovelas",software:"Software",musica:"Música",otros:"Otros"}[activeCategory]||"Catálogo"):searchTerm?"Resultados de búsqueda":"Catálogo JOA";
    const tag=$(".demo-tag");if(tag)tag.textContent=filtered.length.toLocaleString("es")+" ELEMENTOS";
-   let more=$("#catalog-load-more");
-   if(more)more.hidden=shown.length>=filtered.length;
    if(!shown.length)grid.innerHTML='<p class="catalog-empty">No encontramos contenido con esos criterios.</p>';
-   const count=$("#catalog-count");if(count)count.textContent=filtered.length.toLocaleString("es")+" resultados";
+   const count=$("#catalog-count");if(count)count.textContent=filtered.length.toLocaleString("es")+" resultados · Página "+currentPage+" de "+totalPages;
+   renderPagination(totalPages);
  }
  async function readCachedCatalog(){
    if(!("caches" in window))return null;
@@ -133,14 +183,18 @@
    }
  }
  $("#catalog-refresh")?.addEventListener("click",()=>{const b=$("#catalog-refresh");b.disabled=true;loadCatalog(true).finally(()=>{b.disabled=false})});
- $("#catalog-load-more")?.addEventListener("click",()=>{visibleCount+=18;renderCatalog()});
+ $("#catalog-sort")?.addEventListener("change",e=>{sortMode=e.target.value;currentPage=1;renderCatalog()});
+ $("#catalog-type-filter")?.addEventListener("change",e=>{activeCategory=e.target.value;cards.forEach(c=>c.classList.toggle("selected",c.dataset.category===activeCategory));currentPage=1;renderCatalog()});
+ $("#catalog-page-size")?.addEventListener("change",e=>{pageSize=Number(e.target.value)||18;currentPage=1;renderCatalog()});
+ $("#catalog-detail-close")?.addEventListener("click",()=>$("#catalog-detail-dialog").close());
+ $("#catalog-detail-dialog")?.addEventListener("click",e=>{if(e.target.id==="catalog-detail-dialog")e.currentTarget.close()});
  cards.forEach(card=>card.addEventListener("click",()=>{
    cards.forEach(c=>c.classList.remove("selected"));card.classList.add("selected");
-   activeCategory=card.dataset.category||"";visibleCount=18;renderCatalog();
+   activeCategory=card.dataset.category||"";currentPage=1;$("#catalog-type-filter").value=activeCategory;renderCatalog();
    $("#catalog-results").scrollIntoView({behavior:"smooth",block:"nearest"});
  }));
  $("#catalog-search").addEventListener("input",e=>{
-   searchTerm=e.target.value.trim().toLocaleLowerCase("es");visibleCount=18;renderCatalog();
+   searchTerm=e.target.value.trim().toLocaleLowerCase("es");currentPage=1;renderCatalog();
    if(!catalogItems.length){const q=searchTerm;cards.forEach(card=>{card.hidden=!!q&&!card.innerText.toLocaleLowerCase("es").includes(q)})}
  });
  loadCatalog();
