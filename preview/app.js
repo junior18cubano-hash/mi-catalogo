@@ -6,7 +6,7 @@
  let authMode="signin", supabase=null, currentUser=null;
  const toast=(message)=>{if(!toastEl)return;toastEl.textContent=message;toastEl.classList.add("show");clearTimeout(window.__joaToast);window.__joaToast=setTimeout(()=>toastEl.classList.remove("show"),3600)};
  $("#year").textContent=new Date().getFullYear();
- const openAuth=()=>{if(currentUser){openCommunity();return}if(dialog&&!dialog.open)dialog.showModal();renderAuthMode()};
+ const openAuth=()=>{if(currentUser){openCommunity();return}communityRequested=true;if(dialog&&!dialog.open)dialog.showModal();renderAuthMode()};
  $("#login-open").addEventListener("click",openAuth);
  $("#community-join").addEventListener("click",openAuth);
  dialog.querySelector(".dialog-close").addEventListener("click",()=>dialog.close());
@@ -239,7 +239,7 @@
    if(!catalogItems.length){const q=searchTerm;cards.forEach(card=>{card.hidden=!!q&&!card.innerText.toLocaleLowerCase("es").includes(q)})}
  });
 
- let currentSession=null,communityProfile=null,communityTab="feed";
+ let currentSession=null,communityProfile=null,communityTab="feed",communityRequested=false;
  function openCommunity(){
    if(!currentUser){openAuth();return}
    const workspace=$("#community-workspace"),layout=$(".community-layout");
@@ -336,7 +336,7 @@
  $("#community-feed-refresh").addEventListener("click",loadCommunityFeed);
  $("#community-signout").addEventListener("click",async()=>{
    if(!supabase)return;const {error}=await supabase.auth.signOut({scope:"local"});if(error){toast(communityError(error));return}
-   closeCommunity();toast("Sesión cerrada en este dispositivo.");
+   closeCommunity();communityRequested=false;toast("Sesión cerrada en este dispositivo.");
  });
  $("#community-profile-form").addEventListener("submit",async e=>{
    e.preventDefault();const button=e.submitter;button.disabled=true;
@@ -443,7 +443,7 @@
    if(user){btn.innerHTML='<span class="user-status">● '+escapeHtml(user.email||"Mi cuenta")+'</span>';btn.title="Abrir comunidad y cuenta";$("#community-join").textContent="Ir a mi comunidad";$("#community-join").querySelector("b")?.remove()}
    else{btn.innerHTML='Entrar <span>↗</span>';btn.title="Iniciar sesión";$("#community-join").textContent="Entrar a la comunidad";closeCommunity();communityProfile=null}
    renderAuthMode();
-   if(user){Promise.resolve().then(async()=>{try{communityProfile=await ensureCommunityProfile(user);if(!$(".community-layout").hidden)openCommunity()}catch(error){console.warn("No se pudo preparar el perfil social",error);toast("Tu sesión está activa, pero no se pudo cargar el perfil.")}})}
+   if(user){Promise.resolve().then(async()=>{try{communityProfile=await ensureCommunityProfile(user);if(communityRequested)openCommunity()}catch(error){console.warn("No se pudo preparar el perfil social",error);toast("Tu sesión está activa, pero no se pudo cargar el perfil.")}})}
  }
  function escapeHtml(value){return String(value).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
  async function initSupabase(){
