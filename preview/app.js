@@ -279,8 +279,7 @@
        if(!response.ok)throw new Error("No se pudo descargar Update.json");
        const data=await response.json();validateCatalog(data,remoteVersion);
        const nextRecord={fingerprint,data,cachedAt:Date.now()};
-       await saveCachedRecord(nextRecord);
-       localStorage.setItem("joa_web_catalog_version",fingerprint);
+       try{await saveCachedRecord(nextRecord);localStorage.setItem("joa_web_catalog_version",fingerprint)}catch(cacheError){console.warn("JOA: catálogo actualizado, pero no se pudo persistir en este dispositivo",cacheError)}
        applyCatalog(data,remoteVersion,false);
      }catch(error){
        console.error("JOA catalog:",error);
