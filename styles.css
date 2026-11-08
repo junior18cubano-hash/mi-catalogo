@@ -486,3 +486,16 @@
 .community-message{animation:joaMessageIn .16s ease-out}
 @keyframes joaMessageIn{from{opacity:.35;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
 @media(max-width:700px){.community-chat-layout{gap:10px}.community-chat-entry{min-height:62px}}
+
+/* Mensajería tipo Steam: bandeja general + chats individuales */
+.community-chat-general{border-color:#48e9ff66;background:linear-gradient(110deg,#12334a,#1c2144)}
+.community-chat-layout>#community-chat-list{max-height:520px;overflow:auto;padding-right:3px}
+.community-general-message{align-self:stretch;max-width:100%;padding:12px 14px;border:1px solid var(--line);border-left:3px solid #48dff5;border-radius:10px;background:linear-gradient(120deg,#111d32,#0b1325)}
+.community-general-message:nth-child(even){border-left-color:#a68aff}
+.community-general-head{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.community-general-head strong{font-size:11px;color:#91eaff}
+.community-general-head small{font-size:9px;color:#8095b5;white-space:nowrap}
+.community-general-message p{margin:9px 0 10px;color:#e4edff;font-size:11px;line-height:1.55;white-space:pre-wrap;overflow-wrap:anywhere}
+.community-general-message button{border:1px solid #48e9ff55;border-radius:7px;padding:6px 10px;background:#123448;color:#9cecff;font-size:9px;cursor:pointer}
+#community-chat-messages:has(.community-general-message){gap:8px}
+@media(max-width:700px){.community-chat-layout>#community-chat-list{max-height:230px}.community-general-head{align-items:flex-start;flex-direction:column;gap:4px}}
