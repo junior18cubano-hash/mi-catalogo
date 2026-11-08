@@ -311,7 +311,7 @@
    if(!catalogItems.length){const q=searchTerm;cards.forEach(card=>{card.hidden=!!q&&!card.innerText.toLocaleLowerCase("es").includes(q)})}
  });
 
- let currentSession=null,communityProfile=null,communityTab="feed",communityRequested=safeSessionGet("joa_community_requested")==="1",activeConversationId=null,activeConversationIds=[],activeChatChannel=null,communityChatListChannel=null,selectedReviewItem=null;
+ let currentSession=null,communityProfile=null,communityTab="feed",communityRequested=safeSessionGet("joa_community_requested")==="1",activeConversationId=null,activeConversationIds=[],activeChatChannel=null,communityChatListChannel=null,selectedReviewItem=null,activeCommunityGroupId=null,communityGroupsCache=[];
  function openCommunity(){
    if(!currentUser){openAuth();return}
    communityRequested=false;safeSessionRemove("joa_community_requested");
@@ -435,7 +435,7 @@
  });
  $$("[data-community-tab]").forEach(button=>button.addEventListener("click",()=>{
    communityTab=button.dataset.communityTab;$$("[data-community-tab]").forEach(b=>b.classList.toggle("active",b===button));
-   ["feed","friends","messages","groups","reviews","profile"].forEach(tab=>$("#community-"+tab+"-panel").hidden=tab!==communityTab);if(communityTab==="messages")loadCommunityChats();if(communityTab==="friends")loadCommunityDirectory();if(communityTab==="reviews")loadCommunityReviews();
+   ["feed","friends","messages","groups","reviews","profile"].forEach(tab=>$("#community-"+tab+"-panel").hidden=tab!==communityTab);if(communityTab==="messages")loadCommunityChats();if(communityTab==="friends")loadCommunityDirectory();if(communityTab==="groups")loadCommunityGroups();if(communityTab==="reviews")loadCommunityReviews();
  }));
  async function loadCommunityFriends(){
    if(!currentUser||!supabase)return;const host=$("#community-friend-list");if(!host)return;
@@ -678,19 +678,140 @@
    catch(error){toast(communityError(error))}finally{button.disabled=false}
  });
  async function loadCommunityGroups(){
-   const host=$("#community-group-list");if(!host||!supabase)return;
-   const {data,error}=await supabase.from("community_groups").select("id,name,slug,description,created_by,is_public,created_at").eq("is_public",true).order("created_at",{ascending:false}).limit(30);
-   if(error){host.textContent=communityError(error);return}host.innerHTML="";
-   if(!data?.length){host.textContent="Todavía no hay grupos públicos. ¡Crea el primero!";return}
-   const {data:members}=await supabase.from("group_members").select("group_id,user_id").eq("user_id",currentUser.id);
-   const joined=new Set((members||[]).map(x=>x.group_id));
-   data.forEach(group=>{const row=document.createElement("div");row.className="community-list-row";const label=document.createElement("span");label.textContent=group.name+" — "+(group.description||"Grupo JOA");const action=document.createElement("button");action.textContent=joined.has(group.id)?"Miembro":"Unirme";action.disabled=joined.has(group.id);action.addEventListener("click",async()=>{const {error}=await supabase.from("group_members").insert({group_id:group.id,user_id:currentUser.id,role:"member"});if(error)toast(communityError(error));else loadCommunityGroups()});row.append(label,action);host.append(row)})
+   const host=$("#community-group-list");if(!host||!supabase||!currentUser)return;
+   host.innerHTML='<p class="community-loading">Explorando grupos…</p>';
+   const [publicResult,myMemberships]=await Promise.all([
+     supabase.from("community_groups").select("id,name,slug,description,created_by,is_public,category,platform,tags,rules,created_at,updated_at").eq("is_public",true).order("created_at",{ascending:false}).limit(100),
+     supabase.from("group_members").select("group_id,user_id,role").eq("user_id",currentUser.id)
+   ]);
+   if(publicResult.error){host.textContent=communityError(publicResult.error);return}
+   if(myMemberships.error){host.textContent=communityError(myMemberships.error);return}
+   const mine=myMemberships.data||[],privateIds=mine.map(x=>x.group_id);
+   let privateGroups=[];
+   if(privateIds.length){
+     const r=await supabase.from("community_groups").select("id,name,slug,description,created_by,is_public,category,platform,tags,rules,created_at,updated_at").in("id",privateIds);
+     if(r.error){host.textContent=communityError(r.error);return}privateGroups=r.data||[];
+   }
+   const map=new Map();[...(publicResult.data||[]),...privateGroups].forEach(g=>map.set(g.id,g));
+   communityGroupsCache=[...map.values()].sort((a,b)=>new Date(b.created_at)-new Date(a.created_at));
+   const ids=communityGroupsCache.map(g=>g.id);
+   const [roster,owners]=await Promise.all([
+     ids.length?supabase.from("group_members").select("group_id,user_id,role").in("group_id",ids):Promise.resolve({data:[]}),
+     [...new Set(communityGroupsCache.map(g=>g.created_by))].length?supabase.from("profiles").select("id,display_name,username").in("id",[...new Set(communityGroupsCache.map(g=>g.created_by))]):Promise.resolve({data:[]})
+   ]);
+   if(roster.error){host.textContent=communityError(roster.error);return}
+   if(owners.error){host.textContent=communityError(owners.error);return}
+   const countMap=new Map(),myMap=new Map(mine.map(m=>[m.group_id,m]));
+   (roster.data||[]).forEach(m=>countMap.set(m.group_id,(countMap.get(m.group_id)||0)+1));
+   const ownerMap=new Map((owners.data||[]).map(p=>[p.id,p]));
+   host.innerHTML="";
+   const heading=document.createElement("div");heading.className="community-group-discovery-head";
+   const info=document.createElement("p");info.textContent=communityGroupsCache.length+" grupos disponibles · "+mine.length+" en los que participas";
+   const refresh=document.createElement("button");refresh.type="button";refresh.textContent="↻ Actualizar";refresh.addEventListener("click",loadCommunityGroups);heading.append(info,refresh);host.append(heading);
+   if(!communityGroupsCache.length){const empty=document.createElement("p");empty.className="community-empty";empty.textContent="Todavía no hay grupos. ¡Crea el primero!";host.append(empty)}
+   communityGroupsCache.forEach(group=>{
+     const card=document.createElement("article");card.className="community-group-card";
+     const top=document.createElement("div");top.className="community-group-card-top";
+     const title=document.createElement("h4");title.textContent=group.name;
+     const privacy=document.createElement("span");privacy.className="community-group-privacy";privacy.textContent=group.is_public?"PÚBLICO":"PRIVADO";
+     top.append(title,privacy);
+     const desc=document.createElement("p");desc.textContent=group.description||"Un espacio para jugadores JOA.";
+     const meta=document.createElement("div");meta.className="community-group-meta";
+     const creator=ownerMap.get(group.created_by)||{};const owner=document.createElement("span");owner.textContent="Creado por "+(creator.display_name||creator.username||"Jugador JOA");
+     const count=document.createElement("span");count.textContent=(countMap.get(group.id)||0)+" miembros";
+     const category=document.createElement("span");category.textContent=(group.category||"General")+" · "+(group.platform||"Todas");
+     meta.append(owner,count,category);
+     const tags=document.createElement("small");tags.className="community-group-tags";tags.textContent=group.tags||"";
+     const actions=document.createElement("div");actions.className="community-group-actions";
+     const detail=document.createElement("button");detail.type="button";detail.textContent="Ver grupo";detail.addEventListener("click",()=>openCommunityGroup(group.id));
+     actions.append(detail);
+     const membership=myMap.get(group.id);
+     if(!membership&&group.is_public){const join=document.createElement("button");join.type="button";join.className="primary";join.textContent="Unirme";join.addEventListener("click",()=>joinCommunityGroup(group));actions.append(join)}
+     else if(membership){const state=document.createElement("span");state.className="community-group-member-state";state.textContent=membership.role==="owner"?"★ Creador":membership.role==="moderator"?"Moderador":"Miembro";actions.append(state)}
+     card.append(top,desc,meta);if(tags.textContent)card.append(tags);card.append(actions);host.append(card);
+   });
+   if(activeCommunityGroupId&&!communityGroupsCache.some(g=>g.id===activeCommunityGroupId))activeCommunityGroupId=null;
+   if(activeCommunityGroupId)openCommunityGroup(activeCommunityGroupId,false);
+ }
+ async function joinCommunityGroup(group){
+   const {error}=await supabase.from("group_members").insert({group_id:group.id,user_id:currentUser.id,role:"member"});
+   if(error){toast(communityError(error));return}toast("¡Ya formas parte de "+group.name+"!");await loadCommunityGroups();await openCommunityGroup(group.id);
+ }
+ async function openCommunityGroup(groupId,scroll=true){
+   const group=communityGroupsCache.find(g=>g.id===groupId);if(!group)return;
+   activeCommunityGroupId=groupId;
+   const panel=$("#community-group-detail");panel.hidden=false;panel.innerHTML='<p class="community-loading">Cargando información del grupo…</p>';
+   const [members,profiles,friends]=await Promise.all([
+     supabase.from("group_members").select("user_id,role,joined_at").eq("group_id",groupId).order("joined_at",{ascending:true}),
+     supabase.from("profiles").select("id,display_name,username,avatar_url").limit(200),
+     supabase.from("friendships").select("requester_id,addressee_id").eq("status","accepted").or("requester_id.eq."+currentUser.id+",addressee_id.eq."+currentUser.id)
+   ]);
+   if(members.error||profiles.error||friends.error){panel.textContent=communityError(members.error||profiles.error||friends.error);return}
+   const profileMap=new Map((profiles.data||[]).map(p=>[p.id,p]));
+   const mine=(members.data||[]).find(m=>m.user_id===currentUser.id),manager=mine&&["owner","moderator"].includes(mine.role),owner=group.created_by===currentUser.id;
+   const memberIds=new Set((members.data||[]).map(m=>m.user_id));
+   const wrap=document.createElement("div");wrap.className="community-group-detail-card";
+   const head=document.createElement("div");head.className="community-group-detail-head";
+   const title=document.createElement("h3");title.textContent=group.name;
+   const close=document.createElement("button");close.type="button";close.textContent="Cerrar";close.addEventListener("click",()=>{panel.hidden=true;activeCommunityGroupId=null});
+   head.append(title,close);
+   const about=document.createElement("p");about.textContent=group.description||"Sin descripción.";
+   const facts=document.createElement("div");facts.className="community-group-meta";
+   [group.category||"General",group.platform||"Todas las plataformas",group.is_public?"Grupo público":"Grupo privado","Creado "+new Date(group.created_at).toLocaleDateString("es")].forEach(v=>{const x=document.createElement("span");x.textContent=v;facts.append(x)});
+   const rules=document.createElement("p");rules.className="community-group-rules";rules.textContent=group.rules?"Reglas: "+group.rules:"Este grupo todavía no tiene reglas publicadas.";
+   wrap.append(head,about,facts,rules);
+   const actions=document.createElement("div");actions.className="community-group-actions";
+   if(!mine&&group.is_public){const join=document.createElement("button");join.className="primary";join.textContent="Unirme al grupo";join.addEventListener("click",()=>joinCommunityGroup(group));actions.append(join)}
+   if(mine&&mine.role!=="owner"){const leave=document.createElement("button");leave.className="danger";leave.textContent="Salir del grupo";leave.addEventListener("click",async()=>{if(!confirm("¿Quieres salir de este grupo?"))return;const r=await supabase.from("group_members").delete().eq("group_id",groupId).eq("user_id",currentUser.id);if(r.error)toast(communityError(r.error));else{toast("Has salido del grupo.");panel.hidden=true;activeCommunityGroupId=null;loadCommunityGroups()}});actions.append(leave)}
+   if(owner){const edit=document.createElement("button");edit.textContent="Editar grupo";edit.addEventListener("click",()=>showCommunityGroupEditor(group));actions.append(edit)}
+   if(manager){const invite=document.createElement("button");invite.textContent="Invitar amigos";invite.addEventListener("click",()=>showCommunityGroupInviter(group,friends.data||[],memberIds,profileMap));actions.append(invite)}
+   wrap.append(actions);
+   const rosterTitle=document.createElement("h4");rosterTitle.textContent="Miembros · "+(members.data||[]).length;wrap.append(rosterTitle);
+   const roster=document.createElement("div");roster.className="community-group-roster";
+   (members.data||[]).forEach(m=>{
+     const p=profileMap.get(m.user_id)||{},row=document.createElement("div");row.className="community-group-member";
+     const name=document.createElement("span");name.textContent=(p.display_name||p.username||"Jugador JOA")+(m.user_id===currentUser.id?" (tú)":"");
+     const role=document.createElement("small");role.textContent=m.role==="owner"?"CREADOR":m.role==="moderator"?"MODERADOR":"MIEMBRO";row.append(name,role);
+     if(manager&&m.user_id!==currentUser.id&&m.role!=="owner"){const remove=document.createElement("button");remove.type="button";remove.textContent="Expulsar";remove.addEventListener("click",async()=>{if(!confirm("¿Expulsar a este miembro?"))return;const r=await supabase.from("group_members").delete().eq("group_id",groupId).eq("user_id",m.user_id);if(r.error)toast(communityError(r.error));else openCommunityGroup(groupId,false)});row.append(remove)}
+     roster.append(row);
+   });
+   wrap.append(roster);
+   if(owner){
+     const modTitle=document.createElement("h4");modTitle.textContent="Administración";wrap.append(modTitle);
+     const candidates=(members.data||[]).filter(m=>m.role==="member");
+     candidates.forEach(m=>{const p=profileMap.get(m.user_id)||{},row=document.createElement("div");row.className="community-group-member";const label=document.createElement("span");label.textContent=p.display_name||p.username||"Jugador";const promote=document.createElement("button");promote.type="button";promote.textContent="Hacer moderador";promote.addEventListener("click",async()=>{const del=await supabase.from("group_members").delete().eq("group_id",groupId).eq("user_id",m.user_id);if(del.error){toast(communityError(del.error));return}const ins=await supabase.from("group_members").insert({group_id:groupId,user_id:m.user_id,role:"moderator"});if(ins.error)toast(communityError(ins.error));else openCommunityGroup(groupId,false)});row.append(label,promote);wrap.append(row)});
+   }
+   panel.innerHTML="";panel.append(wrap);
+   if(scroll)panel.scrollIntoView({behavior:"smooth",block:"nearest"});
+ }
+ function showCommunityGroupEditor(group){
+   const panel=$("#community-group-detail"),form=document.createElement("form");form.className="community-group-editor";
+   const fields=[["Nombre","name",group.name,70],["Descripción","description",group.description||"",240],["Categoría","category",group.category||"General",50],["Plataforma","platform",group.platform||"Todas",70],["Etiquetas (separadas por comas)","tags",group.tags||"",180],["Reglas del grupo","rules",group.rules||"",800]];
+   const inputs={};
+   fields.forEach(([label,key,value,max])=>{const l=document.createElement("label");l.textContent=label;const input=key==="description"||key==="rules"?document.createElement("textarea"):document.createElement("input");input.value=value;input.maxLength=max;input.required=key==="name";l.append(input);form.append(l);inputs[key]=input});
+   const privacy=document.createElement("label"),select=document.createElement("select");privacy.textContent="Visibilidad";select.innerHTML='<option value="true">Público · cualquiera puede encontrarlo y unirse</option><option value="false">Privado · solo por invitación</option>';select.value=String(group.is_public);privacy.append(select);form.append(privacy);
+   const actions=document.createElement("div");actions.className="community-group-actions";const save=document.createElement("button");save.type="submit";save.className="primary";save.textContent="Guardar cambios";const cancel=document.createElement("button");cancel.type="button";cancel.textContent="Cancelar";cancel.addEventListener("click",()=>openCommunityGroup(group.id,false));actions.append(save,cancel);form.append(actions);
+   form.addEventListener("submit",async e=>{e.preventDefault();save.disabled=true;const payload={name:inputs.name.value.trim(),description:inputs.description.value.trim(),category:inputs.category.value.trim()||"General",platform:inputs.platform.value.trim()||"Todas",tags:inputs.tags.value.trim(),rules:inputs.rules.value.trim(),is_public:select.value==="true",updated_at:new Date().toISOString()};const r=await supabase.from("community_groups").update(payload).eq("id",group.id);save.disabled=false;if(r.error){toast(communityError(r.error));return}toast("Grupo actualizado.");await loadCommunityGroups();openCommunityGroup(group.id,false)});
+   panel.innerHTML="";panel.append(form);form.scrollIntoView({behavior:"smooth",block:"nearest"});
+ }
+ function showCommunityGroupInviter(group,friendRows,memberIds,profileMap){
+   const panel=$("#community-group-detail"),box=document.createElement("div");box.className="community-group-inviter";
+   const title=document.createElement("h4");title.textContent="Invitar amigos al grupo";const select=document.createElement("select");select.innerHTML='<option value="">Selecciona un amigo…</option>';
+   const friendIds=[...new Set(friendRows.map(f=>f.requester_id===currentUser.id?f.addressee_id:f.requester_id))].filter(id=>id&&!memberIds.has(id));
+   friendIds.forEach(id=>{const p=profileMap.get(id);if(!p)return;const option=document.createElement("option");option.value=id;option.textContent=p.display_name||p.username||"Jugador JOA";select.append(option)});
+   const invite=document.createElement("button");invite.type="button";invite.className="primary";invite.textContent="Enviar invitación";invite.disabled=!friendIds.length;invite.addEventListener("click",async()=>{if(!select.value){toast("Selecciona un amigo.");return}invite.disabled=true;const r=await supabase.from("group_members").insert({group_id:group.id,user_id:select.value,role:"member"});invite.disabled=false;if(r.error)toast(communityError(r.error));else{toast("Jugador añadido al grupo.");openCommunityGroup(group.id,false);loadCommunityGroups()}});
+   const cancel=document.createElement("button");cancel.type="button";cancel.textContent="Cancelar";cancel.addEventListener("click",()=>openCommunityGroup(group.id,false));box.append(title,select,invite,cancel);
+   if(!friendIds.length){const note=document.createElement("p");note.textContent="Todos tus amigos ya están en el grupo o todavía no tienes amigos añadidos.";box.append(note)}
+   panel.innerHTML="";panel.append(box);box.scrollIntoView({behavior:"smooth",block:"nearest"});
  }
  $("#community-group-form").addEventListener("submit",async e=>{
    e.preventDefault();const button=e.submitter;button.disabled=true;
-   try{const name=$("#community-group-name").value.trim(),slug=name.toLocaleLowerCase("es").normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"")+"-"+Math.random().toString(36).slice(2,6);
-     const {error}=await supabase.from("community_groups").insert({name,slug,description:$("#community-group-description").value.trim(),created_by:currentUser.id,is_public:true});if(error)throw error;
-     $("#community-group-name").value="";$("#community-group-description").value="";toast("Grupo creado.");loadCommunityGroups()
+   try{
+     const name=$("#community-group-name").value.trim(),slug=name.toLocaleLowerCase("es").normalize("NFD").replace(/[\\u0300-\\u036f]/g,"").replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"")+"-"+Math.random().toString(36).slice(2,6);
+     const payload={name,slug,description:$("#community-group-description").value.trim(),category:$("#community-group-category").value.trim()||"General",platform:$("#community-group-platform").value.trim()||"Todas",tags:$("#community-group-tags").value.trim(),rules:$("#community-group-rules").value.trim(),is_public:$("#community-group-visibility").value==="true",created_by:currentUser.id};
+     const created=await supabase.from("community_groups").insert(payload).select("id").single();if(created.error)throw created.error;
+     const member=await supabase.from("group_members").insert({group_id:created.data.id,user_id:currentUser.id,role:"owner"});if(member.error)throw member.error;
+     e.currentTarget.reset();toast("Grupo creado. Ya apareces como su creador.");await loadCommunityGroups();openCommunityGroup(created.data.id);
    }catch(error){toast(communityError(error))}finally{button.disabled=false}
  });
  function renderAuthMode(){
