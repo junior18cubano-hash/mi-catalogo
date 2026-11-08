@@ -502,11 +502,18 @@
    try{
      let result;
      if(authMode==="signup"){
+       console.info("JOA Auth: enviando solicitud de registro por correo", {emailDomain:email.split("@")[1]||""});
        result=await supabase.auth.signUp({email,password,options:{emailRedirectTo:window.JOA_CONFIG.authRedirectUrl}});
+       console.info("JOA Auth: respuesta de registro", {hasUser:!!result.data?.user,hasSession:!!result.data?.session,identityCount:result.data?.user?.identities?.length??null,hasError:!!result.error});
        if(result.error)throw result.error;
        const createdUser=result.data?.user||null;
        const createdSession=result.data?.session||null;
-       if(!createdUser){
+       const returnedIdentities=createdUser?.identities;
+       // Supabase oculta si un correo ya existe: en ese caso devuelve un usuario ficticio sin identidades.
+       if(createdUser && Array.isArray(returnedIdentities) && returnedIdentities.length===0){
+         $("#auth-message").textContent="Ese correo ya está asociado a una cuenta. Inicia sesión con ese correo o continúa con el proveedor con el que te registraste (por ejemplo, Google).";
+         toast("Ese correo ya tiene una cuenta. Inicia sesión.");
+       }else if(!createdUser){
          $("#auth-message").textContent="No se pudo confirmar la creación de la cuenta. Si ese correo ya está registrado, inicia sesión o usa «¿Olvidaste tu contraseña?»."; 
          toast("No se confirmó el registro. Comprueba si ya tienes una cuenta.");
        }else if(createdSession){
@@ -593,8 +600,8 @@
  function escapeHtml(value){return String(value).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
  async function loadSupabaseSdk(){
    const sources=[
-     "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2",
-     "https://unpkg.com/@supabase/supabase-js@2"
+     "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0",
+     "https://unpkg.com/@supabase/supabase-js@2.119.0"
    ];
    let lastError;
    for(const src of sources){
@@ -619,7 +626,8 @@
      if(!window.JOA_CONFIG?.enableSupabase||!window.JOA_CONFIG.supabaseUrl||!window.JOA_CONFIG.supabasePublishableKey)throw new Error("Falta la configuración pública de Supabase.");
      await loadSupabaseSdk();
      supabase=window.supabase.createClient(window.JOA_CONFIG.supabaseUrl,window.JOA_CONFIG.supabasePublishableKey,{
-       auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true,flowType:"pkce"}
+       auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true,flowType:"pkce"},
+       global:{headers:{"X-Client-Info":"joa-gamers-web-auth/1.0.1"}}
      });
      window.joaSupabase=supabase;
      // Registrar primero el observador para no perder el evento de sesión durante la recuperación OAuth.
