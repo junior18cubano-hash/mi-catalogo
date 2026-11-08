@@ -1,7 +1,7 @@
 (() => {
  "use strict";
  const $ = (s,root=document) => root.querySelector(s);
- const $ = (s,root=document) => [...root.querySelectorAll(s)];
+ const $$ = (s,root=document) => [...root.querySelectorAll(s)];
  // Captura global temprana de los botones de acceso: evita depender de listeners tardíos.
  document.addEventListener("click",event=>{
    const target=event.target;
