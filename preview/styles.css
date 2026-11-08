@@ -254,3 +254,9 @@
  .catalog-detail-dialog{max-height:calc(100dvh - 24px);width:calc(100% - 20px)}
 }
 @media(max-width:350px){.catalog-toolbar{grid-template-columns:minmax(0,1fr)}.catalog-toolbar label:first-child{grid-column:auto}}
+
+/* La cuadrícula nueva prevalece sobre la antigua regla móvil de una columna */
+@media(max-width:650px){
+ #catalog-results .content-grid{grid-template-columns:repeat(2,minmax(0,1fr)) !important}
+ #catalog-results .catalog-live-card{display:flex !important;grid-template-columns:none !important}
+}
