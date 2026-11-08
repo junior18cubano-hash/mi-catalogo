@@ -158,9 +158,17 @@ create policy "joa friendship participants update" on public.joa_friendships for
 drop policy if exists "joa friendship requester delete" on public.joa_friendships;
 create policy "joa friendship requester delete" on public.joa_friendships for delete to authenticated using(auth.uid()=requester_id);
 
+-- Helpers SECURITY DEFINER evitan recursión entre políticas RLS relacionadas.
+create or replace function public.joa_is_group_member(target_group uuid, target_user uuid default auth.uid())
+returns boolean language sql stable security definer set search_path=public
+as $ select exists(select 1 from public.joa_group_members gm where gm.group_id=target_group and gm.user_id=target_user) $;
+create or replace function public.joa_is_conversation_member(target_conversation uuid, target_user uuid default auth.uid())
+returns boolean language sql stable security definer set search_path=public
+as $ select exists(select 1 from public.joa_conversation_members cm where cm.conversation_id=target_conversation and cm.user_id=target_user) $;
+
 -- Grupos públicos visibles; grupos privados solo para miembros/propietario.
 drop policy if exists "joa groups visible" on public.joa_groups;
-create policy "joa groups visible" on public.joa_groups for select to authenticated using(is_public or owner_id=auth.uid() or exists(select 1 from public.joa_group_members gm where gm.group_id=id and gm.user_id=auth.uid()));
+create policy "joa groups visible" on public.joa_groups for select to authenticated using(is_public or owner_id=auth.uid() or public.joa_is_group_member(id));
 drop policy if exists "joa groups create own" on public.joa_groups;
 create policy "joa groups create own" on public.joa_groups for insert to authenticated with check(auth.uid()=owner_id);
 drop policy if exists "joa groups owner update" on public.joa_groups;
@@ -169,7 +177,7 @@ drop policy if exists "joa groups owner delete" on public.joa_groups;
 create policy "joa groups owner delete" on public.joa_groups for delete to authenticated using(auth.uid()=owner_id);
 
 drop policy if exists "joa group members visible" on public.joa_group_members;
-create policy "joa group members visible" on public.joa_group_members for select to authenticated using(exists(select 1 from public.joa_groups g where g.id=group_id and (g.is_public or g.owner_id=auth.uid())) or user_id=auth.uid());
+create policy "joa group members visible" on public.joa_group_members for select to authenticated using(public.joa_is_group_member(group_id) or user_id=auth.uid() or exists(select 1 from public.joa_groups g where g.id=group_id and g.is_public));
 drop policy if exists "joa group members join self" on public.joa_group_members;
 create policy "joa group members join self" on public.joa_group_members for insert to authenticated with check(auth.uid()=user_id and exists(select 1 from public.joa_groups g where g.id=group_id and g.is_public));
 drop policy if exists "joa group members leave self" on public.joa_group_members;
@@ -177,19 +185,19 @@ create policy "joa group members leave self" on public.joa_group_members for del
 
 -- Conversaciones y mensajes: únicamente miembros pueden leer y escribir.
 drop policy if exists "joa conversation member read" on public.joa_conversations;
-create policy "joa conversation member read" on public.joa_conversations for select to authenticated using(exists(select 1 from public.joa_conversation_members cm where cm.conversation_id=id and cm.user_id=auth.uid()));
+create policy "joa conversation member read" on public.joa_conversations for select to authenticated using(public.joa_is_conversation_member(id));
 drop policy if exists "joa conversation create" on public.joa_conversations;
 create policy "joa conversation create" on public.joa_conversations for insert to authenticated with check(auth.uid()=created_by);
 drop policy if exists "joa conversation members read" on public.joa_conversation_members;
-create policy "joa conversation members read" on public.joa_conversation_members for select to authenticated using(exists(select 1 from public.joa_conversation_members cm where cm.conversation_id=conversation_id and cm.user_id=auth.uid()));
+create policy "joa conversation members read" on public.joa_conversation_members for select to authenticated using(public.joa_is_conversation_member(conversation_id));
 drop policy if exists "joa conversation members add" on public.joa_conversation_members;
 create policy "joa conversation members add" on public.joa_conversation_members for insert to authenticated with check(auth.uid()=user_id or exists(select 1 from public.joa_conversations c where c.id=conversation_id and c.created_by=auth.uid()));
 drop policy if exists "joa messages read members" on public.joa_messages;
-create policy "joa messages read members" on public.joa_messages for select to authenticated using(exists(select 1 from public.joa_conversation_members cm where cm.conversation_id=conversation_id and cm.user_id=auth.uid()));
+create policy "joa messages read members" on public.joa_messages for select to authenticated using(public.joa_is_conversation_member(conversation_id));
 drop policy if exists "joa messages send members" on public.joa_messages;
-create policy "joa messages send members" on public.joa_messages for insert to authenticated with check(auth.uid()=sender_id and exists(select 1 from public.joa_conversation_members cm where cm.conversation_id=conversation_id and cm.user_id=auth.uid()));
+create policy "joa messages send members" on public.joa_messages for insert to authenticated with check(auth.uid()=sender_id and public.joa_is_conversation_member(conversation_id));
 drop policy if exists "joa messages edit own" on public.joa_messages;
-create policy "joa messages edit own" on public.joa_messages for update to authenticated using(auth.uid()=sender_id and exists(select 1 from public.joa_conversation_members cm where cm.conversation_id=conversation_id and cm.user_id=auth.uid())) with check(auth.uid()=sender_id);
+create policy "joa messages edit own" on public.joa_messages for update to authenticated using(auth.uid()=sender_id and public.joa_is_conversation_member(conversation_id)) with check(auth.uid()=sender_id);
 
 drop policy if exists "joa reviews readable" on public.joa_reviews;
 create policy "joa reviews readable" on public.joa_reviews for select to authenticated using(true);
