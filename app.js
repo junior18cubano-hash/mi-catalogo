@@ -311,7 +311,7 @@
    if(!catalogItems.length){const q=searchTerm;cards.forEach(card=>{card.hidden=!!q&&!card.innerText.toLocaleLowerCase("es").includes(q)})}
  });
 
- let currentSession=null,communityProfile=null,communityTab="feed",communityRequested=safeSessionGet("joa_community_requested")==="1",activeConversationId=null,activeConversationIds=[],activeChatChannel=null,communityChatListChannel=null,selectedReviewItem=null,activeCommunityGroupId=null,communityGroupsCache=[];
+ let currentSession=null,communityProfile=null,communityTab="feed",communityRequested=safeSessionGet("joa_community_requested")==="1",activeConversationId=null,activeConversationIds=[],activeChatChannel=null,communityChatListChannel=null,activeGroupChatChannel=null,activeGroupChatId=null,selectedReviewItem=null,activeCommunityGroupId=null,communityGroupsCache=[];
 
  let notificationsChannel=null,notificationsUserId=null,notificationRows=[];
  function notificationTime(value){
@@ -418,8 +418,9 @@
    }
    if(target==="messages"&&data.conversation_id){
      activateCommunityTab("messages");
-     const {data:conv,error}=await supabase.from("conversations").select("id,created_by,direct_user_id").eq("id",data.conversation_id).maybeSingle();
+     const {data:conv,error}=await supabase.from("conversations").select("id,created_by,direct_user_id,group_id").eq("id",data.conversation_id).maybeSingle();
      if(error||!conv)return;
+     if(conv.group_id){activateCommunityTab("groups");await loadCommunityGroups();openCommunityGroup(conv.group_id);return}
      const peerId=conv.created_by===currentUser.id?conv.direct_user_id:conv.created_by;
      const profile=await supabase.from("profiles").select("display_name,username").eq("id",peerId).maybeSingle();
      const title=profile.data?.display_name||profile.data?.username||"Chat JOA";
@@ -685,11 +686,13 @@
    const host=$("#community-chat-list");if(!host||!currentUser||!supabase)return;
    const memberships=await supabase.from("conversation_members").select("conversation_id").eq("user_id",currentUser.id);
    if(memberships.error){host.textContent=communityError(memberships.error);return}
-   const ids=(memberships.data||[]).map(x=>x.conversation_id);
-   if(!ids.length){host.textContent="Todavía no tienes chats. Añade a un amigo para comenzar.";return}
-   const conv=await supabase.from("conversations").select("id,title,created_by,direct_user_id,created_at").in("id",ids).order("created_at",{ascending:false});
+   const membershipIds=(memberships.data||[]).map(x=>x.conversation_id);
+   if(!membershipIds.length){host.textContent="Todavía no tienes chats privados. Añade a un amigo para comenzar.";return}
+   const conv=await supabase.from("conversations").select("id,title,created_by,direct_user_id,group_id,created_at").in("id",membershipIds).order("created_at",{ascending:false});
    if(conv.error){host.textContent=communityError(conv.error);return}
-   const conversations=conv.data||[];
+   const conversations=(conv.data||[]).filter(item=>!item.group_id);
+   const ids=conversations.map(item=>item.id);
+   if(!ids.length){host.innerHTML='<p class="community-empty">Tus chats grupales están dentro de cada grupo. Añade amigos para iniciar conversaciones privadas.</p>';return}
    const peerIds=[...new Set(conversations.map(x=>x.created_by===currentUser.id?x.direct_user_id:x.created_by).filter(Boolean))];
    const [profiles,messages]=await Promise.all([
      peerIds.length?supabase.from("profiles").select("id,display_name,username").in("id",peerIds):Promise.resolve({data:[]}),
@@ -866,6 +869,7 @@
  }
  async function openCommunityGroup(groupId,scroll=true){
    const group=communityGroupsCache.find(g=>g.id===groupId);if(!group)return;
+   if(activeGroupChatChannel&&activeGroupChatId!==groupId){supabase.removeChannel(activeGroupChatChannel);activeGroupChatChannel=null;activeGroupChatId=null}
    activeCommunityGroupId=groupId;
    const panel=$("#community-group-detail");panel.hidden=false;panel.innerHTML='<p class="community-loading">Cargando información del grupo…</p>';
    const [members,profiles,friends]=await Promise.all([
@@ -880,7 +884,7 @@
    const wrap=document.createElement("div");wrap.className="community-group-detail-card";
    const head=document.createElement("div");head.className="community-group-detail-head";
    const title=document.createElement("h3");title.textContent=group.name;
-   const close=document.createElement("button");close.type="button";close.textContent="Cerrar";close.addEventListener("click",()=>{panel.hidden=true;activeCommunityGroupId=null});
+   const close=document.createElement("button");close.type="button";close.textContent="Cerrar";close.addEventListener("click",()=>{panel.hidden=true;activeCommunityGroupId=null;if(activeGroupChatChannel&&supabase){supabase.removeChannel(activeGroupChatChannel);activeGroupChatChannel=null;activeGroupChatId=null}});
    head.append(title,close);
    const about=document.createElement("p");about.textContent=group.description||"Sin descripción.";
    const facts=document.createElement("div");facts.className="community-group-meta";
@@ -903,6 +907,22 @@
      roster.append(row);
    });
    wrap.append(roster);
+   const chatCard=document.createElement("section");chatCard.className="community-group-chat-card";
+   const chatHeading=document.createElement("div");chatHeading.className="community-group-chat-heading";
+   const chatTitle=document.createElement("h4");chatTitle.textContent="Chat del grupo";
+   const chatInfo=document.createElement("p");chatInfo.textContent="Conversa en tiempo real con todos los miembros de este grupo.";
+   chatHeading.append(chatTitle,chatInfo);
+   const chatLaunch=document.createElement("button");chatLaunch.type="button";chatLaunch.className="community-group-chat-launch";chatLaunch.id="community-group-chat-open";chatLaunch.textContent="Abrir chat grupal ↗";
+   const chatRoom=document.createElement("div");chatRoom.className="community-group-chat-room";chatRoom.hidden=true;
+   const chatMessages=document.createElement("div");chatMessages.className="community-group-chat-messages";
+   const chatForm=document.createElement("form");chatForm.className="community-group-chat-form";
+   const chatInput=document.createElement("input");chatInput.type="text";chatInput.maxLength=5000;chatInput.placeholder="Escribe al grupo…";chatInput.required=true;
+   const chatSend=document.createElement("button");chatSend.type="submit";chatSend.textContent="Enviar";
+   const chatClose=document.createElement("button");chatClose.type="button";chatClose.className="community-group-chat-close";chatClose.textContent="Cerrar chat";
+   chatForm.append(chatInput,chatSend);chatRoom.append(chatMessages,chatForm,chatClose);
+   chatLaunch.addEventListener("click",()=>{chatRoom.hidden=false;chatLaunch.hidden=true;openCommunityGroupChat(groupId,group.name,chatMessages,chatForm)});
+   chatClose.addEventListener("click",()=>{chatRoom.hidden=true;chatLaunch.hidden=false;if(activeGroupChatChannel&&supabase){supabase.removeChannel(activeGroupChatChannel);activeGroupChatChannel=null;activeGroupChatId=null}});
+   chatCard.append(chatHeading,chatLaunch,chatRoom);wrap.append(chatCard);
    if(owner){
      const modTitle=document.createElement("h4");modTitle.textContent="Administración";wrap.append(modTitle);
      const candidates=(members.data||[]).filter(m=>m.role==="member");
@@ -910,6 +930,50 @@
    }
    panel.innerHTML="";panel.append(wrap);
    if(scroll)panel.scrollIntoView({behavior:"smooth",block:"nearest"});
+ }
+ async function openCommunityGroupChat(groupId,groupName,host,form){
+   if(!currentUser||!supabase)return;
+   if(activeGroupChatChannel&&activeGroupChatId!==groupId){supabase.removeChannel(activeGroupChatChannel);activeGroupChatChannel=null}
+   const conversation=await supabase.from("conversations").select("id").eq("group_id",groupId).maybeSingle();
+   if(conversation.error||!conversation.data){host.textContent=conversation.error?communityError(conversation.error):"El chat de este grupo todavía no está disponible.";return}
+   const conversationId=conversation.data.id;activeGroupChatId=groupId;
+   host.innerHTML='<p class="community-loading">Cargando mensajes del grupo…</p>';
+   const result=await supabase.from("messages").select("id,conversation_id,sender_id,body,created_at").eq("conversation_id",conversationId).order("created_at",{ascending:true}).limit(300);
+   if(result.error){host.textContent=communityError(result.error);return}
+   const senderIds=[...new Set((result.data||[]).map(m=>m.sender_id))];
+   const profiles=senderIds.length?await supabase.from("profiles").select("id,display_name,username").in("id",senderIds):{data:[]};
+   if(profiles.error){host.textContent=communityError(profiles.error);return}
+   const profileMap=new Map((profiles.data||[]).map(p=>[p.id,p]));
+   const renderMessage=(message,profile)=>{
+     if(host.querySelector('[data-group-message-id="'+message.id+'"]'))return;
+     const empty=host.querySelector(".community-empty");if(empty)empty.remove();
+     const row=document.createElement("article");row.className="community-group-message";row.dataset.groupMessageId=message.id;
+     const head=document.createElement("div");head.className="community-group-message-head";
+     const author=document.createElement("strong");author.textContent=message.sender_id===currentUser.id?"Tú":(profile?.display_name||profile?.username||"Jugador JOA");
+     const time=document.createElement("small");time.textContent=new Date(message.created_at).toLocaleString("es",{day:"2-digit",month:"short",hour:"2-digit",minute:"2-digit"});
+     const body=document.createElement("p");body.textContent=message.body;head.append(author,time);row.append(head,body);host.append(row);host.scrollTop=host.scrollHeight;
+   };
+   host.innerHTML="";
+   if(!result.data?.length){const empty=document.createElement("p");empty.className="community-empty";empty.textContent="Todavía no hay mensajes. ¡Saluda al grupo!";host.append(empty)}
+   (result.data||[]).forEach(m=>renderMessage(m,profileMap.get(m.sender_id)));
+   if(activeGroupChatChannel)supabase.removeChannel(activeGroupChatChannel);
+   activeGroupChatChannel=supabase.channel("joa-group-chat-"+conversationId)
+     .on("postgres_changes",{event:"INSERT",schema:"public",table:"messages",filter:"conversation_id=eq."+conversationId},async payload=>{
+       const m=payload.new;let profile=profileMap.get(m.sender_id);
+       if(!profile){const p=await supabase.from("profiles").select("id,display_name,username").eq("id",m.sender_id).maybeSingle();profile=p.data||{};profileMap.set(m.sender_id,profile)}
+       renderMessage(m,profile);
+     }).subscribe();
+   form.onsubmit=async event=>{
+     event.preventDefault();const input=form.querySelector("input"),button=form.querySelector('button[type="submit"]'),body=input.value.trim();if(!body)return;
+     button.disabled=true;button.textContent="Enviando…";
+     try{
+       const sent=await supabase.from("messages").insert({conversation_id:conversationId,sender_id:currentUser.id,body}).select("id,conversation_id,sender_id,body,created_at").single();
+       if(sent.error)throw sent.error;
+       renderMessage(sent.data,communityProfile||{display_name:"Tú"});input.value="";input.focus();
+     }catch(error){toast(communityError(error))}
+     finally{button.disabled=false;button.textContent="Enviar"}
+   };
+   const title=$("#community-group-detail h3");if(title)title.setAttribute("aria-label","Chat grupal: "+groupName);
  }
  function showCommunityGroupEditor(group){
    const panel=$("#community-group-detail"),form=document.createElement("form");form.className="community-group-editor";
