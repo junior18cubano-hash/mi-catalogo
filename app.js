@@ -405,7 +405,7 @@
    if(!item.read_at){
      const {error}=await supabase.from("notifications").update({read_at:new Date().toISOString()}).eq("id",item.id).eq("user_id",currentUser.id);
      if(error)console.warn("No se pudo marcar la notificación",error);
-     item.read_at=new Date().toISOString();renderNotifications(notificationRows);
+     item.read_at=new Date().toISOString();await loadNotifications();
    }
    const data=item.data||{},target=data.target||"feed";
    openCommunity();
@@ -421,17 +421,14 @@
      const {data:conv,error}=await supabase.from("conversations").select("id,created_by,direct_user_id").eq("id",data.conversation_id).maybeSingle();
      if(error||!conv)return;
      const peerId=conv.created_by===currentUser.id?conv.direct_user_id:conv.created_by;
-     const [profile,members]=await Promise.all([
-       supabase.from("profiles").select("display_name,username").eq("id",peerId).maybeSingle(),
-       supabase.from("conversation_members").select("user_id").eq("conversation_id",data.conversation_id)
-     ]);
+     const profile=await supabase.from("profiles").select("display_name,username").eq("id",peerId).maybeSingle();
      const title=profile.data?.display_name||profile.data?.username||"Chat JOA";
-     const related=(members.data||[]).map(x=>x.conversation_id).filter(Boolean);
      openCommunityChat(conv.id,title,[conv.id]);
      return;
    }
    activateCommunityTab("feed");
    await loadCommunityFeed();
+   if(data.post_id){const post=$(`[data-community-post-id="${data.post_id}"]`);if(post){post.scrollIntoView({behavior:"smooth",block:"center"});post.classList.add("notification-highlight");setTimeout(()=>post.classList.remove("notification-highlight"),2400)}}
  }
  function openCommunity(){
    if(!currentUser){openAuth();return}
@@ -501,7 +498,7 @@
        const ownReaction=reactions.find(r=>r.post_id===post.id&&r.user_id===currentUser.id);
        const postReactions=reactions.filter(r=>r.post_id===post.id);
        const postComments=comments.filter(c=>c.post_id===post.id);
-       const card=document.createElement("article");card.className="community-post-card";
+       const card=document.createElement("article");card.className="community-post-card";card.dataset.communityPostId=post.id;
        const head=document.createElement("div");head.className="community-post-head";
        const avatar=document.createElement("span");avatar.className="community-avatar";avatar.textContent=communityInitials(profile.display_name||profile.username);
        const who=document.createElement("div");who.className="community-post-author";
@@ -545,6 +542,7 @@
  $("#notifications-toggle").addEventListener("click",async()=>{
    if(!currentUser){openAuth();return}
    const panel=$("#notification-panel");panel.hidden=!panel.hidden;
+   $("#notifications-toggle").setAttribute("aria-expanded",String(!panel.hidden));
    if(!panel.hidden)await loadNotifications();
  });
  $("#notifications-mark-all").addEventListener("click",markAllNotificationsRead);
