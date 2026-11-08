@@ -197,7 +197,6 @@
    searchTerm=e.target.value.trim().toLocaleLowerCase("es");currentPage=1;renderCatalog();
    if(!catalogItems.length){const q=searchTerm;cards.forEach(card=>{card.hidden=!!q&&!card.innerText.toLocaleLowerCase("es").includes(q)})}
  });
- loadCatalog();
  function renderAuthMode(){
    $("#auth-title").innerHTML=authMode==="signin"?'Entra en tu <span>universo.</span>':'Crea tu <span>cuenta JOA.</span>';
    $("#auth-description").textContent=authMode==="signin"?"Accede para participar en la comunidad JOA.":"Regístrate para crear tu perfil y conectar con otros jugadores.";
