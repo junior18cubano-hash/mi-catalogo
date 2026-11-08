@@ -5,8 +5,11 @@
  const dialog=$("#auth-dialog"), toastEl=$("#toast");
  let authMode="signin", supabase=null, currentUser=null, authReadyPromise=Promise.resolve(false);
  const toast=(message)=>{if(!toastEl)return;toastEl.textContent=message;toastEl.classList.add("show");clearTimeout(window.__joaToast);window.__joaToast=setTimeout(()=>toastEl.classList.remove("show"),3600)};
+ function safeSessionGet(key){try{return window.sessionStorage?.getItem(key)||null}catch(error){console.warn("JOA: sessionStorage no disponible",error);return null}}
+ function safeSessionSet(key,value){try{window.sessionStorage?.setItem(key,value);return true}catch(error){console.warn("JOA: no se pudo guardar el estado temporal",error);return false}}
+ function safeSessionRemove(key){try{window.sessionStorage?.removeItem(key)}catch(error){console.warn("JOA: no se pudo limpiar el estado temporal",error)}}
  $("#year").textContent=new Date().getFullYear();
- const openAuth=()=>{communityRequested=true;sessionStorage.setItem("joa_community_requested","1");if(currentUser){openCommunity();return}if(dialog&&!dialog.open)dialog.showModal();renderAuthMode()};
+ const openAuth=()=>{communityRequested=true;safeSessionSet("joa_community_requested","1");if(currentUser){openCommunity();return}if(dialog&&!dialog.open)dialog.showModal();renderAuthMode()};
  $("#login-open").addEventListener("click",openAuth);
  $("#community-join").addEventListener("click",openAuth);
  dialog.querySelector(".dialog-close").addEventListener("click",()=>dialog.close());
@@ -243,10 +246,10 @@
    if(!catalogItems.length){const q=searchTerm;cards.forEach(card=>{card.hidden=!!q&&!card.innerText.toLocaleLowerCase("es").includes(q)})}
  });
 
- let currentSession=null,communityProfile=null,communityTab="feed",communityRequested=sessionStorage.getItem("joa_community_requested")==="1",activeConversationId=null,activeChatChannel=null,selectedReviewItem=null;
+ let currentSession=null,communityProfile=null,communityTab="feed",communityRequested=safeSessionGet("joa_community_requested")==="1",activeConversationId=null,activeChatChannel=null,selectedReviewItem=null;
  function openCommunity(){
    if(!currentUser){openAuth();return}
-   communityRequested=false;sessionStorage.removeItem("joa_community_requested");
+   communityRequested=false;safeSessionRemove("joa_community_requested");
    const workspace=$("#community-workspace"),layout=$(".community-layout");
    if(workspace)workspace.hidden=false;if(layout)layout.hidden=true;
    $("#community-user-name").textContent=communityProfile?.display_name||currentUser.email?.split("@")[0]||"jugador";
@@ -341,7 +344,7 @@
  $("#community-feed-refresh").addEventListener("click",loadCommunityFeed);
  $("#community-signout").addEventListener("click",async()=>{
    if(!supabase)return;const {error}=await supabase.auth.signOut({scope:"local"});if(error){toast(communityError(error));return}
-   closeCommunity();communityRequested=false;sessionStorage.removeItem("joa_community_requested");toast("Sesión cerrada en este dispositivo.");
+   closeCommunity();communityRequested=false;safeSessionRemove("joa_community_requested");toast("Sesión cerrada en este dispositivo.");
  });
  $("#community-profile-form").addEventListener("submit",async e=>{
    e.preventDefault();const button=e.submitter;button.disabled=true;
