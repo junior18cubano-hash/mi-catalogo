@@ -312,6 +312,127 @@
  });
 
  let currentSession=null,communityProfile=null,communityTab="feed",communityRequested=safeSessionGet("joa_community_requested")==="1",activeConversationId=null,activeConversationIds=[],activeChatChannel=null,communityChatListChannel=null,selectedReviewItem=null,activeCommunityGroupId=null,communityGroupsCache=[];
+
+ let notificationsChannel=null,notificationsUserId=null,notificationRows=[];
+ function notificationTime(value){
+   const date=new Date(value);if(!Number.isFinite(date.getTime()))return "";
+   const seconds=Math.max(0,Math.floor((Date.now()-date.getTime())/1000));
+   if(seconds<60)return "Ahora";
+   if(seconds<3600)return "Hace "+Math.floor(seconds/60)+" min";
+   if(seconds<86400)return "Hace "+Math.floor(seconds/3600)+" h";
+   return date.toLocaleDateString("es",{day:"2-digit",month:"short"});
+ }
+ function renderNotifications(rows){
+   const host=$("#notification-list"),badge=$("#notification-count");
+   if(!host||!badge)return;
+   notificationRows=rows||[];
+   const unread=notificationRows.filter(x=>!x.read_at).length;
+   badge.textContent=unread>99?"99+":String(unread);
+   badge.hidden=unread===0;
+   host.innerHTML="";
+   if(!notificationRows.length){
+     const empty=document.createElement("div");empty.className="notification-empty";
+     empty.textContent="Todavía no tienes notificaciones. Cuando alguien interactúe contigo, aparecerá aquí.";
+     host.append(empty);return;
+   }
+   notificationRows.forEach(item=>{
+     const button=document.createElement("button");button.type="button";
+     button.className="notification-item"+(item.read_at?"":" unread");
+     const dot=document.createElement("i");dot.className="notification-dot";
+     const content=document.createElement("span");content.className="notification-copy";
+     const title=document.createElement("b");title.textContent=item.title||"Notificación";
+     const body=document.createElement("span");body.textContent=item.body||"Hay una novedad en JOA.";
+     const time=document.createElement("small");time.textContent=notificationTime(item.created_at);
+     content.append(title,body,time);button.append(dot,content);
+     button.addEventListener("click",()=>openNotification(item));
+     host.append(button);
+   });
+ }
+ async function loadNotifications(){
+   if(!currentUser||!supabase)return;
+   const host=$("#notification-list");if(!host)return;
+   const [rows,count]=await Promise.all([
+     supabase.from("notifications").select("id,user_id,type,title,body,data,read_at,created_at").eq("user_id",currentUser.id).order("created_at",{ascending:false}).limit(30),
+     supabase.from("notifications").select("id",{count:"exact",head:true}).eq("user_id",currentUser.id).is("read_at",null)
+   ]);
+   if(rows.error||count.error){console.warn("JOA notifications:",rows.error||count.error);return}
+   renderNotifications(rows.data||[]);
+   const badge=$("#notification-count");
+   const unread=count.count||0;
+   badge.textContent=unread>99?"99+":String(unread);
+   badge.hidden=unread===0;
+ }
+ function startNotificationRealtime(){
+   if(!supabase||!currentUser)return;
+   if(notificationsChannel&&notificationsUserId===currentUser.id)return;
+   if(notificationsChannel)supabase.removeChannel(notificationsChannel);
+   notificationsUserId=currentUser.id;
+   notificationsChannel=supabase.channel("joa-notifications-"+currentUser.id)
+     .on("postgres_changes",{event:"INSERT",schema:"public",table:"notifications",filter:"user_id=eq."+currentUser.id},payload=>{
+       loadNotifications();
+       const panel=$("#notification-panel");
+       if(panel?.hidden)toast(payload.new?.title||"Tienes una nueva notificación.");
+     }).subscribe();
+ }
+ function stopNotificationRealtime(){
+   if(notificationsChannel&&supabase)supabase.removeChannel(notificationsChannel);
+   notificationsChannel=null;notificationsUserId=null;notificationRows=[];
+   const badge=$("#notification-count"),host=$("#notification-list");
+   if(badge){badge.hidden=true;badge.textContent="0"}
+   if(host)host.innerHTML='<div class="notification-empty">Inicia sesión para ver tus notificaciones.</div>';
+   const panel=$("#notification-panel");if(panel)panel.hidden=true;
+ }
+ async function markAllNotificationsRead(){
+   if(!currentUser||!supabase)return;
+   const {error}=await supabase.from("notifications").update({read_at:new Date().toISOString()}).eq("user_id",currentUser.id).is("read_at",null);
+   if(error){toast(communityError(error));return}
+   await loadNotifications();toast("Notificaciones marcadas como leídas.");
+ }
+ function activateCommunityTab(tab){
+   communityTab=tab;
+   $("[data-community-tab]").forEach(button=>button.classList.toggle("active",button.dataset.communityTab===tab));
+   ["feed","friends","messages","groups","reviews","profile"].forEach(name=>{
+     const panel=$("#community-"+name+"-panel");if(panel)panel.hidden=name!==tab;
+   });
+   if(tab==="messages")loadCommunityChats();
+   if(tab==="friends")loadCommunityDirectory();
+   if(tab==="groups")loadCommunityGroups();
+   if(tab==="reviews")loadCommunityReviews();
+ }
+ async function openNotification(item){
+   const panel=$("#notification-panel");if(panel)panel.hidden=true;
+   if(!currentUser||!supabase)return;
+   if(!item.read_at){
+     const {error}=await supabase.from("notifications").update({read_at:new Date().toISOString()}).eq("id",item.id).eq("user_id",currentUser.id);
+     if(error)console.warn("No se pudo marcar la notificación",error);
+     item.read_at=new Date().toISOString();renderNotifications(notificationRows);
+   }
+   const data=item.data||{},target=data.target||"feed";
+   openCommunity();
+   if(target==="friends"){activateCommunityTab("friends");loadCommunityFriends();return}
+   if(target==="groups"){
+     activateCommunityTab("groups");
+     await loadCommunityGroups();
+     if(data.group_id)openCommunityGroup(data.group_id);
+     return;
+   }
+   if(target==="messages"&&data.conversation_id){
+     activateCommunityTab("messages");
+     const {data:conv,error}=await supabase.from("conversations").select("id,created_by,direct_user_id").eq("id",data.conversation_id).maybeSingle();
+     if(error||!conv)return;
+     const peerId=conv.created_by===currentUser.id?conv.direct_user_id:conv.created_by;
+     const [profile,members]=await Promise.all([
+       supabase.from("profiles").select("display_name,username").eq("id",peerId).maybeSingle(),
+       supabase.from("conversation_members").select("user_id").eq("conversation_id",data.conversation_id)
+     ]);
+     const title=profile.data?.display_name||profile.data?.username||"Chat JOA";
+     const related=(members.data||[]).map(x=>x.conversation_id).filter(Boolean);
+     openCommunityChat(conv.id,title,[conv.id]);
+     return;
+   }
+   activateCommunityTab("feed");
+   await loadCommunityFeed();
+ }
  function openCommunity(){
    if(!currentUser){openAuth();return}
    communityRequested=false;safeSessionRemove("joa_community_requested");
@@ -421,6 +542,17 @@
    catch(error){toast(communityError(error))}finally{button.disabled=false}
  });
  $("#community-feed-refresh").addEventListener("click",loadCommunityFeed);
+ $("#notifications-toggle").addEventListener("click",async()=>{
+   if(!currentUser){openAuth();return}
+   const panel=$("#notification-panel");panel.hidden=!panel.hidden;
+   if(!panel.hidden)await loadNotifications();
+ });
+ $("#notifications-mark-all").addEventListener("click",markAllNotificationsRead);
+ document.addEventListener("click",event=>{
+   const wrap=$("#notifications-wrap");
+   if(wrap&&!wrap.contains(event.target))$("#notification-panel").hidden=true;
+ });
+
  $("#community-signout").addEventListener("click",async()=>{
    if(!supabase)return;const {error}=await supabase.auth.signOut({scope:"local"});if(error){toast(communityError(error));return}
    closeCommunity();communityRequested=false;safeSessionRemove("joa_community_requested");toast("Sesión cerrada en este dispositivo.");
@@ -433,10 +565,7 @@
      if(error)throw error;communityProfile=data;$("#community-user-name").textContent=data.display_name;$("#community-avatar").textContent=communityInitials(data.display_name);$("#community-profile-status").textContent="Perfil actualizado correctamente.";toast("Perfil guardado.");
    }catch(error){$("#community-profile-status").textContent=communityError(error)}finally{button.disabled=false}
  });
- $$("[data-community-tab]").forEach(button=>button.addEventListener("click",()=>{
-   communityTab=button.dataset.communityTab;$$("[data-community-tab]").forEach(b=>b.classList.toggle("active",b===button));
-   ["feed","friends","messages","groups","reviews","profile"].forEach(tab=>$("#community-"+tab+"-panel").hidden=tab!==communityTab);if(communityTab==="messages")loadCommunityChats();if(communityTab==="friends")loadCommunityDirectory();if(communityTab==="groups")loadCommunityGroups();if(communityTab==="reviews")loadCommunityReviews();
- }));
+ $("[data-community-tab]").forEach(button=>button.addEventListener("click",()=>activateCommunityTab(button.dataset.communityTab)));
  async function loadCommunityFriends(){
    if(!currentUser||!supabase)return;const host=$("#community-friend-list");if(!host)return;
    const {data,error}=await supabase.from("friendships").select("*").or("requester_id.eq."+currentUser.id+",addressee_id.eq."+currentUser.id).order("created_at",{ascending:false});
@@ -934,9 +1063,9 @@
    currentUser=user;currentSession=session||currentSession;
    const btn=$("#login-open");
    if(user){btn.innerHTML='<span class="user-status">● '+escapeHtml(user.email||"Mi cuenta")+'</span>';btn.title="Abrir comunidad y cuenta";$("#community-join").textContent="Ir a mi comunidad";$("#community-join").querySelector("b")?.remove()}
-   else{btn.innerHTML='Entrar <span>↗</span>';btn.title="Iniciar sesión";$("#community-join").textContent="Entrar a la comunidad";closeCommunity();communityProfile=null}
+   else{btn.innerHTML='Entrar <span>↗</span>';btn.title="Iniciar sesión";$("#community-join").textContent="Entrar a la comunidad";closeCommunity();communityProfile=null;stopNotificationRealtime()}
    renderAuthMode();
-   if(user){Promise.resolve().then(async()=>{try{communityProfile=await ensureCommunityProfile(user);if(communityRequested)openCommunity()}catch(error){console.warn("No se pudo preparar el perfil social",error);toast("Tu sesión está activa, pero no se pudo cargar el perfil.")}})}
+   if(user){Promise.resolve().then(async()=>{try{communityProfile=await ensureCommunityProfile(user);startNotificationRealtime();await loadNotifications();if(communityRequested)openCommunity()}catch(error){console.warn("No se pudo preparar el perfil social",error);toast("Tu sesión está activa, pero no se pudo cargar el perfil.")}})}
  }
  function escapeHtml(value){return String(value).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
  async function loadSupabaseSdk(){
