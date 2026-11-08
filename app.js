@@ -311,7 +311,7 @@
    if(!catalogItems.length){const q=searchTerm;cards.forEach(card=>{card.hidden=!!q&&!card.innerText.toLocaleLowerCase("es").includes(q)})}
  });
 
- let currentSession=null,communityProfile=null,communityTab="feed",communityRequested=safeSessionGet("joa_community_requested")==="1",activeConversationId=null,activeChatChannel=null,selectedReviewItem=null;
+ let currentSession=null,communityProfile=null,communityTab="feed",communityRequested=safeSessionGet("joa_community_requested")==="1",activeConversationId=null,activeConversationIds=[],activeChatChannel=null,communityChatListChannel=null,selectedReviewItem=null;
  function openCommunity(){
    if(!currentUser){openAuth();return}
    communityRequested=false;safeSessionRemove("joa_community_requested");
@@ -324,7 +324,7 @@
    $("#community-profile-bio").value=communityProfile?.bio||"";
    $("#community-profile-games").value=communityProfile?.game_preferences||"";
    $("#community-avatar").textContent=(communityProfile?.display_name||"JG").slice(0,2).toUpperCase();
-   loadCommunityFeed();loadCommunityFriends();loadCommunityDirectory();loadCommunityGroups();loadCommunityChats();loadCommunityReviews();
+   loadCommunityFeed();loadCommunityFriends();loadCommunityDirectory();loadCommunityGroups();loadCommunityChats();ensureCommunityChatListRealtime();loadCommunityReviews();
    $("#community").scrollIntoView({behavior:"smooth",block:"start"});
  }
  function closeCommunity(){
@@ -502,8 +502,8 @@
 
  async function startDirectChat(friendId,friendName){
    try{
-     const found=await supabase.from("conversations").select("id").or("and(created_by.eq."+currentUser.id+",direct_user_id.eq."+friendId+"),and(created_by.eq."+friendId+",direct_user_id.eq."+currentUser.id+")").limit(1).maybeSingle();
-     if(found.error)throw found.error;let conversationId=found.data?.id;
+     const found=await supabase.from("conversations").select("id,created_at").or("and(created_by.eq."+currentUser.id+",direct_user_id.eq."+friendId+"),and(created_by.eq."+friendId+",direct_user_id.eq."+currentUser.id+")").order("created_at",{ascending:false}).limit(1);
+     if(found.error)throw found.error;let conversationId=found.data?.[0]?.id;
      if(!conversationId){
        const created=await supabase.from("conversations").insert({created_by:currentUser.id,direct_user_id:friendId,title:friendName}).select("id").single();
        if(created.error)throw created.error;conversationId=created.data.id;
@@ -516,39 +516,96 @@
      await loadCommunityChats();await openCommunityChat(conversationId,friendName);
    }catch(error){toast(communityError(error))}
  }
+ function ensureCommunityChatListRealtime(){
+   if(communityChatListChannel||!supabase||!currentUser)return;
+   communityChatListChannel=supabase.channel("joa-chat-list-"+currentUser.id)
+     .on("postgres_changes",{event:"INSERT",schema:"public",table:"messages"},()=>loadCommunityChats())
+     .subscribe();
+ }
  async function loadCommunityChats(){
    const host=$("#community-chat-list");if(!host||!currentUser||!supabase)return;
    const memberships=await supabase.from("conversation_members").select("conversation_id").eq("user_id",currentUser.id);
    if(memberships.error){host.textContent=communityError(memberships.error);return}
    const ids=(memberships.data||[]).map(x=>x.conversation_id);
    if(!ids.length){host.textContent="Todavía no tienes chats. Añade a un amigo para comenzar.";return}
-   const conv=await supabase.from("conversations").select("id,title,direct_user_id,created_at").in("id",ids).order("created_at",{ascending:false});
+   const conv=await supabase.from("conversations").select("id,title,created_by,direct_user_id,created_at").in("id",ids).order("created_at",{ascending:false});
    if(conv.error){host.textContent=communityError(conv.error);return}
-   const peerIds=[...new Set((conv.data||[]).map(x=>x.direct_user_id).filter(Boolean))];
-   const profiles=peerIds.length?await supabase.from("profiles").select("id,display_name,username").in("id",peerIds):{data:[]};
-   const profileMap=new Map((profiles.data||[]).map(p=>[p.id,p]));host.innerHTML="";
-   for(const item of conv.data||[]){
-     const peer=profileMap.get(item.direct_user_id),row=document.createElement("button");row.type="button";row.className="community-chat-entry";row.textContent=peer?.display_name||peer?.username||item.title||"Conversación JOA";row.classList.toggle("active",item.id===activeConversationId);
-     row.addEventListener("click",()=>openCommunityChat(item.id,row.textContent));host.append(row);
-   }
+   const conversations=conv.data||[];
+   const peerIds=[...new Set(conversations.map(x=>x.created_by===currentUser.id?x.direct_user_id:x.created_by).filter(Boolean))];
+   const [profiles,messages]=await Promise.all([
+     peerIds.length?supabase.from("profiles").select("id,display_name,username").in("id",peerIds):Promise.resolve({data:[]}),
+     supabase.from("messages").select("id,conversation_id,sender_id,body,created_at").in("conversation_id",ids).order("created_at",{ascending:false}).limit(150)
+   ]);
+   if(profiles.error){host.textContent=communityError(profiles.error);return}
+   if(messages.error){host.textContent=communityError(messages.error);return}
+   const profileMap=new Map((profiles.data||[]).map(p=>[p.id,p]));
+   const lastByConversation=new Map();
+   (messages.data||[]).forEach(m=>{if(!lastByConversation.has(m.conversation_id))lastByConversation.set(m.conversation_id,m)});
+   // Si quedaron chats duplicados de las primeras pruebas, se agrupan por amigo y se conserva como principal el más reciente.
+   const groups=new Map();
+   conversations.forEach(item=>{
+     const peerId=item.created_by===currentUser.id?item.direct_user_id:item.created_by;
+     if(!peerId)return;
+     if(!groups.has(peerId))groups.set(peerId,[]);
+     groups.get(peerId).push(item);
+   });
+   const rows=[...groups.entries()].map(([peerId,items])=>{
+     items.sort((a,b)=>new Date(b.created_at)-new Date(a.created_at));
+     const primary=items[0],peer=profileMap.get(peerId)||{},allIds=items.map(x=>x.id);
+     const latest=allIds.map(id=>lastByConversation.get(id)).filter(Boolean).sort((a,b)=>new Date(b.created_at)-new Date(a.created_at))[0];
+     return {peerId,primary,peer,allIds,latest};
+   }).sort((a,b)=>new Date(b.latest?.created_at||b.primary.created_at)-new Date(a.latest?.created_at||a.primary.created_at));
+   host.innerHTML="";
+   rows.forEach(item=>{
+     const name=item.peer.display_name||item.peer.username||"Jugador JOA";
+     const row=document.createElement("button");row.type="button";row.className="community-chat-entry";row.classList.toggle("active",item.primary.id===activeConversationId);
+     const title=document.createElement("strong");title.textContent=name;
+     const preview=document.createElement("span");preview.className="community-chat-preview";
+     preview.textContent=item.latest?(item.latest.sender_id===currentUser.id?"Tú: ":"")+item.latest.body:"Empieza la conversación";
+     const time=document.createElement("small");time.className="community-chat-time";time.textContent=item.latest?new Date(item.latest.created_at).toLocaleString("es",{hour:"2-digit",minute:"2-digit",day:"2-digit",month:"short"}):"Nuevo chat";
+     row.append(title,preview,time);
+     row.addEventListener("click",()=>openCommunityChat(item.primary.id,name,item.allIds));host.append(row);
+   });
  }
- async function openCommunityChat(conversationId,title){
-   activeConversationId=conversationId;$("#community-chat-title").textContent=title||"Chat JOA";
+ function appendCommunityMessage(message){
+   const host=$("#community-chat-messages");if(!host||!message||host.querySelector('[data-message-id="'+message.id+'"]'))return;
+   const empty=host.querySelector(".community-empty");if(empty)empty.remove();
+   const bubble=document.createElement("div");bubble.className="community-message"+(message.sender_id===currentUser.id?" mine":"");bubble.dataset.messageId=message.id;
+   const body=document.createElement("p");body.textContent=message.body;
+   const time=document.createElement("small");time.textContent=new Date(message.created_at).toLocaleString("es",{hour:"2-digit",minute:"2-digit",day:"2-digit",month:"short"});
+   bubble.append(body,time);host.append(bubble);host.scrollTop=host.scrollHeight;
+ }
+ async function openCommunityChat(conversationId,title,relatedIds){
+   activeConversationId=conversationId;activeConversationIds=relatedIds?.length?relatedIds:[conversationId];
+   $("#community-chat-title").textContent=title||"Chat JOA";
    const host=$("#community-chat-messages");host.innerHTML='<p class="community-loading">Cargando mensajes…</p>';
-   const {data,error}=await supabase.from("messages").select("id,sender_id,body,created_at").eq("conversation_id",conversationId).order("created_at",{ascending:true}).limit(200);
+   const {data,error}=await supabase.from("messages").select("id,conversation_id,sender_id,body,created_at").in("conversation_id",activeConversationIds).order("created_at",{ascending:true}).limit(300);
    if(error){host.textContent=communityError(error);return}
    host.innerHTML="";
    if(!data?.length)host.innerHTML='<p class="community-empty">Saluda y empieza la conversación.</p>';
-   data?.forEach(message=>{const bubble=document.createElement("div");bubble.className="community-message"+(message.sender_id===currentUser.id?" mine":"");const body=document.createElement("p");body.textContent=message.body;const time=document.createElement("small");time.textContent=new Date(message.created_at).toLocaleString("es",{hour:"2-digit",minute:"2-digit",day:"2-digit",month:"short"});bubble.append(body,time);host.append(bubble)});
+   data?.forEach(appendCommunityMessage);
    host.scrollTop=host.scrollHeight;
    if(activeChatChannel)supabase.removeChannel(activeChatChannel);
-   activeChatChannel=supabase.channel("joa-chat-"+conversationId).on("postgres_changes",{event:"INSERT",schema:"public",table:"messages",filter:"conversation_id=eq."+conversationId},()=>openCommunityChat(conversationId,title)).subscribe();
+   let channel=supabase.channel("joa-chat-"+conversationId);
+   activeConversationIds.forEach(id=>{
+     channel=channel.on("postgres_changes",{event:"INSERT",schema:"public",table:"messages",filter:"conversation_id=eq."+id},payload=>{
+       if(activeConversationIds.includes(payload.new.conversation_id))appendCommunityMessage(payload.new);
+       loadCommunityChats();
+     });
+   });
+   activeChatChannel=channel.subscribe();
+   ensureCommunityChatListRealtime();
  }
  $("#community-chat-form").addEventListener("submit",async e=>{
    e.preventDefault();if(!activeConversationId){toast("Selecciona primero un chat.");return}
-   const input=$("#community-chat-input"),button=e.submitter,body=input.value.trim();if(!body)return;button.disabled=true;
-   try{const {error}=await supabase.from("messages").insert({conversation_id:activeConversationId,sender_id:currentUser.id,body});if(error)throw error;input.value="";await openCommunityChat(activeConversationId,$("#community-chat-title").textContent)}
-   catch(error){toast(communityError(error))}finally{button.disabled=false}
+   const input=$("#community-chat-input"),button=e.submitter||e.currentTarget.querySelector("button"),body=input.value.trim();if(!body)return;
+   button.disabled=true;button.textContent="Enviando…";
+   try{
+     const {data,error}=await supabase.from("messages").insert({conversation_id:activeConversationId,sender_id:currentUser.id,body}).select("id,conversation_id,sender_id,body,created_at").single();
+     if(error)throw error;
+     appendCommunityMessage(data);input.value="";await loadCommunityChats();input.focus();
+   }catch(error){toast(communityError(error))}
+   finally{button.disabled=false;button.textContent="Enviar"}
  });
  function reviewItemKey(item){const raw=item.id??item.external_id??item.igdb_id??item.tmdb_id??item.slug??itemTitle(item);return itemType(item)+":"+String(raw).trim().toLocaleLowerCase("es")}
  function showReviewMatches(query){
