@@ -15,17 +15,16 @@
  const CATALOG_VERSION_URL="https://raw.githubusercontent.com/junior18cubano-hash/Actualizacion-Catalogo/main/version.json";
  const CATALOG_DATA_URL="https://raw.githubusercontent.com/junior18cubano-hash/Actualizacion-Catalogo/main/Update.json";
  const CATALOG_CACHE="joa-web-catalog-v1";
- let catalogItems=[],catalogMeta={},activeCategory="",searchTerm="",sortMode="name",pageSize=18,currentPage=1;
+ let catalogItems=[],catalogMeta={},activeCategory="",activeSubcategory="",activePlatform="",searchTerm="",sortMode="name",pageSize=18,currentPage=1;
  const categoryAliases={
-   juego:["juego","game","games","videojuego","videojuegos"],
-   pelicula:["pelicula","película","peliculas","películas","movie","movies","film","pelicula_animada"],
-   serie:["serie","series","serie_tv","tv","show"],
-   anime:["anime","anime_movie","anime_series"],
-   novela:["novela","novelas","novela_tv","novelas_tv","telenovela","telenovelas"],
-   software:["software","app","apps","programa","programas"],
-   musica:["musica","música","music","audio"],
-   otros:["otros","other","misc"]
+ juego:["juego","juego_emulado","game","games","videojuego","videojuegos"],
+ pelicula:["pelicula","pelicula_animada","movie","movies","film"],
+ serie:["serie","serie_animada","series","serie_tv","tv","show"],
+ anime:["anime","anime_movie","anime_series"],
+ novela:["novela_tv","telenovela","telenovelas","novelas_tv","novela-tv"],
+ software:["software","app","apps","programa","programas"],musica:["musica","music","audio"],otros:["otros","other","misc"]
  };
+ const subtypeLabels={juego:{juego:"Juegos",juego_emulado:"Juegos emulados"},pelicula:{pelicula:"Películas",pelicula_animada:"Películas animadas"},serie:{serie:"Series de TV",serie_animada:"Series animadas"},anime:{anime:"Series anime",anime_movie:"Películas anime"},novela:{novela_tv:"Telenovelas"}};
  const normalizeType=value=>String(value||"").toLocaleLowerCase("es").normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[ -]/g,"_");
  const itemType=item=>normalizeType(item.type||item.tipo||item.category||item.categoria||"otros");
  const itemTitle=item=>String(item.title||item.name||item.titulo||item.nombre||item.game||"Contenido JOA");
@@ -40,16 +39,47 @@
    try{return base?new URL(raw,base).href:raw}catch(_){return raw}
  }
  function categoryFor(type){
-   const t=normalizeType(type);
-   for(const [key,aliases] of Object.entries(categoryAliases))if(aliases.map(normalizeType).includes(t))return key;
-   if(t.includes("novela")||t.includes("telenovela"))return "novela";
-   if(t.includes("anime"))return "anime";
-   if(t.includes("pelicula")||t.includes("movie"))return "pelicula";
-   if(t.includes("serie"))return "serie";
-   if(t.includes("juego")||t.includes("game"))return "juego";
-   if(t.includes("software"))return "software";
-   if(t.includes("music")||t.includes("musica"))return "musica";
-   return "otros";
+ const t=normalizeType(type);
+ for(const [key,values] of Object.entries(categoryAliases))if(values.map(normalizeType).includes(t))return key;
+ if(t.includes("novela")||t.includes("telenovela"))return "novela";
+ if(t.includes("anime"))return "anime";
+ if(t.includes("pelicula")||t.includes("movie"))return "pelicula";
+ if(t.includes("serie"))return "serie";
+ if(t.includes("juego")||t.includes("game"))return "juego";
+ if(t.includes("software"))return "software";
+ if(t.includes("music")||t.includes("musica"))return "musica";
+ return "otros";
+ }
+ function itemSubcategory(item){
+ const raw=normalizeType(item.type||item.tipo||"");
+ if(subtypeLabels[categoryFor(raw)]&&subtypeLabels[categoryFor(raw)][raw])return raw;
+ const other=normalizeType(item.subcategory||item.subcategoria||item.sub_type||item.subtipo||"");
+ if(other.includes("anim"))return categoryFor(raw)==="serie"?"serie_animada":"pelicula_animada";
+ if(other.includes("movie")||other.includes("pelicula"))return categoryFor(raw)==="anime"?"anime_movie":"pelicula";
+ if(other.includes("serie"))return categoryFor(raw)==="anime"?"anime":"serie";
+ if(categoryFor(raw)==="novela")return "novela_tv";
+ return raw;
+ }
+ function itemPlatform(item){return String(item.console||item.consola||item.platform||item.plataforma||item.emulator||item.emulador||"").trim()}
+ function itemCategoryValue(item){return normalizeType(item.type||item.tipo||item.category||item.categoria||"otros")}
+ function updateSubcategoryControls(){
+ const sub=$("#catalog-subcategory-filter"),wrap=$("#catalog-platform-wrap"),platform=$("#catalog-platform-filter");
+ if(!sub||!platform)return;
+ const group=activeCategory,options=[];
+ if(group==="juego")options.push(["juego","Juegos"],["juego_emulado","Juegos emulados"]);
+ else if(subtypeLabels[group])Object.entries(subtypeLabels[group]).forEach(([key,label])=>options.push([key,label]));
+ sub.innerHTML='<option value="">Todas las subcategorías</option>';
+ options.forEach(([value,label])=>{const option=document.createElement("option");option.value=value;option.textContent=label;sub.append(option)});
+ sub.disabled=!group||!options.length;
+ if(!options.some(option=>option[0]===activeSubcategory))activeSubcategory="";
+ sub.value=activeSubcategory;
+ const showPlatforms=group==="juego"&&activeSubcategory==="juego_emulado";wrap.hidden=!showPlatforms;
+ const previous=activePlatform;platform.innerHTML='<option value="">Todas las plataformas</option>';
+ if(showPlatforms){
+ const platforms=[...new Set(catalogItems.filter(item=>categoryFor(itemCategoryValue(item))==="juego"&&itemSubcategory(item)==="juego_emulado").map(itemPlatform).filter(Boolean))].sort((x,y)=>x.localeCompare(y,"es"));
+ platforms.forEach(value=>{const option=document.createElement("option");option.value=value;option.textContent=value;platform.append(option)});
+ }
+ activePlatform=showPlatforms&&[...platform.options].some(option=>option.value===previous)?previous:"";platform.value=activePlatform;
  }
  function setCatalogStatus(message,state=""){
    const el=$("#catalog-status");if(!el)return;
@@ -61,9 +91,12 @@
  function itemDate(item){const value=item.updated_at||item.created_at||item.added_at||item.release_date||item.fecha||item.date||itemYear(item);const n=Date.parse(value);return Number.isFinite(n)?n:(Number(value)||0)}
  function sortedItems(){
    const filtered=catalogItems.filter(item=>{
-     const categoryOk=!activeCategory||categoryFor(itemType(item))===activeCategory;
-     const text=[itemTitle(item),itemDescription(item),itemType(item),item.genre,item.genres,item.generos,item.console,item.consola,item.platform,item.plataforma].flat().join(" ").toLocaleLowerCase("es");
-     return categoryOk&&(!searchTerm||text.includes(searchTerm));
+     const group=categoryFor(itemCategoryValue(item));
+     const categoryOk=!activeCategory||group===activeCategory;
+     const subOk=!activeSubcategory||itemSubcategory(item)===activeSubcategory;
+     const platformOk=!activePlatform||itemPlatform(item)===activePlatform;
+     const text=[itemTitle(item),itemDescription(item),itemType(item),item.subcategory,item.subcategoria,item.genre,item.genres,item.generos,itemPlatform(item)].flat().join(" ").toLocaleLowerCase("es");
+     return categoryOk&&subOk&&platformOk&&(!searchTerm||text.includes(searchTerm));
    });
    return filtered.sort((a,b)=>{
      if(sortMode==="recent")return itemDate(b)-itemDate(a)||itemTitle(a).localeCompare(itemTitle(b),"es");
@@ -168,6 +201,7 @@
      if(!data||!Array.isArray(data.items))throw new Error("El catálogo no tiene el formato esperado.");
      catalogItems=data.items;
      catalogMeta=data;
+     updateSubcategoryControls();
      catalogMeta.version=remoteVersion.version||data.version||"";
      const generated=data.generated_at||remoteVersion.generated_at;
      const date=generated?new Date(generated).toLocaleDateString("es",{day:"2-digit",month:"short",year:"numeric"}):"fecha no disponible";
@@ -184,13 +218,15 @@
  }
  $("#catalog-refresh")?.addEventListener("click",()=>{const b=$("#catalog-refresh");b.disabled=true;loadCatalog(true).finally(()=>{b.disabled=false})});
  $("#catalog-sort")?.addEventListener("change",e=>{sortMode=e.target.value;currentPage=1;renderCatalog()});
- $("#catalog-type-filter")?.addEventListener("change",e=>{activeCategory=e.target.value;cards.forEach(c=>c.classList.toggle("selected",c.dataset.category===activeCategory));currentPage=1;renderCatalog()});
+ $("#catalog-type-filter")?.addEventListener("change",e=>{activeCategory=e.target.value;activeSubcategory="";activePlatform="";cards.forEach(c=>c.classList.toggle("selected",c.dataset.category===activeCategory));updateSubcategoryControls();currentPage=1;renderCatalog()});
+ $("#catalog-subcategory-filter")?.addEventListener("change",e=>{activeSubcategory=e.target.value;activePlatform="";updateSubcategoryControls();currentPage=1;renderCatalog()});
+ $("#catalog-platform-filter")?.addEventListener("change",e=>{activePlatform=e.target.value;currentPage=1;renderCatalog()});
  $("#catalog-page-size")?.addEventListener("change",e=>{pageSize=Number(e.target.value)||18;currentPage=1;renderCatalog()});
  $("#catalog-detail-close")?.addEventListener("click",()=>$("#catalog-detail-dialog").close());
  $("#catalog-detail-dialog")?.addEventListener("click",e=>{if(e.target.id==="catalog-detail-dialog")e.currentTarget.close()});
  cards.forEach(card=>card.addEventListener("click",()=>{
    cards.forEach(c=>c.classList.remove("selected"));card.classList.add("selected");
-   activeCategory=card.dataset.category||"";currentPage=1;$("#catalog-type-filter").value=activeCategory;renderCatalog();
+   activeCategory=card.dataset.category||"";activeSubcategory="";activePlatform="";currentPage=1;$("#catalog-type-filter").value=activeCategory;updateSubcategoryControls();renderCatalog();
    $("#catalog-results").scrollIntoView({behavior:"smooth",block:"nearest"});
  }));
  $("#catalog-search").addEventListener("input",e=>{
