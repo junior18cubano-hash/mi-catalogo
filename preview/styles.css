@@ -448,3 +448,12 @@
 #auth-dialog .oauth-btn{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;touch-action:manipulation}
 #auth-dialog .oauth-btn:disabled{opacity:.65;cursor:wait}
 
+
+
+/* Etiqueta de tipo de contenido en las tarjetas del catálogo */
+#catalog-results .catalog-live-card .poster{position:relative;isolation:isolate}
+#catalog-results .catalog-type-badge{position:absolute;z-index:2;top:9px;left:9px;max-width:calc(100% - 18px);padding:5px 8px;border:1px solid rgba(111,231,255,.45);border-radius:6px;background:rgba(5,12,27,.88);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);color:#8cecff;font:800 8px/1.15 var(--display);letter-spacing:.09em;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;box-shadow:0 3px 14px #0008;pointer-events:none}
+#catalog-results .catalog-type-badge.type-pelicula,#catalog-results .catalog-type-badge.type-novela{border-color:#ff83d477;color:#ffb0e4}
+#catalog-results .catalog-type-badge.type-serie,#catalog-results .catalog-type-badge.type-anime{border-color:#b39aff77;color:#c9baff}
+#catalog-results .catalog-type-badge.type-software{border-color:#8ceca977;color:#a6f4b6}
+@media(max-width:650px){#catalog-results .catalog-type-badge{top:7px;left:7px;padding:4px 6px;font-size:7px;max-width:calc(100% - 14px)}}
