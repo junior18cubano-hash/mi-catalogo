@@ -170,6 +170,21 @@
      add("›",Math.min(totalPages,currentPage+1),currentPage===totalPages);
    });
  }
+ function cardTypeLabel(item){
+   const group=categoryFor(itemCategoryValue(item)),sub=itemSubcategory(item),platform=itemPlatform(item).toLocaleLowerCase("es");
+   if(group==="juego"){
+     if(sub==="juego_emulado")return "JUEGO EMULADO";
+     if(/(^|[^a-z])(pc|windows|computer|computadora)([^a-z]|$)/i.test(platform))return "JUEGO DE PC";
+     return "VIDEOJUEGO";
+   }
+   if(group==="pelicula")return sub==="pelicula_animada"?"PELÍCULA ANIMADA":"PELÍCULA";
+   if(group==="serie")return sub==="serie_animada"?"SERIE ANIMADA":"SERIE";
+   if(group==="anime")return sub==="anime_movie"?"PELÍCULA ANIME":"ANIME";
+   if(group==="novela")return "TELENOVELA";
+   if(group==="software")return "SOFTWARE";
+   if(group==="musica")return "MÚSICA";
+   return "OTROS";
+ }
  function renderCatalog(){
    const grid=$("#content-grid");if(!grid)return;
    const filtered=sortedItems(),totalPages=Math.max(1,Math.ceil(filtered.length/pageSize));
@@ -179,7 +194,8 @@
    shown.forEach(item=>{
      const article=document.createElement("button");article.type="button";article.className="content-card catalog-live-card";article.setAttribute("aria-label","Ver detalles de "+itemTitle(item));
      const poster=document.createElement("div");poster.className="poster";const cover=resolveCover(itemCover(item));
-     if(cover){const img=document.createElement("img");img.src=cover;img.alt="";img.loading="lazy";img.decoding="async";img.onerror=()=>{img.remove();poster.textContent=itemTitle(item).slice(0,32)};poster.append(img)}else poster.textContent=itemTitle(item).slice(0,32);
+     if(cover){const img=document.createElement("img");img.src=cover;img.alt="";img.loading="lazy";img.decoding="async";img.onerror=()=>{img.remove();if(!poster.querySelector(".catalog-type-badge"))poster.textContent=itemTitle(item).slice(0,32)};poster.append(img)}else poster.textContent=itemTitle(item).slice(0,32);
+     const badge=document.createElement("span");badge.className="catalog-type-badge type-"+categoryFor(itemCategoryValue(item));badge.textContent=cardTypeLabel(item);poster.append(badge);
      const body=document.createElement("div"),title=document.createElement("b");title.textContent=itemTitle(item);body.append(title);article.append(poster,body);
      article.addEventListener("click",()=>openCatalogDetail(item));grid.append(article);
    });
