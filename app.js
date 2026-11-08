@@ -333,13 +333,26 @@
  function communityError(error){console.error("JOA Social:",error);return error?.message||"No se pudo completar la operación."}
  async function ensureCommunityProfile(user){
    if(!user||!supabase)return null;
+   const meta=user.user_metadata||{};
+   const display=meta.full_name||meta.name||user.email?.split("@")[0]||"Jugador JOA";
+   const username="joa_"+user.id.replace(/-/g,"").slice(0,10);
    const {data,error}=await supabase.from("profiles").select("*").eq("id",user.id).maybeSingle();
    if(error)throw error;
-   if(data)return data;
-   const meta=user.user_metadata||{},display=meta.full_name||meta.name||user.email?.split("@")[0]||"Jugador JOA";
-   const username="joa_"+user.id.replace(/-/g,"").slice(0,10);
+   if(data){
+     // El trigger crea la fila, pero no asigna username; completar solo campos vacíos.
+     const patch={};
+     if(!data.username)patch.username=username;
+     if(!data.display_name)patch.display_name=display;
+     if(!data.avatar_url&&(meta.avatar_url||meta.picture))patch.avatar_url=meta.avatar_url||meta.picture;
+     if(!Object.keys(patch).length)return data;
+     patch.updated_at=new Date().toISOString();
+     const {data:updated,error:updateError}=await supabase.from("profiles").update(patch).eq("id",user.id).select().single();
+     if(updateError)throw updateError;
+     return updated;
+   }
    const {data:created,error:insertError}=await supabase.from("profiles").insert({id:user.id,username,display_name:display,avatar_url:meta.avatar_url||meta.picture||null}).select().single();
-   if(insertError)throw insertError;return created;
+   if(insertError)throw insertError;
+   return created;
  }
  function communityInitials(name){return String(name||"JG").trim().split(/\s+/).slice(0,2).map(x=>x[0]||"").join("").toUpperCase()||"JG"}
  async function loadCommunityFeed(){
