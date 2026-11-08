@@ -568,3 +568,26 @@
  .notification-bell{width:36px;height:36px}
  .notification-panel{right:-55px;top:calc(100% + 12px);width:min(350px,calc(100vw - 20px))}
 }
+
+/* Chat grupal JOA en cada comunidad */
+.community-group-chat-card{margin-top:18px;padding:16px;border:1px solid #48e9ff55;border-radius:13px;background:linear-gradient(145deg,#101d35,#090f20);box-shadow:0 14px 35px #0003}
+.community-group-chat-heading h4{margin:0;color:#eaf7ff;font-size:13px}
+.community-group-chat-heading p{margin:6px 0 13px;color:#9fb2d1;font-size:10px;line-height:1.55}
+.community-group-chat-launch,.community-group-chat-close{border:1px solid #48e9ff66;border-radius:9px;padding:10px 14px;background:linear-gradient(110deg,#103c54,#32265d);color:#a9f4ff;font-size:10px;font-weight:800;cursor:pointer}
+.community-group-chat-room{margin-top:13px}
+.community-group-chat-room[hidden],.community-group-chat-launch[hidden]{display:none}
+.community-group-chat-messages{display:flex;flex-direction:column;gap:8px;max-height:380px;min-height:190px;overflow-y:auto;padding:12px;border:1px solid #ffffff12;border-radius:10px;background:#070d1b;overscroll-behavior:contain}
+.community-group-message{max-width:88%;padding:10px 12px;border:1px solid #ffffff12;border-radius:11px 11px 11px 3px;background:#14243b;animation:joaMessageIn .16s ease-out}
+.community-group-message:has(.community-group-message-head strong:first-child){align-self:flex-start}
+.community-group-message-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:6px}
+.community-group-message-head strong{font-size:10px;color:#7feaff}
+.community-group-message-head small{font-size:8px;color:#8399b8;white-space:nowrap}
+.community-group-message p{margin:0;color:#e6efff;font-size:11px;line-height:1.55;white-space:pre-wrap;overflow-wrap:anywhere}
+.community-group-chat-form{display:flex;gap:8px;margin:10px 0}
+.community-group-chat-form input{flex:1;min-width:0;margin:0;padding:11px;border:1px solid #ffffff20;border-radius:8px;background:#0a1223;color:#fff;font-size:11px}
+.community-group-chat-form button{border:0;border-radius:8px;padding:0 16px;background:#16465c;color:#9ceeff;font-size:10px;font-weight:800;cursor:pointer}
+.community-group-chat-form button:disabled{opacity:.6;cursor:wait}
+.community-group-chat-close{padding:7px 11px;background:#1a2135;border-color:#ffffff20;color:#b9c9df}
+.brand-mark{overflow:hidden}
+.brand-mark img{display:block;width:100%;height:100%;object-fit:cover;border-radius:inherit}
+@media(max-width:600px){.community-group-chat-card{padding:12px}.community-group-chat-messages{max-height:320px;min-height:160px}.community-group-message{max-width:96%}.community-group-chat-form{gap:6px}.community-group-chat-form button{padding:0 11px}}
