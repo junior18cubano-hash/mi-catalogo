@@ -36,7 +36,21 @@
 </main>
 <footer class="footer"><div class="shell footer-inner"><a class="brand" href="#home"><span class="brand-mark">J</span><span>JOA <b>GAMERs</b><small>PLAY · DISCOVER · CONNECT</small></span></a><p>© <span id="year"></span> JOA GAMERs. Tu universo digital.</p><a href="#home">Volver arriba ↑</a></div></footer>
 <nav class="mobile-nav"><a href="#home"><span>⌂</span>Inicio</a><a href="#catalog"><span>▦</span>Catálogo</a><a href="#community"><span>♧</span>Comunidad</a><a href="#services"><span>⚙</span>Servicios</a></nav>
-<dialog id="auth-dialog" class="auth-dialog"><form method="dialog"><button class="dialog-close" aria-label="Cerrar">×</button></form><div class="eyebrow">BIENVENIDO A JOA</div><h2>Entra en tu <span>universo.</span></h2><p>La autenticación se activará al configurar Supabase y sus proveedores.</p><label>Correo electrónico<input id="auth-email" type="email" placeholder="tu@correo.com"></label><label>Contraseña<input id="auth-password" type="password" placeholder="••••••••"></label><button class="button button-primary auth-submit" id="auth-submit">Continuar <b>↗</b></button><small id="auth-message">La estructura está preparada; configura el proveedor de acceso antes de habilitar cuentas reales.</small></dialog>
+<dialog id="auth-dialog" class="auth-dialog">
+ <form method="dialog"><button class="dialog-close" aria-label="Cerrar">×</button></form>
+ <div class="eyebrow">BIENVENIDO A JOA</div><h2 id="auth-title">Entra en tu <span>universo.</span></h2>
+ <p id="auth-description">Accede para participar en la comunidad JOA.</p>
+ <div class="oauth-buttons"><button type="button" id="auth-google" class="oauth-btn"><b class="google-g">G</b> Continuar con Google</button><button type="button" id="auth-facebook" class="oauth-btn"><b class="facebook-f">f</b> Continuar con Facebook</button></div>
+ <div class="auth-divider"><span>O con tu correo electrónico</span></div>
+ <form id="auth-form">
+  <label>Correo electrónico<input id="auth-email" type="email" autocomplete="email" placeholder="tu@correo.com" required></label>
+  <label>Contraseña<input id="auth-password" type="password" minlength="6" autocomplete="current-password" placeholder="Mínimo 6 caracteres" required></label>
+  <button type="button" id="auth-forgot" class="auth-link" hidden>¿Olvidaste tu contraseña?</button>
+  <button class="button button-primary auth-submit" id="auth-submit" type="submit">Iniciar sesión</button>
+ </form>
+ <button type="button" id="auth-switch" class="auth-link auth-switch">¿No tienes cuenta? Regístrate</button>
+ <small id="auth-message">También puedes continuar con Google o Facebook.</small>
+</dialog>
 <div class="toast" id="toast" role="status"></div>
 <script src="config.js"></script><script src="app.js"></script>
 </body></html>
