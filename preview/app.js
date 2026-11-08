@@ -504,15 +504,34 @@
      if(authMode==="signup"){
        result=await supabase.auth.signUp({email,password,options:{emailRedirectTo:window.JOA_CONFIG.authRedirectUrl}});
        if(result.error)throw result.error;
-       if(result.data.session){toast("¡Cuenta creada! Bienvenido a JOA.");dialog.close()}
-       else{$("#auth-message").textContent="Te enviamos un correo para confirmar tu cuenta. Revisa también la carpeta de spam.";toast("Registro iniciado. Confirma tu correo para entrar.")}
+       const createdUser=result.data?.user||null;
+       const createdSession=result.data?.session||null;
+       if(!createdUser){
+         $("#auth-message").textContent="No se pudo confirmar la creación de la cuenta. Si ese correo ya está registrado, inicia sesión o usa «¿Olvidaste tu contraseña?»."; 
+         toast("No se confirmó el registro. Comprueba si ya tienes una cuenta.");
+       }else if(createdSession){
+         updateHeader(createdUser,createdSession);
+         dialog.close();
+         toast("¡Cuenta creada y sesión iniciada!");
+       }else{
+         $("#auth-message").textContent="La cuenta fue creada, pero todavía está pendiente de confirmar. Abre el correo de Supabase y pulsa el enlace de verificación. Después volverás aquí para iniciar sesión.";
+         toast("Revisa tu correo y confirma la cuenta antes de entrar.");
+       }
      }else{
        result=await supabase.auth.signInWithPassword({email,password});
        if(result.error)throw result.error;
-       toast("¡Bienvenido de nuevo a JOA!");dialog.close();
+       updateHeader(result.data.user,result.data.session);
+       dialog.close();
+       toast("¡Bienvenido de nuevo a JOA!");
      }
-   }catch(error){$("#auth-message").textContent=authError(error);toast(authError(error))}
-   finally{submit.disabled=false;renderAuthMode()}
+   }catch(error){
+     console.error("JOA email auth:",error);
+     $("#auth-message").textContent=authError(error);
+     toast(authError(error));
+   }finally{
+     submit.disabled=false;
+     renderAuthMode();
+   }
  });
  $("#auth-forgot").addEventListener("click",async()=>{
    const email=$("#auth-email").value.trim();if(!email){toast("Escribe primero tu correo electrónico.");return}
@@ -526,16 +545,21 @@
    $("#auth-message").textContent="Preparando el acceso seguro…";
    try{
      const ready=await authReadyPromise;
-     if(!ready||!supabase)throw new Error("No se pudo cargar el servicio de acceso. Comprueba tu conexión y vuelve a intentarlo.");
-     const {error}=await supabase.auth.signInWithOAuth({
+     if(!ready||!supabase)throw new Error("El servicio de acceso no terminó de inicializarse. Recarga la página e inténtalo otra vez.");
+     // Navegación explícita: evita que algunos navegadores embebidos dejen el diálogo abierto
+     // después de que Supabase haya generado correctamente la URL OAuth.
+     const {data,error}=await supabase.auth.signInWithOAuth({
        provider,
        options:{
          redirectTo:window.JOA_CONFIG.authRedirectUrl,
+         skipBrowserRedirect:true,
          queryParams:provider==="google"?{access_type:"offline",prompt:"select_account"}:undefined
        }
      });
      if(error)throw error;
-     $("#auth-message").textContent="Redirigiendo al proveedor de acceso…";
+     if(!data?.url)throw new Error("Supabase no devolvió la dirección de acceso del proveedor.");
+     $("#auth-message").textContent="Abriendo el acceso seguro…";
+     window.location.assign(data.url);
    }catch(error){
      console.error("JOA OAuth:",error);
      const message=authError(error);
@@ -553,6 +577,9 @@
    if(/provider is not enabled|unsupported provider/i.test(msg))return "Este proveedor aún no está activado en Supabase.";
    if(/password should be at least/i.test(msg))return "La contraseña debe tener al menos 6 caracteres.";
    if(/user already registered/i.test(msg))return "Ese correo ya tiene una cuenta. Inicia sesión.";
+   if(/email rate limit exceeded|over_email_send_rate_limit/i.test(msg))return "Se han enviado demasiados correos en poco tiempo. Espera unos minutos e inténtalo otra vez.";
+   if(/signup is disabled/i.test(msg))return "El registro por correo está desactivado en este momento.";
+   if(/network|failed to fetch|load failed/i.test(msg))return "No se pudo conectar con Supabase. Comprueba la conexión e inténtalo otra vez.";
    return msg||"No se pudo completar el acceso. Inténtalo de nuevo.";
  }
  function updateHeader(user,session=null){
@@ -574,9 +601,12 @@
      try{
        await new Promise((resolve,reject)=>{
          const script=document.createElement("script");
+         let settled=false;
+         const finish=(fn,value)=>{if(settled)return;settled=true;clearTimeout(timer);fn(value)};
+         const timer=setTimeout(()=>{script.remove();finish(reject,new Error("Tiempo de espera agotado al cargar "+new URL(src).hostname));},12000);
          script.src=src;script.async=true;
-         script.onload=()=>window.supabase?.createClient?resolve():reject(new Error("El SDK de Supabase no quedó disponible."));
-         script.onerror=()=>reject(new Error("No se pudo descargar el SDK desde "+new URL(src).hostname));
+         script.onload=()=>window.supabase?.createClient?finish(resolve,true):finish(reject,new Error("El SDK de Supabase no quedó disponible."));
+         script.onerror=()=>finish(reject,new Error("No se pudo descargar el SDK desde "+new URL(src).hostname));
          document.head.append(script);
        });
        return true;
@@ -596,14 +626,16 @@
      supabase.auth.onAuthStateChange((event,newSession)=>{
        currentSession=newSession||null;
        updateHeader(newSession?.user||null,newSession||null);
+       if(newSession?.user&&dialog?.open)dialog.close();
        if(event==="SIGNED_IN"&&newSession?.user)toast("Sesión activa. ¡Bienvenido a JOA!");
      });
      const {data:{session},error}=await supabase.auth.getSession();
      if(error)throw error;
      currentSession=session||null;
      updateHeader(session?.user||null,session||null);
+     if(session?.user&&dialog?.open)dialog.close();
      document.documentElement.dataset.supabase="ready";
-     $("#auth-message").textContent="Servicio de acceso listo.";
+     if(!session?.user)$("#auth-message").textContent="Servicio de acceso listo. Puedes iniciar sesión o crear una cuenta.";
      return true;
    })().catch(error=>{
      console.error("JOA Auth initialization:",error);
