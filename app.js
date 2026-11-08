@@ -522,6 +522,38 @@
      .on("postgres_changes",{event:"INSERT",schema:"public",table:"messages"},()=>loadCommunityChats())
      .subscribe();
  }
+ function showCommunityGeneral(){
+   activeConversationId=null;activeConversationIds=[];
+   $("#community-chat-title").textContent="General · Todos tus mensajes";
+   $("#community-chat-form").hidden=true;
+   $(".community-chat-entry").forEach(row=>row.classList.toggle("active",row.dataset.general==="true"));
+   loadCommunityChats();
+ }
+ async function renderCommunityGeneral(ids,conversations,profileMap,messages){
+   const host=$("#community-chat-messages");if(!host)return;
+   host.innerHTML="";
+   const peerByConversation=new Map();
+   conversations.forEach(c=>peerByConversation.set(c.id,c.created_by===currentUser.id?c.direct_user_id:c.created_by));
+   const rows=(messages||[]).slice().sort((a,b)=>new Date(a.created_at)-new Date(b.created_at));
+   if(!rows.length){host.innerHTML='<p class="community-empty">Todavía no hay mensajes. Cuando alguien te escriba, aparecerá aquí.</p>';return}
+   rows.forEach(message=>{
+     const peerId=peerByConversation.get(message.conversation_id),peer=profileMap.get(peerId)||{};
+     const peerName=peer.display_name||peer.username||"Jugador JOA";
+     const mine=message.sender_id===currentUser.id;
+     const card=document.createElement("article");card.className="community-general-message";
+     const head=document.createElement("div");head.className="community-general-head";
+     const name=document.createElement("strong");name.textContent=mine?"Tú → "+peerName:peerName+" → tú";
+     const time=document.createElement("small");time.textContent=new Date(message.created_at).toLocaleString("es",{day:"2-digit",month:"short",hour:"2-digit",minute:"2-digit"});
+     const body=document.createElement("p");body.textContent=message.body;
+     const reply=document.createElement("button");reply.type="button";reply.textContent="Abrir chat";reply.addEventListener("click",()=>{
+       const group=conversations.filter(c=>(c.created_by===currentUser.id?c.direct_user_id:c.created_by)===peerId);
+       const primary=group.sort((a,b)=>new Date(b.created_at)-new Date(a.created_at))[0];
+       openCommunityChat(primary.id,peerName,group.map(x=>x.id));
+     });
+     head.append(name,time);card.append(head,body,reply);host.append(card);
+   });
+   host.scrollTop=host.scrollHeight;
+ }
  async function loadCommunityChats(){
    const host=$("#community-chat-list");if(!host||!currentUser||!supabase)return;
    const memberships=await supabase.from("conversation_members").select("conversation_id").eq("user_id",currentUser.id);
@@ -556,9 +588,13 @@
      return {peerId,primary,peer,allIds,latest};
    }).sort((a,b)=>new Date(b.latest?.created_at||b.primary.created_at)-new Date(a.latest?.created_at||a.primary.created_at));
    host.innerHTML="";
+   const general=document.createElement("button");general.type="button";general.className="community-chat-entry community-chat-general";general.dataset.general="true";
+   const generalTitle=document.createElement("strong");generalTitle.textContent="▤ General";
+   const generalPreview=document.createElement("span");generalPreview.className="community-chat-preview";generalPreview.textContent="Todos los mensajes, en orden de llegada";
+   general.append(generalTitle,generalPreview);general.addEventListener("click",showCommunityGeneral);host.append(general);
    rows.forEach(item=>{
      const name=item.peer.display_name||item.peer.username||"Jugador JOA";
-     const row=document.createElement("button");row.type="button";row.className="community-chat-entry";row.classList.toggle("active",item.primary.id===activeConversationId);
+     const row=document.createElement("button");row.type="button";row.className="community-chat-entry";row.dataset.general="false";row.classList.toggle("active",item.primary.id===activeConversationId);
      const title=document.createElement("strong");title.textContent=name;
      const preview=document.createElement("span");preview.className="community-chat-preview";
      preview.textContent=item.latest?(item.latest.sender_id===currentUser.id?"Tú: ":"")+item.latest.body:"Empieza la conversación";
@@ -566,6 +602,7 @@
      row.append(title,preview,time);
      row.addEventListener("click",()=>openCommunityChat(item.primary.id,name,item.allIds));host.append(row);
    });
+   if(!activeConversationId)await renderCommunityGeneral(ids,conversations,profileMap,messages.data||[]);
  }
  function appendCommunityMessage(message){
    const host=$("#community-chat-messages");if(!host||!message||host.querySelector('[data-message-id="'+message.id+'"]'))return;
@@ -577,6 +614,7 @@
  }
  async function openCommunityChat(conversationId,title,relatedIds){
    activeConversationId=conversationId;activeConversationIds=relatedIds?.length?relatedIds:[conversationId];
+   $("#community-chat-form").hidden=false;
    $("#community-chat-title").textContent=title||"Chat JOA";
    const host=$("#community-chat-messages");host.innerHTML='<p class="community-loading">Cargando mensajes…</p>';
    const {data,error}=await supabase.from("messages").select("id,conversation_id,sender_id,body,created_at").in("conversation_id",activeConversationIds).order("created_at",{ascending:true}).limit(300);
