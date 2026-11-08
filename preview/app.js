@@ -22,7 +22,7 @@
    $("#auth-switch").textContent=authMode==="signin"?"¿No tienes cuenta? Regístrate":"¿Ya tienes cuenta? Inicia sesión";
    $("#auth-password").autocomplete=authMode==="signin"?"current-password":"new-password";
    $("#auth-forgot").hidden=authMode!=="signin";
-   $("#auth-message").textContent=currentUser?("Sesión iniciada como "+(currentUser.email||"usuario JOA")):"También puedes continuar con Google o Facebook.";
+   if(currentUser)$("#auth-message").textContent="Sesión iniciada como "+(currentUser.email||"usuario JOA")+". Puedes cerrar esta ventana.";
  }
  $("#auth-switch").addEventListener("click",()=>{authMode=authMode==="signin"?"signup":"signin";renderAuthMode();$("#auth-message").textContent=""});
  $("#auth-form").addEventListener("submit",async e=>{
