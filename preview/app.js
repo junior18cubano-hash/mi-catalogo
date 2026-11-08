@@ -5,12 +5,12 @@
  // Captura global temprana de los botones de acceso: evita depender de listeners tardíos.
  document.addEventListener("click",event=>{
    const target=event.target;
-   const button=target&&target.closest?target.closest("#auth-google,#auth-facebook"):null;
+   const button=target&&target.closest?target.closest("#auth-google"):null;
    if(!button)return;
    event.preventDefault();
    event.stopImmediatePropagation();
    console.info("JOA Auth: clic detectado",button.id);
-   oauth(button.id==="auth-google"?"google":"facebook");
+   oauth("google");
  },true);
  const dialog=$("#auth-dialog"), toastEl=$("#toast");
  let authMode="signin", supabase=null, currentUser=null, authReadyPromise=Promise.resolve(false), authInitError=null;
@@ -611,7 +611,7 @@
    catch(error){toast(authError(error))}
  });
  async function oauth(provider){
-   const button=provider==="google"?$("#auth-google"):$("#auth-facebook");
+   const button=$("#auth-google");
    const originalText=button?.textContent||"Continuar";
    if(button){button.disabled=true;button.textContent="Conectando…"}
    $("#auth-message").textContent="Preparando el acceso seguro…";
