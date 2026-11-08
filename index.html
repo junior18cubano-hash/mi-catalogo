@@ -1,158 +1,69 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="es">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0">
-<meta name="theme-color" content="#03060d">
-<meta name="description" content="JOA GAMERs — Catálogo Multimedia. Películas, series, anime, novelas TV, música, software y servicios.">
-<meta property="og:title" content="JOA GAMERs | Catálogo Multimedia">
-<meta property="og:description" content="Todo tu contenido digital en un solo lugar.">
-<title>JOA GAMERs | Catálogo Multimedia</title>
-<link rel="icon" href="assets/logo.svg" type="image/svg+xml">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Orbitron:wght@500;600;700;800;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css">
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#070914"><meta name="description" content="JOA GAMERs: descubre juegos, cine, anime, series y conecta con la comunidad.">
+<title>JOA GAMERs — Tu universo digital</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;600;700;800;900&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css?v=20261108-rootmain1">
 </head>
 <body>
-
-<div class="cursor-glow"></div>
-<div class="particles" aria-hidden="true"></div>
-
-<header class="navbar">
-  <a class="brand" href="#inicio"><img src="assets/logo.svg" alt="JOA GAMERs"></a>
-  <nav class="nav-links">
-    <a class="active" href="#inicio">INICIO</a>
-    <a href="#categorias">CATEGORÍAS</a>
-    <a href="#servicios">SERVICIOS</a>
-    <a href="#descargar">DESCARGAR</a>
-  </nav>
-  <div class="nav-status">
-    <span class="status-dot"></span>
-    <span>CATÁLOGO<br><b id="nav-version">CARGANDO...</b></span>
-  </div>
-  <button class="menu-btn" aria-label="Abrir menú">☰</button>
-</header>
-
-<main id="inicio">
-
-<section class="hero section">
-  <div class="grid-bg"></div>
-  <div class="hero-bg-orb orb-1"></div>
-  <div class="hero-bg-orb orb-2"></div>
-
-  <div class="hero-copy reveal">
-    <div class="eyebrow"><span>▣</span> APP CATÁLOGO MULTIMEDIA <em id="release-badge">ONLINE</em></div>
-    <h1>TODO TU<br><strong>CONTENIDO DIGITAL</strong><br>EN UN SOLO LUGAR</h1>
-    <p class="hero-text">Películas, Series, Anime, Novelas TV, Música, Software y mucho más... ¡Descarga la app y disfruta de todo el contenido que te gusta!</p>
-
-    <div class="hero-actions">
-      <a class="download-btn" id="hero-download" href="#">
-        <span class="download-icon">↓</span>
-        <span><b>DESCARGAR APK</b><small id="hero-version">ÚLTIMA VERSIÓN</small></span>
-      </a>
-      <div class="trust"><span class="trust-icon">✓</span><span>SEGURO<br>Y RÁPIDO</span></div>
-    </div>
-
-    <div class="release-info">
-      <span>●</span> Última versión: <b id="release-version">Consultando...</b>
-      <span class="separator">•</span>
-      <span id="download-count">Descargas: —</span>
-    </div>
-  </div>
-
-  <div class="hero-device-wrap reveal delay-1">
-    <div class="energy-ring ring-a"></div><div class="energy-ring ring-b"></div>
-    <div class="floating-card card-a">🎮</div><div class="floating-card card-b">🎬</div><div class="floating-card card-c">🎧</div>
-    <div class="phone">
-      <div class="phone-speaker"></div>
-      <div class="phone-screen">
-        <div class="phone-status"><span>9:41</span><span>● ● ●</span></div>
-        <div class="phone-logo"><img src="assets/logo.svg" alt=""><small>CATÁLOGO MULTIMEDIA</small></div>
-        <div class="phone-grid">
-          <div>🎮<span>Juegos</span></div><div>🎬<span>Películas</span></div><div>📺<span>Series</span></div>
-          <div>👾<span>Anime</span></div><div>🎵<span>Música</span></div><div>⚙️<span>Software</span></div>
-          <div>📺<span>Novelas TV</span></div><div>🔧<span>Servicios</span></div><div>＋<span>Y más...</span></div>
-        </div>
-        <div class="phone-live"><span></span> CATÁLOGO ACTUALIZADO</div>
-      </div>
-    </div>
-  </div>
+<div class="ambient ambient-a"></div><div class="ambient ambient-b"></div>
+<header class="topbar"><a class="brand" href="#home"><span class="brand-mark">J</span><span>JOA <b>GAMERs</b><small>PLAY · DISCOVER · CONNECT</small></span></a>
+<nav class="desktop-nav"><a class="active" href="#home">Inicio</a><a href="#catalog">Catálogo</a><a href="#community">Comunidad</a><a href="#services">Servicios</a></nav>
+<div class="top-actions"><button class="icon-btn" id="search-toggle" aria-label="Buscar">⌕</button><button class="login-btn" id="login-open">Entrar <span>↗</span></button></div></header>
+<main id="home">
+<section class="hero shell"><div class="hero-copy"><div class="eyebrow"><i></i> EL UNIVERSO DIGITAL ESTÁ AQUÍ</div><h1>SUBE DE<br><span>NIVEL.</span></h1><p>Descubre tu próximo juego, encuentra historias que te atrapen y conecta con personas que comparten tu pasión.</p><div class="hero-actions"><a class="button button-primary" href="#catalog">Explorar universo <b>↗</b></a><a class="button button-ghost" href="actualizacion/">Descargar APK <b>↓</b></a></div><div class="hero-proof"><div class="avatar-stack"><i>J</i><i>G</i><i>+</i></div><span><b>Una comunidad en construcción</b><small>Tu espacio. Tus gustos. Tu gente.</small></span></div></div>
+<div class="hero-art"><div class="orbit orbit-one"></div><div class="orbit orbit-two"></div><div class="hero-core"><div class="core-glow"></div><span class="core-j">JOA</span><span class="core-sub">GAMERS</span><div class="core-line"></div><span class="core-tag">YOUR NEXT LEVEL</span></div><div class="float-card float-top"><span>✦</span><div><b>DISCOVER</b><small>Contenido sin límites</small></div></div><div class="float-card float-bottom"><span>⌁</span><div><b>CONNECT</b><small>Juega en comunidad</small></div></div></div></section>
+<section class="ticker"><div>GAMES <i>✦</i> MOVIES <i>✦</i> ANIME <i>✦</i> SERIES <i>✦</i> COMMUNITY <i>✦</i> TECH SERVICES <i>✦</i> GAMES <i>✦</i> MOVIES <i>✦</i> ANIME <i>✦</i> SERIES <i>✦</i></div></section>
+<section class="section shell" id="catalog"><div class="section-heading"><div><div class="eyebrow">01 / EXPLORA</div><h2>Tu próximo <span>universo.</span></h2><p>Todo lo que te gusta, organizado en un solo lugar.</p></div><a class="text-link" href="#catalog-grid">Ver categorías <b>↗</b></a></div>
+<div class="search-panel" id="search-panel"><span>⌕</span><input id="catalog-search" placeholder="Busca juegos, películas, anime..." aria-label="Buscar contenido"><kbd>BUSCAR</kbd></div>
+<div class="category-grid" id="catalog-grid">
+<button class="category-card cat-game" data-category="juego"><span class="cat-icon">🎮</span><span class="cat-number">01 / GAMING</span><b>Juegos</b><small>Juegos normales · Emulados</small><i>↗</i></button>
+<button class="category-card cat-movie" data-category="pelicula"><span class="cat-icon">🎬</span><span class="cat-number">02 / CINEMA</span><b>Películas</b><small>Películas · Películas animadas</small><i>↗</i></button>
+<button class="category-card cat-series" data-category="serie"><span class="cat-icon">📺</span><span class="cat-number">03 / SERIES</span><b>Series TV</b><small>Series de TV · Animadas</small><i>↗</i></button>
+<button class="category-card cat-anime" data-category="anime"><span class="cat-icon">🌸</span><span class="cat-number">04 / ANIME</span><b>Anime</b><small>Series anime · Películas anime</small><i>↗</i></button>
+<button class="category-card cat-novela" data-category="novela"><span class="cat-icon">💫</span><span class="cat-number">05 / DRAMA</span><b>Telenovelas</b><small>Coreanas · Turcas · Latinas</small><i>↗</i></button>
+<button class="category-card cat-software" data-category="software"><span class="cat-icon">💻</span><span class="cat-number">06 / DIGITAL</span><b>Software</b><small>Apps y herramientas</small><i>↗</i></button>
+<button class="category-card cat-music" data-category="musica"><span class="cat-icon">🎧</span><span class="cat-number">07 / AUDIO</span><b>Música</b><small>Sonidos para cada momento</small><i>↗</i></button>
+<button class="category-card cat-other" data-category="otros"><span class="cat-icon">✧</span><span class="cat-number">08 / MORE</span><b>Otros</b><small>Más para descubrir</small><i>↗</i></button>
+</div><div class="catalog-results" id="catalog-results"><div class="results-head"><div><div class="eyebrow">CATÁLOGO SINCRONIZADO</div><h3 id="results-title">Catálogo JOA</h3><p id="catalog-status" class="catalog-status" role="status">Preparando catálogo…</p><small id="catalog-count" class="catalog-count"></small></div><div class="catalog-tools"><span class="demo-tag">CATÁLOGO EN VIVO</span><button type="button" id="catalog-refresh" class="catalog-refresh">↻ Actualizar</button></div></div><div class="catalog-toolbar"><label>Ordenar por<select id="catalog-sort"><option value="name">Nombre: A–Z</option><option value="recent">Más recientes</option><option value="added">✦ Últimas incorporaciones</option><option value="views">Más vistos</option><option value="rating">Mejor valorados</option><option value="year">Año de lanzamiento</option></select></label><label>Categoría principal<select id="catalog-type-filter"><option value="">Todas las categorías</option><option value="juego">Juegos</option><option value="pelicula">Películas</option><option value="serie">Series TV</option><option value="anime">Anime</option><option value="novela">Telenovelas</option><option value="software">Software</option><option value="musica">Música</option><option value="otros">Otros</option></select></label><label>Subcategoría<select id="catalog-subcategory-filter" disabled><option value="">Todas las subcategorías</option></select></label><label id="catalog-platform-wrap" hidden>Consola / plataforma<select id="catalog-platform-filter"><option value="">Todas las plataformas</option></select></label><label>Mostrar<select id="catalog-page-size"><option value="18">18 por página</option><option value="30">30 por página</option><option value="48">48 por página</option></select></label></div><div class="catalog-pagination" id="catalog-pagination" aria-label="Páginas del catálogo"></div><div class="content-grid" id="content-grid"><article class="content-card catalog-feature-card feature-game"><div class="poster poster-one"><span class="feature-kicker">JOA ORIGINALS / 01</span><strong>GAME<span>ZONE</span></strong><i class="feature-orbit"></i><small>PLAY BEYOND</small></div><div><small>GAMING · UNIVERSO INTERACTIVO</small><b>Tu próxima aventura comienza aquí</b><p>Explora juegos, plataformas y nuevas experiencias.</p></div></article><article class="content-card catalog-feature-card feature-cinema"><div class="poster poster-two"><span class="feature-kicker">JOA ORIGINALS / 02</span><strong>CINE<span>VERSE</span></strong><i class="feature-orbit"></i><small>STORIES NEVER END</small></div><div><small>CINE · SERIES · ESTRENOS</small><b>Historias que merecen una pantalla</b><p>Descubre películas y series para cada momento.</p></div></article><article class="content-card catalog-feature-card feature-anime"><div class="poster poster-three"><span class="feature-kicker">JOA ORIGINALS / 03</span><strong>ANIME<span>WORLD</span></strong><i class="feature-orbit"></i><small>ENTER ANOTHER WORLD</small></div><div><small>ANIME · ANIMACIÓN</small><b>Entra en mundos extraordinarios</b><p>Encuentra tus universos y personajes favoritos.</p></div></article></div><div class="catalog-pagination catalog-pagination-bottom" id="catalog-pagination-bottom" aria-label="Páginas del catálogo"></div></div>
 </section>
-
-<section id="categorias" class="section categories-section">
-  <div class="section-heading reveal"><div class="mini-line">│</div><div><span>NUESTRO CATÁLOGO</span><h2>TODO LO QUE TE GUSTA <strong>EN UNA APP</strong></h2></div></div>
-  <div class="category-grid">
-    <article class="category-card game reveal"><div class="cat-image">🎮</div><div class="cat-overlay"></div><div class="cat-content"><i>🎮</i><b>JUEGOS</b></div></article>
-    <article class="category-card movie reveal delay-1"><div class="cat-image">🎬</div><div class="cat-overlay"></div><div class="cat-content"><i>🎬</i><b>PELÍCULAS</b></div></article>
-    <article class="category-card series reveal delay-2"><div class="cat-image">📺</div><div class="cat-overlay"></div><div class="cat-content"><i>📺</i><b>SERIES</b></div></article>
-    <article class="category-card anime reveal"><div class="cat-image">👾</div><div class="cat-overlay"></div><div class="cat-content"><i>👾</i><b>ANIME</b></div></article>
-    <article class="category-card music reveal delay-1"><div class="cat-image">🎧</div><div class="cat-overlay"></div><div class="cat-content"><i>🎵</i><b>MÚSICA</b></div></article>
-    <article class="category-card software reveal delay-2"><div class="cat-image">💻</div><div class="cat-overlay"></div><div class="cat-content"><i>⚙</i><b>SOFTWARE</b></div></article>
-    <article class="category-card novelas reveal"><div class="cat-image">📺</div><div class="cat-overlay"></div><div class="cat-content"><i>📺</i><b>NOVELAS TV</b></div></article>
-    <article class="category-card services reveal delay-1"><div class="cat-image">🛠</div><div class="cat-overlay"></div><div class="cat-content"><i>🔧</i><b>SERVICIOS</b></div></article>
-    <article class="category-card more reveal delay-2"><div class="more-symbol">＋</div><b>¡Y MUCHO MÁS!</b></article>
-  </div>
-</section>
-
-<section id="servicios" class="benefits section">
-  <div class="benefit"><span>ϟ</span><div><b>RÁPIDA</b><small>Descarga en segundos</small></div></div>
-  <div class="benefit"><span>✓</span><div><b>SEGURA</b><small>Descarga oficial</small></div></div>
-  <div class="benefit"><span>∞</span><div><b>ACTUALIZADA</b><small>Nuevas versiones</small></div></div>
-  <div class="benefit"><span>▯</span><div><b>EN TU MÓVIL</b><small>Disponible en Android</small></div></div>
-</section>
-
-<section class="update-strip">
-  <div><span class="pulse"></span><b>SISTEMA ONLINE</b><small>La página comprueba automáticamente si existe una versión nueva.</small></div>
-  <button id="check-update">COMPROBAR ACTUALIZACIÓN</button>
-</section>
-
-<section id="descargar" class="download-section">
-  <div class="download-bg"></div>
-  <div class="download-copy reveal">
-    <span>│ NO ESPERES MÁS!</span>
-    <h2>DESCARGA <strong>AHORA</strong><br>LA APP <strong>CATÁLOGO</strong></h2>
-    <a class="download-btn center" id="cta-download" href="#"><span class="download-icon">↓</span><span><b>DESCARGAR APK</b><small id="cta-version">ÚLTIMA VERSIÓN</small></span></a>
-  </div>
-
-  <div class="qr-panel">
-    <div id="qrcode"></div>
-    <div><b>¿ESTÁS EN PC?</b><small>ESCANEA PARA ABRIR ESTA PÁGINA EN TU MÓVIL</small></div>
-  </div>
-
-  <div class="mini-phone"><div class="mini-phone-screen"><img src="assets/logo.svg" alt=""><small>CATÁLOGO MULTIMEDIA</small></div></div>
-</section>
-
+<section class="community-section" id="community"><div class="shell community-layout"><div class="community-copy"><div class="eyebrow">02 / CONECTA</div><h2>No juegues<br><span>en solitario.</span></h2><p>La comunidad JOA nace para que compartas reseñas, publiques tus descubrimientos, encuentres compañeros de partida y formes tu propio grupo.</p><button class="button button-primary" id="community-join">Entrar a la comunidad <b>↗</b></button><div class="community-points"><span>✦ Perfiles y amigos</span><span>✦ Publicaciones y reseñas</span><span>✦ Grupos y mensajes</span></div></div>
+<div class="social-preview"><div class="social-top"><span class="live-dot"></span> FEED DE LA COMUNIDAD <span class="preview-label">PREVIEW</span></div><article class="post-preview"><div class="post-user"><div class="userpic">JG</div><div><b>Jugador JOA</b><small>Miembro de la comunidad · ahora</small></div><span>•••</span></div><p>¿Cuál es ese juego al que siempre vuelves? 🎮 ¡Comparte tu recomendación!</p><div class="post-art"><span>LEVEL UP</span><b>YOUR<br>NEXT<br>ADVENTURE.</b><i>✦</i></div><div class="post-actions"><span>♡ Me gusta</span><span>▢ Comentar</span><span>↗ Compartir</span></div></article><div class="social-bottom"><span>◉</span> Tu próxima conexión puede empezar aquí.</div></div></div>
+<div class="community-workspace" id="community-workspace" hidden>
+ <div class="community-workspace-head"><div><div class="eyebrow">JOA SOCIAL / TU ESPACIO</div><h2>Bienvenido, <span id="community-user-name">jugador</span></h2><p>Comparte, descubre y conecta con la comunidad.</p></div><div class="community-account"><span id="community-account-email"></span><button type="button" id="community-signout" class="community-logout">Cerrar sesión</button></div></div>
+ <div class="community-tabs" role="tablist"><button class="active" data-community-tab="feed">Feed</button><button data-community-tab="friends">Amigos</button><button data-community-tab="messages">Chats</button><button data-community-tab="groups">Grupos</button><button data-community-tab="reviews">Reseñas</button><button data-community-tab="profile">Mi perfil</button></div>
+ <div class="community-panel" id="community-feed-panel">
+  <form id="community-post-form" class="community-composer"><div class="community-composer-title"><span class="community-avatar" id="community-avatar">JG</span><div><b>¿Qué quieres compartir?</b><small>Publica una idea, recomendación o logro.</small></div></div><textarea id="community-post-body" maxlength="5000" rows="3" placeholder="Cuéntale algo a la comunidad JOA…" required></textarea><div class="community-composer-actions"><small>Respeta a los demás jugadores. Nada de spam.</small><button class="button button-primary" type="submit">Publicar <b>↗</b></button></div></form>
+  <div class="community-feed-heading"><div><div class="eyebrow">EN DIRECTO</div><h3>Lo que pasa en JOA</h3></div><button id="community-feed-refresh" class="catalog-refresh" type="button">↻ Actualizar</button></div>
+  <div id="community-feed-list" class="community-feed-list"><p class="community-loading">Cargando publicaciones…</p></div>
+ </div>
+ <div class="community-panel" id="community-friends-panel" hidden><div class="community-feature-card"><div class="eyebrow">CONECTA</div><h3>Encuentra jugadores</h3><p>Busca por nombre de usuario y envía solicitudes de amistad.</p><form id="community-friend-search"><input id="community-friend-query" placeholder="Buscar usuario JOA…" required><button class="button button-primary">Buscar</button></form><div id="community-friend-results"></div></div><div class="community-feature-card"><h3>Solicitudes y amigos</h3><div id="community-friend-list">Cargando…</div></div></div>
+ <div class="community-panel" id="community-messages-panel" hidden><div class="community-feature-card"><div class="eyebrow">MENSAJERÍA</div><h3>Tus conversaciones</h3><p>Los chats privados se habilitan entre miembros conectados. Primero añade amigos para iniciar una conversación.</p><div class="community-chat-layout"><div id="community-chat-list">Cargando conversaciones…</div><div class="community-chat-window"><div id="community-chat-title">Selecciona una conversación</div><div id="community-chat-messages"></div><form id="community-chat-form"><input id="community-chat-input" maxlength="5000" placeholder="Escribe un mensaje…" required><button>Enviar</button></form></div></div></div></div>
+ <div class="community-panel" id="community-groups-panel" hidden><div class="community-feature-card"><div class="eyebrow">JUEGA EN EQUIPO</div><h3>Grupos de la comunidad</h3><form id="community-group-form"><input id="community-group-name" placeholder="Nombre del grupo" maxlength="70" required><input id="community-group-description" placeholder="¿De qué trata?" maxlength="240"><button class="button button-primary">Crear grupo</button></form><div id="community-group-list">Cargando grupos…</div></div></div>
+ <div class="community-panel" id="community-reviews-panel" hidden><div class="community-feature-card"><div class="eyebrow">CATÁLOGO + COMUNIDAD</div><h3>Comparte tu opinión</h3><p>Busca un juego, película, serie o anime del catálogo y deja tu valoración.</p><input id="community-review-search" placeholder="Buscar en el catálogo JOA…"><div id="community-review-matches"></div><div id="community-review-selected" class="community-review-selected" hidden></div><form id="community-review-form" hidden><label>Tu valoración<select id="community-review-rating"><option value="5">★★★★★ — Me encantó</option><option value="4">★★★★☆ — Muy bueno</option><option value="3">★★★☆☆ — Está bien</option><option value="2">★★☆☆☆ — No me gustó mucho</option><option value="1">★☆☆☆☆ — No lo recomiendo</option></select></label><label>Tu reseña<textarea id="community-review-body" rows="4" maxlength="3000" placeholder="¿Qué te pareció? Evita spoilers sin avisar." required></textarea></label><button class="button button-primary">Publicar reseña</button></form></div><div class="community-feature-card"><h3>Reseñas recientes</h3><div id="community-review-feed">Cargando reseñas…</div></div></div><div class="community-panel" id="community-profile-panel" hidden><div class="community-feature-card"><div class="eyebrow">TU IDENTIDAD</div><h3>Personaliza tu perfil</h3><form id="community-profile-form"><label>Nombre visible<input id="community-profile-name" maxlength="60" required></label><label>Nombre de usuario<input id="community-profile-username" maxlength="24" pattern="[A-Za-z0-9_]+" required></label><label>Biografía<textarea id="community-profile-bio" maxlength="240" rows="3"></textarea></label><button class="button button-primary">Guardar perfil</button></form><p id="community-profile-status" class="community-hint"></p></div></div>
+</div></section>
+<section class="section shell" id="services"><div class="section-heading"><div><div class="eyebrow">03 / SOPORTE</div><h2>Tecnología a <span>tu nivel.</span></h2><p>Soluciones informáticas para tus equipos y proyectos.</p></div></div><div class="services-grid"><article class="service-card"><span>01</span><div class="service-icon">▣</div><h3>Sistemas operativos</h3><p>Instalación de Windows, Linux, Android y Android TV.</p></article><article class="service-card"><span>02</span><div class="service-icon">⌘</div><h3>Mantenimiento</h3><p>Limpieza y mantenimiento preventivo de hardware y software.</p></article><article class="service-card"><span>03</span><div class="service-icon">⟳</div><h3>Programas y drivers</h3><p>Instalación, configuración y actualización de aplicaciones.</p></article><article class="service-card"><span>04</span><div class="service-icon">✧</div><h3>Edición digital</h3><p>Diseño, edición y soluciones creativas digitales.</p></article></div></section>
+<section class="download-band shell"><div><div class="eyebrow">LLEVA JOA CONTIGO</div><h2>Tu catálogo. <span>Donde estés.</span></h2><p>Descarga la aplicación Android y lleva el universo JOA en tu dispositivo.</p></div><a class="button button-primary" href="actualizacion/">Descargar APK <b>↓</b></a></section>
 </main>
-
-<footer class="footer">
-  <img src="assets/logo.svg" alt="JOA GAMERs">
-  <div class="footer-center"><span>TU MUNDO DIGITAL<br><b>EN UNA SOLA APP</b></span><small>JOA GAMERs &nbsp; | &nbsp; Catálogo Multimedia &nbsp; | &nbsp; Juegos · Películas · Series · Anime · Música · Software · Novelas TV · Servicios</small></div>
-  <div class="socials"><a href="#" aria-label="Facebook">f</a><a href="#" aria-label="TikTok">♪</a><a href="#" aria-label="YouTube">▶</a><a href="#" aria-label="WhatsApp">◉</a></div>
-</footer>
-
-<div class="mobile-download-bar" id="mobile-download-bar">
-  <a id="mobile-download" href="#">↓ &nbsp; DESCARGAR APK <small id="mobile-version">ÚLTIMA VERSIÓN</small></a>
-</div>
-
-<div class="modal" id="update-modal" aria-hidden="true">
-  <div class="modal-box">
-    <button class="modal-close" id="modal-close">×</button>
-    <div class="modal-icon">✓</div>
-    <span class="modal-kicker">JOA GAMERs</span>
-    <h3 id="modal-title">Tienes la última versión</h3>
-    <p id="modal-text">La aplicación está actualizada.</p>
-    <div class="modal-actions">
-      <a id="modal-download" class="download-btn" href="#">DESCARGAR</a>
-      <button id="modal-ok">CERRAR</button>
-    </div>
-  </div>
-</div>
-
-<div class="toast" id="toast"></div>
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-<script src="config.js"></script>
-<script src="script.js"></script>
-</body>
-</html>
+<footer class="footer"><div class="shell footer-inner"><a class="brand" href="#home"><span class="brand-mark">J</span><span>JOA <b>GAMERs</b><small>PLAY · DISCOVER · CONNECT</small></span></a><p>© <span id="year"></span> JOA GAMERs. Tu universo digital.</p><a href="#home">Volver arriba ↑</a></div></footer>
+<nav class="mobile-nav"><a href="#home"><span>⌂</span>Inicio</a><a href="#catalog"><span>▦</span>Catálogo</a><a href="#community"><span>♧</span>Comunidad</a><a href="#services"><span>⚙</span>Servicios</a></nav>
+<dialog id="auth-dialog" class="auth-dialog">
+ <form method="dialog"><button class="dialog-close" aria-label="Cerrar">×</button></form>
+ <div class="eyebrow">BIENVENIDO A JOA</div><h2 id="auth-title">Entra en tu <span>universo.</span></h2>
+ <p id="auth-description">Accede para participar en la comunidad JOA.</p>
+ <div class="oauth-buttons"><button type="button" id="auth-google" class="oauth-btn"><b class="google-g">G</b> Continuar con Google</button></div>
+ <div class="auth-divider"><span>O con tu correo electrónico</span></div>
+ <form id="auth-form">
+  <label>Correo electrónico<input id="auth-email" type="email" autocomplete="email" placeholder="tu@correo.com" required></label>
+  <label>Contraseña<input id="auth-password" type="password" minlength="6" autocomplete="current-password" placeholder="Mínimo 6 caracteres" required></label>
+  <button type="button" id="auth-forgot" class="auth-link" hidden>¿Olvidaste tu contraseña?</button>
+  <button class="button button-primary auth-submit" id="auth-submit" type="submit">Iniciar sesión</button>
+ </form>
+ <button type="button" id="auth-switch" class="auth-link auth-switch">¿No tienes cuenta? Regístrate</button>
+ <small id="auth-message">También puedes continuar con Google.</small>
+</dialog>
+<dialog id="catalog-detail-dialog" class="catalog-detail-dialog"><button type="button" class="dialog-close catalog-detail-close" id="catalog-detail-close" aria-label="Cerrar">×</button><div id="catalog-detail-content"></div></dialog><div class="toast" id="toast" role="status"></div>
+<script src="config.js"></script><script src="app.js?v=20261108-rootmain1"></script>
+</body></html>
