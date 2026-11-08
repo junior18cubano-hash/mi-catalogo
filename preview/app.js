@@ -561,8 +561,14 @@
    if(button){button.disabled=true;button.textContent="Conectando…"}
    $("#auth-message").textContent="Preparando el acceso seguro…";
    try{
-     const ready=await authReadyPromise;
-     if(!ready||!supabase)throw authInitError||new Error("El cliente de acceso no está disponible. Revisa tu conexión e inténtalo de nuevo.");
+     let ready=await authReadyPromise;
+     // Recuperación defensiva: si algún error previo impidió iniciar Supabase,
+     // el primer intento de acceso vuelve a lanzar la inicialización.
+     if(!ready&&!authInitError){
+       console.warn("JOA Auth: la inicialización no se había iniciado; reintentando ahora.");
+       ready=await initSupabase();
+     }
+     if(!ready||!supabase)throw authInitError||new Error("La inicialización de Supabase no llegó a completarse. Revisa la consola del navegador para ver el error anterior.");
      // Navegación explícita: evita que algunos navegadores embebidos dejen el diálogo abierto
      // después de que Supabase haya generado correctamente la URL OAuth.
      const {data,error}=await supabase.auth.signInWithOAuth({
