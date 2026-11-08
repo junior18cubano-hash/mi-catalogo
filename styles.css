@@ -457,3 +457,21 @@
 #catalog-results .catalog-type-badge.type-serie,#catalog-results .catalog-type-badge.type-anime{border-color:#b39aff77;color:#c9baff}
 #catalog-results .catalog-type-badge.type-software{border-color:#8ceca977;color:#a6f4b6}
 @media(max-width:650px){#catalog-results .catalog-type-badge{top:7px;left:7px;padding:4px 6px;font-size:7px;max-width:calc(100% - 14px)}}
+
+
+/* Directorio de jugadores JOA */
+.community-directory-heading{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:8px}
+.community-directory-heading h3{margin:0}
+.community-player-card{display:flex;flex-direction:column;gap:10px;padding:14px;margin-top:10px;border:1px solid var(--line);border-radius:12px;background:linear-gradient(145deg,#111d32,#0a1222)}
+.community-player-head{display:flex;align-items:center;gap:10px}
+.community-player-identity b,.community-player-identity small{display:block}
+.community-player-identity b{font-size:12px;color:#eff7ff}
+.community-player-identity small{font-size:10px;color:var(--muted);margin-top:3px}
+.community-player-bio,.community-player-games{margin:0!important;overflow-wrap:anywhere}
+.community-player-games{color:#8cecff!important}
+.community-player-actions{display:flex;justify-content:flex-end}
+.community-player-actions button{border:1px solid #48e9ff55;border-radius:8px;padding:8px 12px;background:#10354a;color:#9cefff;font-size:10px;cursor:pointer}
+.community-player-actions button:disabled{opacity:.65;cursor:default}
+#community-profile-form label{display:block;color:#aebfda;font-size:11px;margin-top:12px}
+#community-profile-form label input,#community-profile-form label textarea{display:block}
+@media(max-width:600px){.community-directory-heading{align-items:flex-start;flex-direction:column}.community-directory-heading .catalog-refresh{width:100%}}
