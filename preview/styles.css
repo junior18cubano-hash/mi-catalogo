@@ -44,3 +44,33 @@
     line-height:1.15;
   }
 }
+
+/* Modal de registro adaptable a móviles y al teclado en pantalla */
+@media (max-width:650px){
+  .auth-dialog{
+    width:calc(100vw - 24px);
+    max-width:420px;
+    max-height:calc(100vh - 24px);
+    max-height:calc(100dvh - max(12px,env(safe-area-inset-top)) - max(12px,env(safe-area-inset-bottom)));
+    margin:auto;
+    padding:clamp(18px,5vw,26px);
+    box-sizing:border-box;
+    overflow-x:hidden;
+    overflow-y:auto;
+    overscroll-behavior:contain;
+    -webkit-overflow-scrolling:touch;
+  }
+  .auth-dialog h2{
+    max-width:100%;
+    font-size:clamp(21px,6vw,25px);
+    line-height:1.2;
+    overflow-wrap:anywhere;
+  }
+  .auth-dialog>p{font-size:10px}
+  .auth-dialog .oauth-buttons{gap:8px;margin:14px 0 12px}
+  .auth-dialog .oauth-btn{min-height:42px;padding:10px;font-size:10px}
+  .auth-dialog form label{margin-top:12px}
+  .auth-dialog form input{min-width:0;width:100%;max-width:100%;padding:11px}
+  .auth-dialog .auth-submit{margin:12px 0 6px}
+  .auth-dialog>small{line-height:1.5}
+}
