@@ -113,7 +113,9 @@
      const text=[itemTitle(item),itemDescription(item),itemType(item),item.subcategory,item.subcategoria,item.genre,item.genres,item.generos,itemPlatform(item)].flat().join(" ").toLocaleLowerCase("es");
      return categoryOk&&subOk&&platformOk&&(!searchTerm||text.includes(searchTerm));
    });
+   const catalogOrder=new Map(catalogItems.map((item,index)=>[item,index]));
    return filtered.sort((a,b)=>{
+     if(sortMode==="added")return (catalogOrder.get(b)??-1)-(catalogOrder.get(a)??-1);
      if(sortMode==="recent")return itemDate(b)-itemDate(a)||itemTitle(a).localeCompare(itemTitle(b),"es");
      if(sortMode==="views")return itemViews(b)-itemViews(a)||itemTitle(a).localeCompare(itemTitle(b),"es");
      if(sortMode==="rating")return itemRating(b)-itemRating(a)||itemTitle(a).localeCompare(itemTitle(b),"es");
@@ -170,41 +172,23 @@
  }
  function renderCatalog(){
    const grid=$("#content-grid");if(!grid)return;
-   const filtered=sortedItems();grid.innerHTML="";
-   const appendCard=item=>{
+   const filtered=sortedItems(),totalPages=Math.max(1,Math.ceil(filtered.length/pageSize));
+   currentPage=Math.min(currentPage,totalPages);
+   const shown=filtered.slice((currentPage-1)*pageSize,currentPage*pageSize);
+   grid.innerHTML="";
+   shown.forEach(item=>{
      const article=document.createElement("button");article.type="button";article.className="content-card catalog-live-card";article.setAttribute("aria-label","Ver detalles de "+itemTitle(item));
      const poster=document.createElement("div");poster.className="poster";const cover=resolveCover(itemCover(item));
      if(cover){const img=document.createElement("img");img.src=cover;img.alt="";img.loading="lazy";img.decoding="async";img.onerror=()=>{img.remove();poster.textContent=itemTitle(item).slice(0,32)};poster.append(img)}else poster.textContent=itemTitle(item).slice(0,32);
      const body=document.createElement("div"),title=document.createElement("b");title.textContent=itemTitle(item);body.append(title);article.append(poster,body);
      article.addEventListener("click",()=>openCatalogDetail(item));grid.append(article);
-   };
-   if(activeCategory==="recent_updates"){
-     const labels={juego:"Juegos",pelicula:"Películas",serie:"Series TV",anime:"Anime",novela:"Telenovelas",software:"Software",musica:"Música",otros:"Otros"};
-     const groups=Object.keys(labels).map(key=>[key,filtered.filter(item=>categoryFor(itemCategoryValue(item))===key).sort((a,b)=>itemDate(b)-itemDate(a))]).filter(([,items])=>items.length);
-     groups.forEach(([key,items])=>{
-       const section=document.createElement("section");section.className="recent-category-group";
-       const heading=document.createElement("h4");heading.className="recent-category-title";heading.textContent=labels[key]+" · "+items.length+" novedades";section.append(heading);
-       const row=document.createElement("div");row.className="recent-category-grid";
-       const previous=grid;grid.append(section);section.append(row);
-       items.slice(0,8).forEach(item=>{
-         const holder=document.createElement("div");holder.className="recent-card-holder";row.append(holder);
-         const article=document.createElement("button");article.type="button";article.className="content-card catalog-live-card";article.setAttribute("aria-label","Ver detalles de "+itemTitle(item));
-         const poster=document.createElement("div");poster.className="poster";const cover=resolveCover(itemCover(item));
-         if(cover){const img=document.createElement("img");img.src=cover;img.alt="";img.loading="lazy";img.decoding="async";img.onerror=()=>{img.remove();poster.textContent=itemTitle(item).slice(0,32)};poster.append(img)}else poster.textContent=itemTitle(item).slice(0,32);
-         const body=document.createElement("div"),title=document.createElement("b");title.textContent=itemTitle(item);body.append(title);article.append(poster,body);article.addEventListener("click",()=>openCatalogDetail(item));holder.append(article);
-       });
-     });
-   }else{
-     const totalPages=Math.max(1,Math.ceil(filtered.length/pageSize));currentPage=Math.min(currentPage,totalPages);
-     filtered.slice((currentPage-1)*pageSize,currentPage*pageSize).forEach(appendCard);
-     renderPagination(totalPages);
-   }
+   });
    const labels={juego:"Juegos",pelicula:"Películas",serie:"Series TV",anime:"Anime",novela:"Telenovelas",software:"Software",musica:"Música",otros:"Otros"};
-   $("#results-title").textContent=activeCategory==="recent_updates"?"Actualizaciones recientes":activeCategory?(labels[activeCategory]||"Catálogo"):searchTerm?"Resultados de búsqueda":"Catálogo JOA";
+   $("#results-title").textContent=activeCategory?(labels[activeCategory]||"Catálogo"):searchTerm?"Resultados de búsqueda":"Catálogo JOA";
    const tag=$(".demo-tag");if(tag)tag.textContent=filtered.length.toLocaleString("es")+" ELEMENTOS";
-   if(!filtered.length)grid.innerHTML='<p class="catalog-empty">No encontramos contenido con esos criterios.</p>';
-   const count=$("#catalog-count");if(count)count.textContent=filtered.length.toLocaleString("es")+(activeCategory==="recent_updates"?" novedades agrupadas por categoría":" resultados");
-   if(activeCategory==="recent_updates"){$("#catalog-pagination").innerHTML="";$("#catalog-pagination-bottom").innerHTML=""}
+   if(!shown.length)grid.innerHTML='<p class="catalog-empty">No encontramos contenido con esos criterios.</p>';
+   const count=$("#catalog-count");if(count)count.textContent=filtered.length.toLocaleString("es")+" resultados · Página "+currentPage+" de "+totalPages;
+   renderPagination(totalPages);
  }
  const CATALOG_DB_NAME="joa-catalog-db",CATALOG_DB_VERSION=1,CATALOG_STORE="catalogs",CATALOG_RECORD_KEY="main";
  let catalogLoadPromise=null;
