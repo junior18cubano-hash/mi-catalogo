@@ -259,7 +259,7 @@
     const userId=currentUser.id,{data,error}=await supabase.from("catalog_favorites").select("user_id,item_key,item_title,item_type,cover_url,item_data,created_at").eq("user_id",userId).order("created_at",{ascending:false});
     if(currentUser?.id!==userId)return;if(error){console.warn("JOA favorites:",error);const host=$("#community-favorites-list");if(host)host.textContent="No se pudieron cargar tus favoritos: "+communityError(error);return}
     catalogFavorites=data||[];catalogFavoritesByKey=new Map(catalogFavorites.map(row=>[row.item_key,row]));renderFavoriteButtons();
-    if($("#community-favorites-panel")&&!$("#community-favorites-panel").hidden)renderCommunityFavorites();
+    if($("#community-favorites-panel")&&!$("#community-favorites-panel").hidden){renderCommunityFavorites();loadCommunityFavoriteFriends()}
   }
   async function toggleCatalogFavorite(item,button){
     if(!currentUser||!supabase){openAuth();toast("Inicia sesión para guardar tus favoritos.");return}
