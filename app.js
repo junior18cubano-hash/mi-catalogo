@@ -44,6 +44,18 @@
    const button=$("#auth-google");
    if(button){button.disabled=false;button.textContent="Continuar con Google"}
  });
+ // Si el usuario cancela Google y vuelve a JOA sin completar el callback,
+ // liberar el bloqueo temporal para que pueda volver a intentarlo.
+ document.addEventListener("visibilitychange",()=>{
+   if(document.visibilityState!=="visible")return;
+   const params=new URLSearchParams(window.location.search);
+   if(params.has("code")||params.has("error")||params.has("error_description"))return;
+   const pending=readOAuthPending();
+   if(!pending?.startedAt||Date.now()-pending.startedAt<5000)return;
+   clearOAuthPending();oauthInProgress=false;
+   const button=$("#auth-google");
+   if(button){button.disabled=false;button.textContent="Continuar con Google"}
+ });
  const toast=(message)=>{if(!toastEl)return;toastEl.textContent=message;toastEl.classList.add("show");clearTimeout(window.__joaToast);window.__joaToast=setTimeout(()=>toastEl.classList.remove("show"),3600)};
  function safeSessionGet(key){try{return window.sessionStorage?.getItem(key)||null}catch(error){console.warn("JOA: sessionStorage no disponible",error);return null}}
  function safeSessionSet(key,value){try{window.sessionStorage?.setItem(key,value);return true}catch(error){console.warn("JOA: no se pudo guardar el estado temporal",error);return false}}
@@ -56,7 +68,7 @@
  $("#search-toggle").addEventListener("click",()=>{$("#search-panel").scrollIntoView({behavior:"smooth",block:"center"});$("#catalog-search").focus()});
  const cards=$$(".category-card");
  const CATALOG_VERSION_URL="https://raw.githubusercontent.com/junior18cubano-hash/Actualizacion-Catalogo/main/version.json";
- const CATALOG_DATA_URL="https://raw.githubusercontent.com/junior18cubano-hash/Actualizacion-Catalogo/main/Update.json";
+ const CATALOG_DATA_URL=window.JOA_CONFIG?.catalogJsonUrl||"https://raw.githubusercontent.com/junior18cubano-hash/Actualizacion-Catalogo/main/Update.json";
  const CATALOG_CACHE="joa-web-catalog-v1";
  let catalogItems=[],catalogMeta={},activeCategory="",activeSubcategory="",activePlatform="",searchTerm="",sortMode="name",pageSize=18,currentPage=1;
  const categoryAliases={
@@ -427,7 +439,7 @@
  }
  function activateCommunityTab(tab){
    communityTab=tab;
-   $("[data-community-tab]").forEach(button=>button.classList.toggle("active",button.dataset.communityTab===tab));
+   $$("[data-community-tab]").forEach(button=>button.classList.toggle("active",button.dataset.communityTab===tab));
    ["feed","friends","messages","groups","reviews","profile"].forEach(name=>{
      const panel=$("#community-"+name+"-panel");if(panel)panel.hidden=name!==tab;
    });
@@ -437,7 +449,7 @@
    if(tab==="reviews")loadCommunityReviews();
  }
  async function openNotification(item){
-   const panel=$("#notification-panel");if(panel)panel.hidden=true;
+   const panel=$("#notification-panel");if(panel?.open)panel.close();$("#notifications-toggle")?.setAttribute("aria-expanded","false");
    if(!currentUser||!supabase)return;
    if(!item.read_at){
      const {error}=await supabase.from("notifications").update({read_at:new Date().toISOString()}).eq("id",item.id).eq("user_id",currentUser.id);
@@ -617,7 +629,7 @@
      if(error)throw error;communityProfile=data;$("#community-user-name").textContent=data.display_name;$("#community-avatar").textContent=communityInitials(data.display_name);$("#community-profile-status").textContent="Perfil actualizado correctamente.";toast("Perfil guardado.");
    }catch(error){$("#community-profile-status").textContent=communityError(error)}finally{button.disabled=false}
  });
- $("[data-community-tab]").forEach(button=>button.addEventListener("click",()=>activateCommunityTab(button.dataset.communityTab)));
+ $$("[data-community-tab]").forEach(button=>button.addEventListener("click",()=>activateCommunityTab(button.dataset.communityTab));
  function openPublicProfile(profile){
    const dialog=$("#community-public-profile-dialog"),host=$("#community-public-profile-content");
    if(!dialog||!host||!profile)return;
@@ -634,18 +646,66 @@
  }
  $("#community-public-profile-close").addEventListener("click",()=>$("#community-public-profile-dialog")?.close());
  async function loadCommunityFriends(){
-   if(!currentUser||!supabase)return;const host=$("#community-friend-list");if(!host)return;
-   const {data,error}=await supabase.from("friendships").select("*").or("requester_id.eq."+currentUser.id+",addressee_id.eq."+currentUser.id).order("created_at",{ascending:false});
+   if(!currentUser||!supabase)return;
+   const host=$("#community-friend-list");if(!host)return;
+   const {data,error}=await supabase.from("friendships").select("*")
+     .or("requester_id.eq."+currentUser.id+",addressee_id.eq."+currentUser.id)
+     .order("created_at",{ascending:false});
    if(error){host.textContent=communityError(error);return}
    if(!data?.length){host.textContent="Todavía no tienes amistades ni solicitudes.";return}
    const others=[...new Set(data.map(x=>x.requester_id===currentUser.id?x.addressee_id:x.requester_id))];
-   const p=await supabase.from("profiles").select("id,username,display_name,avatar_url,bio,game_preferences").in("id",others);const map=new Map((p.data||[]).map(x=>[x.id,x]));
-   host.innerHTML="";data.forEach(row=>{const other=row.requester_id===currentUser.id?row.addressee_id:row.requester_id,profile=map.get(other)||{},line=document.createElement("div");line.className="community-list-row";const label=document.createElement("span");label.textContent=(profile.display_name||profile.username||"Jugador")+" · "+row.status;line.append(label);
+   const p=await supabase.from("profiles").select("id,username,display_name,avatar_url,bio,game_preferences").in("id",others);
+   if(p.error){host.textContent=communityError(p.error);return}
+   const map=new Map((p.data||[]).map(x=>[x.id,x]));host.innerHTML="";
+   for(const row of data){
+     const other=row.requester_id===currentUser.id?row.addressee_id:row.requester_id,profile=map.get(other)||{};
+     const line=document.createElement("div");line.className="community-list-row";
+     const label=document.createElement("span");label.textContent=(profile.display_name||profile.username||"Jugador")+" · "+row.status;line.append(label);
      const view=document.createElement("button");view.type="button";view.textContent="Ver perfil";view.addEventListener("click",()=>openPublicProfile(profile));line.append(view);
-     if(row.status==="accepted"){const chat=document.createElement("button");chat.textContent="Mensaje";chat.addEventListener("click",()=>startDirectChat(other,profile.display_name||profile.username||"Amigo"));line.append(chat)}
-     if(row.status==="pending"&&row.addressee_id===currentUser.id){const accept=document.createElement("button");accept.textContent="Aceptar";accept.addEventListener("click",async()=>{const {error}=await supabase.from("friendships").update({status:"accepted",updated_at:new Date().toISOString()}).eq("id",row.id);if(error)toast(communityError(error));else loadCommunityFriends()});line.append(accept)}
+     const makeAction=(text,handler,kind="")=>{const button=document.createElement("button");button.type="button";button.textContent=text;if(kind)button.classList.add(kind);button.addEventListener("click",handler);line.append(button);return button};
+     const refresh=async()=>{await loadCommunityFriends();await loadCommunityDirectory()};
+     if(row.status==="accepted"){
+       makeAction("Mensaje",()=>startDirectChat(other,profile.display_name||profile.username||"Amigo"));
+       if(row.requester_id===currentUser.id){
+         makeAction("Eliminar amistad",async button=>{
+           if(!confirm("¿Eliminar esta amistad?"))return;button.disabled=true;
+           const result=await supabase.from("friendships").delete().eq("id",row.id).eq("requester_id",currentUser.id).select("id").maybeSingle();
+           if(result.error||!result.data){button.disabled=false;toast(communityError(result.error)||"No se pudo eliminar la amistad.");return}
+           toast("Amistad eliminada.");await refresh();
+         },"danger");
+       }else{
+         makeAction("Bloquear",async button=>{
+           if(!confirm("¿Bloquear a este jugador? La relación dejará de aparecer como amistad."))return;button.disabled=true;
+           const result=await supabase.from("friendships").update({status:"blocked",updated_at:new Date().toISOString()}).eq("id",row.id).eq("addressee_id",currentUser.id).select("id").maybeSingle();
+           if(result.error||!result.data){button.disabled=false;toast(communityError(result.error)||"No se pudo bloquear al jugador.");return}
+           toast("Jugador bloqueado.");await refresh();
+         },"danger");
+       }
+     }else if(row.status==="pending"&&row.addressee_id===currentUser.id){
+       makeAction("Aceptar",async button=>{
+         button.disabled=true;
+         const result=await supabase.from("friendships").update({status:"accepted",updated_at:new Date().toISOString()}).eq("id",row.id).eq("addressee_id",currentUser.id).eq("status","pending").select("id").maybeSingle();
+         if(result.error||!result.data){button.disabled=false;toast(communityError(result.error)||"La solicitud ya no está disponible.");return}
+         toast("¡Ahora son amigos!");await refresh();
+       },"primary");
+       makeAction("Rechazar",async button=>{
+         button.disabled=true;
+         const result=await supabase.from("friendships").update({status:"rejected",updated_at:new Date().toISOString()}).eq("id",row.id).eq("addressee_id",currentUser.id).eq("status","pending").select("id").maybeSingle();
+         if(result.error||!result.data){button.disabled=false;toast(communityError(result.error)||"No se pudo rechazar la solicitud.");return}
+         toast("Solicitud rechazada.");await refresh();
+       },"danger");
+     }else if(row.status==="pending"&&row.requester_id===currentUser.id){
+       makeAction("Cancelar solicitud",async button=>{
+         button.disabled=true;
+         const result=await supabase.from("friendships").delete().eq("id",row.id).eq("requester_id",currentUser.id).select("id").maybeSingle();
+         if(result.error||!result.data){button.disabled=false;toast(communityError(result.error)||"No se pudo cancelar la solicitud.");return}
+         toast("Solicitud cancelada.");await refresh();
+       },"danger");
+     }else{
+       const state=document.createElement("small");state.className="community-friend-state";state.textContent=row.status==="rejected"?"Solicitud rechazada":"Jugador bloqueado";line.append(state);
+     }
      host.append(line);
-   });
+   }
  }
  async function loadCommunityDirectory(){
    const host=$("#community-friend-results");if(!host||!currentUser||!supabase)return;
@@ -676,23 +736,40 @@
        if(profile.game_preferences){const games=document.createElement("p");games.className="community-player-games";games.textContent="🎮 Busca jugar: "+profile.game_preferences;row.append(games)}
        const actions=document.createElement("div");actions.className="community-player-actions";
        const view=document.createElement("button");view.type="button";view.textContent="Ver perfil";view.addEventListener("click",()=>openPublicProfile(profile));actions.append(view);
-       const action=document.createElement("button");action.type="button";
-       if(relation?.status==="accepted"){action.textContent="✓ Ya son amigos";action.disabled=true}
-       else if(relation?.status==="pending"&&relation.requester_id===currentUser.id){action.textContent="Solicitud enviada";action.disabled=true}
-       else if(relation?.status==="pending"){action.textContent="Responder solicitud";action.disabled=true}
-       else{
-         action.textContent="＋ Añadir amigo";
-         action.addEventListener("click",async()=>{
-           action.disabled=true;action.textContent="Enviando…";
-           const {error}=await supabase.from("friendships").insert({requester_id:currentUser.id,addressee_id:profile.id,status:"pending"});
-           if(error){action.disabled=false;action.textContent="＋ Añadir amigo";toast(communityError(error))}
-           else{action.textContent="Solicitud enviada";friendships.push({requester_id:currentUser.id,addressee_id:profile.id,status:"pending"});loadCommunityFriends()}
-         });
+       const addAction=(label,handler,kind="")=>{const button=document.createElement("button");button.type="button";button.textContent=label;if(kind)button.classList.add(kind);button.addEventListener("click",handler);actions.append(button);return button};
+       const refreshRelations=async()=>{await loadCommunityFriends();await loadCommunityDirectory()};
+       if(relation?.status==="accepted"){
+         addAction("Enviar mensaje",()=>startDirectChat(profile.id,profile.display_name||profile.username||"Amigo"));
+       }else if(relation?.status==="pending"&&relation.requester_id===currentUser.id){
+         addAction("Cancelar solicitud",async button=>{
+           button.disabled=true;const result=await supabase.from("friendships").delete().eq("requester_id",currentUser.id).eq("addressee_id",profile.id).select("id").maybeSingle();
+           if(result.error||!result.data){button.disabled=false;toast(communityError(result.error)||"No se pudo cancelar la solicitud.");return}
+           toast("Solicitud cancelada.");await refreshRelations();
+         },"danger");
+       }else if(relation?.status==="pending"&&relation.addressee_id===currentUser.id){
+         addAction("Aceptar",async button=>{
+           button.disabled=true;const result=await supabase.from("friendships").update({status:"accepted",updated_at:new Date().toISOString()}).eq("requester_id",profile.id).eq("addressee_id",currentUser.id).eq("status","pending").select("id").maybeSingle();
+           if(result.error||!result.data){button.disabled=false;toast(communityError(result.error)||"La solicitud ya no está disponible.");return}
+           toast("¡Ahora son amigos!");await refreshRelations();
+         },"primary");
+         addAction("Rechazar",async button=>{
+           button.disabled=true;const result=await supabase.from("friendships").update({status:"rejected",updated_at:new Date().toISOString()}).eq("requester_id",profile.id).eq("addressee_id",currentUser.id).eq("status","pending").select("id").maybeSingle();
+           if(result.error||!result.data){button.disabled=false;toast(communityError(result.error)||"No se pudo rechazar la solicitud.");return}
+           toast("Solicitud rechazada.");await refreshRelations();
+         },"danger");
+       }else if(relation?.status){
+         const state=document.createElement("small");state.textContent=relation.status==="rejected"?"Solicitud rechazada":"Jugador bloqueado";actions.append(state);
+       }else{
+         addAction("＋ Añadir amigo",async button=>{
+           button.disabled=true;button.textContent="Enviando…";const {error}=await supabase.from("friendships").insert({requester_id:currentUser.id,addressee_id:profile.id,status:"pending"});
+           if(error){button.disabled=false;button.textContent="＋ Añadir amigo";toast(communityError(error))}
+           else{toast("Solicitud enviada.");await refreshRelations()}
+         },"primary");
        }
-       actions.append(action);row.append(actions);host.append(row);
+       row.append(actions);host.append(row);
      });
    };
-   if(input&&!input.dataset.directoryBound){input.dataset.directoryBound="1";input.addEventListener("input",render)}
+   if(input)input.oninput=render;
    render();
  }
  $("#community-friend-refresh").addEventListener("click",loadCommunityDirectory);
@@ -722,9 +799,9 @@
  }
  function showCommunityGeneral(){
    activeConversationId=null;activeConversationIds=[];
-   $("#community-chat-title").textContent="General · Todos tus mensajes";
+   $("#community-chat-title").textContent="General · Último mensaje de cada chat";
    $("#community-chat-form").hidden=true;
-   $(".community-chat-entry").forEach(row=>row.classList.toggle("active",row.dataset.general==="true"));
+   $$(".community-chat-entry").forEach(row=>row.classList.toggle("active",row.dataset.general==="true"));
    loadCommunityChats();
  }
  async function renderCommunityGeneral(ids,conversations,profileMap,messages){
@@ -764,15 +841,16 @@
    const ids=conversations.map(item=>item.id);
    if(!ids.length){host.innerHTML='<p class="community-empty">Tus chats grupales están dentro de cada grupo. Añade amigos para iniciar conversaciones privadas.</p>';return}
    const peerIds=[...new Set(conversations.map(x=>x.created_by===currentUser.id?x.direct_user_id:x.created_by).filter(Boolean))];
-   const [profiles,messages]=await Promise.all([
+   const [profiles,messageResults]=await Promise.all([
      peerIds.length?supabase.from("profiles").select("id,display_name,username").in("id",peerIds):Promise.resolve({data:[]}),
-     supabase.from("messages").select("id,conversation_id,sender_id,body,created_at").in("conversation_id",ids).order("created_at",{ascending:false}).limit(150)
+     Promise.all(conversations.map(item=>supabase.from("messages").select("id,conversation_id,sender_id,body,created_at").eq("conversation_id",item.id).order("created_at",{ascending:false}).limit(1)))
    ]);
    if(profiles.error){host.textContent=communityError(profiles.error);return}
-   if(messages.error){host.textContent=communityError(messages.error);return}
+   const messageError=messageResults.find(result=>result.error)?.error;
+   if(messageError){host.textContent=communityError(messageError);return}
+   const latestMessages=messageResults.flatMap(result=>result.data||[]);
    const profileMap=new Map((profiles.data||[]).map(p=>[p.id,p]));
-   const lastByConversation=new Map();
-   (messages.data||[]).forEach(m=>{if(!lastByConversation.has(m.conversation_id))lastByConversation.set(m.conversation_id,m)});
+   const lastByConversation=new Map(latestMessages.map(message=>[message.conversation_id,message]));
    // Si quedaron chats duplicados de las primeras pruebas, se agrupan por amigo y se conserva como principal el más reciente.
    const groups=new Map();
    conversations.forEach(item=>{
@@ -790,7 +868,7 @@
    host.innerHTML="";
    const general=document.createElement("button");general.type="button";general.className="community-chat-entry community-chat-general";general.dataset.general="true";
    const generalTitle=document.createElement("strong");generalTitle.textContent="▤ General";
-   const generalPreview=document.createElement("span");generalPreview.className="community-chat-preview";generalPreview.textContent="Todos los mensajes, en orden de llegada";
+   const generalPreview=document.createElement("span");generalPreview.className="community-chat-preview";generalPreview.textContent="Último mensaje de cada conversación";
    general.append(generalTitle,generalPreview);general.addEventListener("click",showCommunityGeneral);host.append(general);
    rows.forEach(item=>{
      const name=item.peer.display_name||item.peer.username||"Jugador JOA";
@@ -802,7 +880,7 @@
      row.append(title,preview,time);
      row.addEventListener("click",()=>openCommunityChat(item.primary.id,name,item.allIds));host.append(row);
    });
-   if(!activeConversationId)await renderCommunityGeneral(ids,conversations,profileMap,messages.data||[]);
+   if(!activeConversationId)await renderCommunityGeneral(ids,conversations,profileMap,latestMessages);
  }
  function appendCommunityMessage(message){
    const host=$("#community-chat-messages");if(!host||!message||host.querySelector('[data-message-id="'+message.id+'"]'))return;
@@ -998,7 +1076,7 @@
    if(owner){
      const modTitle=document.createElement("h4");modTitle.textContent="Administración";wrap.append(modTitle);
      const candidates=(members.data||[]).filter(m=>m.role==="member");
-     candidates.forEach(m=>{const p=profileMap.get(m.user_id)||{},row=document.createElement("div");row.className="community-group-member";const label=document.createElement("span");label.textContent=p.display_name||p.username||"Jugador";const promote=document.createElement("button");promote.type="button";promote.textContent="Hacer moderador";promote.addEventListener("click",async()=>{const del=await supabase.from("group_members").delete().eq("group_id",groupId).eq("user_id",m.user_id);if(del.error){toast(communityError(del.error));return}const ins=await supabase.from("group_members").insert({group_id:groupId,user_id:m.user_id,role:"moderator"});if(ins.error)toast(communityError(ins.error));else openCommunityGroup(groupId,false)});row.append(label,promote);wrap.append(row)});
+     candidates.forEach(m=>{const p=profileMap.get(m.user_id)||{},row=document.createElement("div");row.className="community-group-member";const label=document.createElement("span");label.textContent=p.display_name||p.username||"Jugador";const promote=document.createElement("button");promote.type="button";promote.textContent="Hacer moderador";promote.addEventListener("click",async()=>{const del=await supabase.from("group_members").delete().eq("group_id",groupId).eq("user_id",m.user_id);if(del.error){toast(communityError(del.error));return}const ins=await supabase.from("group_members").insert({group_id:groupId,user_id:m.user_id,role:"moderator"});if(ins.error){const rollback=await supabase.from("group_members").insert({group_id:groupId,user_id:m.user_id,role:"member"});toast(rollback.error?"No se pudo promover al miembro ni restaurar su rol. Contacta con soporte.":"No se pudo promover al miembro; se restauró su rol anterior. "+communityError(ins.error));if(!rollback.error)openCommunityGroup(groupId,false)}else openCommunityGroup(groupId,false)});row.append(label,promote);wrap.append(row)});
    }
    panel.innerHTML="";panel.append(wrap);
    if(scroll)panel.scrollIntoView({behavior:"smooth",block:"nearest"});
@@ -1068,13 +1146,13 @@
    panel.innerHTML="";panel.append(box);box.scrollIntoView({behavior:"smooth",block:"nearest"});
  }
  $("#community-group-form").addEventListener("submit",async e=>{
-   e.preventDefault();const button=e.submitter;button.disabled=true;
+   e.preventDefault();const form=e.currentTarget,button=e.submitter;button.disabled=true;
    try{
      const name=$("#community-group-name").value.trim(),slug=name.toLocaleLowerCase("es").normalize("NFD").replace(/[\\u0300-\\u036f]/g,"").replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"")+"-"+Math.random().toString(36).slice(2,6);
      const payload={name,slug,description:$("#community-group-description").value.trim(),category:$("#community-group-category").value.trim()||"General",platform:$("#community-group-platform").value.trim()||"Todas",tags:$("#community-group-tags").value.trim(),rules:$("#community-group-rules").value.trim(),is_public:$("#community-group-visibility").value==="true",created_by:currentUser.id};
      const created=await supabase.from("community_groups").insert(payload).select("id").single();if(created.error)throw created.error;
      const member=await supabase.from("group_members").insert({group_id:created.data.id,user_id:currentUser.id,role:"owner"});if(member.error)throw member.error;
-     e.currentTarget.reset();toast("Grupo creado. Ya apareces como su creador.");await loadCommunityGroups();openCommunityGroup(created.data.id);
+     form.reset();toast("Grupo creado. Ya apareces como su creador.");await loadCommunityGroups();openCommunityGroup(created.data.id);
    }catch(error){toast(communityError(error))}finally{button.disabled=false}
  });
  function renderAuthMode(){
@@ -1158,7 +1236,7 @@
      // Evitar dos flujos PKCE simultáneos, incluso si el navegador duplica el toque
      // o hay otra pestaña de JOA abierta en el mismo dispositivo.
      const pending=readOAuthPending();
-     if(pending?.startedAt&&Date.now()-pending.startedAt<180000){
+     if(pending?.startedAt&&Date.now()-pending.startedAt<90000){
        oauthInProgress=false;
        if(button){button.disabled=false;button.textContent=originalText}
        $("#auth-message").textContent="Ya hay un acceso de Google en curso. Espera a que termine y vuelve a JOA.";
