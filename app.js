@@ -27,11 +27,11 @@
  // Registrar el clic desde el inicio del script, antes de inicializar el resto de la comunidad.
  // Así el botón de Google sigue respondiendo aunque falle algún módulo secundario.
  document.addEventListener("click",event=>{
-   const button=event.target?.closest?.("#auth-google");
+   const button=event.target?.closest?.("#auth-google,#auth-google-other");
    if(!button)return;
    event.preventDefault();
    event.stopPropagation();
-   if(typeof oauth==="function")oauth("google");
+   if(typeof oauth==="function")oauth("google",button.id==="auth-google-other");
    else{
      const message=$("#auth-message");
      if(message)message.textContent="El acceso todavía no terminó de inicializarse. Recarga la página.";
@@ -1345,7 +1345,7 @@ function renderPagination(totalPages){
    try{const {error}=await supabase.auth.resetPasswordForEmail(email,{redirectTo:window.JOA_CONFIG.authRedirectUrl});if(error)throw error;toast("Si el correo está registrado, recibirás instrucciones para recuperar el acceso.");$("#auth-message").textContent="Revisa tu correo para continuar con la recuperación."}
    catch(error){toast(authError(error))}
  });
- async function oauth(provider){
+ async function oauth(provider,chooseAccount=false){
    const button=$("#auth-google");
    if(oauthInProgress)return;
    oauthInProgress=true;
@@ -1382,7 +1382,8 @@ function renderPagination(totalPages){
        provider,
        options:{
          redirectTo:window.JOA_CONFIG.authRedirectUrl,
-         skipBrowserRedirect:true
+         skipBrowserRedirect:true,
+         ...(chooseAccount?{queryParams:{prompt:"select_account"}}:{})
        }
      });
      if(error)throw error;
