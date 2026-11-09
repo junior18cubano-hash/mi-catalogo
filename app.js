@@ -195,9 +195,61 @@
    addDetailLine(info,"Duración",item.duration||item.duracion||item.runtime);
    addDetailLine(info,"Director",item.director);
    addDetailLine(info,"Precio",item.price||item.precio);
-   content.append(hero,info);dialog.showModal();
+   content.append(hero,info);
+  const reviews=document.createElement("section");reviews.className="catalog-item-reviews";reviews.dataset.itemKey=reviewItemKey(item);
+  const heading=document.createElement("div");heading.className="catalog-reviews-heading";
+  const headingTitle=document.createElement("h3");headingTitle.textContent="Opiniones de la comunidad";
+  const summary=document.createElement("div");summary.className="catalog-review-summary";summary.textContent="Cargando valoraciones…";
+  heading.append(headingTitle,summary);
+  const formHost=document.createElement("div");formHost.className="catalog-review-form-host";
+  const feed=document.createElement("div");feed.className="catalog-item-review-feed";feed.textContent="Cargando reseñas…";
+  reviews.append(heading,formHost,feed);content.append(reviews);dialog.showModal();
+  loadCatalogItemReviews(item,reviews);
  }
- function renderPagination(totalPages){
+   async function loadCatalogReviewSummaries(items){
+    if(!supabase||!items?.length)return;
+    const keys=[...new Set(items.map(reviewItemKey))];
+    const {data,error}=await supabase.from("catalog_reviews").select("external_item_id,rating").in("external_item_id",keys);
+    if(error){console.warn("JOA catalog reviews:",error);return}
+    const sums=new Map();
+    (data||[]).forEach(row=>{const value=sums.get(row.external_item_id)||{total:0,count:0};value.total+=Number(row.rating)||0;value.count++;sums.set(row.external_item_id,value)});
+    $$(".catalog-review-compact").forEach(el=>{const value=sums.get(el.dataset.reviewKey)||{total:0,count:0};el.textContent=value.count?"★ "+(value.total/value.count).toFixed(1)+" · "+value.count+(value.count===1?" reseña":" reseñas"):"☆ Sin reseñas";el.classList.toggle("has-reviews",value.count>0)});
+  }
+  async function loadCatalogItemReviews(item,host){
+    if(!supabase){host.querySelector(".catalog-review-summary").textContent="Las reseñas estarán disponibles cuando se conecte el servicio.";return}
+    const key=reviewItemKey(item),summary=host.querySelector(".catalog-review-summary"),feed=host.querySelector(".catalog-item-review-feed"),formHost=host.querySelector(".catalog-review-form-host");
+    const {data,error}=await supabase.from("catalog_reviews").select("id,user_id,rating,body,created_at").eq("external_item_id",key).order("created_at",{ascending:false}).limit(50);
+    if(host.dataset.itemKey!==key)return;
+    if(error){summary.textContent="No se pudieron cargar las valoraciones.";feed.textContent=communityError(error);return}
+    const reviews=data||[],count=reviews.length,average=count?reviews.reduce((sum,row)=>sum+Number(row.rating),0)/count:0;
+    summary.innerHTML="";
+    const score=document.createElement("strong");score.textContent=count?average.toFixed(1)+"/5":"—";
+    const stars=document.createElement("span");stars.className="catalog-review-stars";stars.textContent=count?"★".repeat(Math.round(average))+"☆".repeat(5-Math.round(average)):"☆☆☆☆☆";
+    const total=document.createElement("small");total.textContent=count?count+(count===1?" reseña":" reseñas"):"Sé el primero en valorar";summary.append(score,stars,total);
+    formHost.innerHTML="";const own=currentUser?reviews.find(row=>row.user_id===currentUser.id):null;
+    if(currentUser){
+      const form=document.createElement("form");form.className="catalog-item-review-form";
+      const label=document.createElement("label");label.textContent=own?"Actualiza tu reseña":"Deja tu reseña";
+      const picker=document.createElement("div");picker.className="catalog-review-picker";picker.setAttribute("role","group");picker.setAttribute("aria-label","Clasificación de 1 a 5 estrellas");
+      let rating=Number(own?.rating)||5;
+      const updateStars=()=>picker.querySelectorAll("button").forEach((button,index)=>{button.classList.toggle("selected",index<rating);button.setAttribute("aria-pressed",String(index+1===rating))});
+      for(let i=1;i<=5;i++){const star=document.createElement("button");star.type="button";star.textContent="★";star.setAttribute("aria-label",i+" de 5 estrellas");star.addEventListener("click",()=>{rating=i;updateStars()});picker.append(star)}updateStars();
+      const textarea=document.createElement("textarea");textarea.maxLength=3000;textarea.required=true;textarea.rows=3;textarea.placeholder="¿Qué te pareció este contenido?";textarea.value=own?.body||"";
+      const submit=document.createElement("button");submit.type="submit";submit.className="button button-primary";submit.textContent=own?"Guardar cambios":"Publicar reseña";
+      form.append(label,picker,textarea,submit);form.addEventListener("submit",async event=>{
+        event.preventDefault();const body=textarea.value.trim();if(!body){toast("Escribe tu opinión antes de publicarla.");return}
+        submit.disabled=true;submit.textContent="Publicando…";
+        const payload={external_item_id:key,item_title:itemTitle(item).slice(0,300),item_type:itemType(item),cover_url:resolveCover(itemCover(item))||null,user_id:currentUser.id,rating,body,updated_at:new Date().toISOString()};
+        try{const result=await supabase.from("catalog_reviews").upsert(payload,{onConflict:"external_item_id,user_id"});if(result.error)throw result.error;toast(own?"Reseña actualizada.":"¡Gracias por compartir tu reseña!");await loadCatalogItemReviews(item,host);loadCatalogReviewSummaries([item])}
+        catch(err){toast(communityError(err))}finally{submit.disabled=false;submit.textContent=own?"Guardar cambios":"Publicar reseña"}
+      });formHost.append(form);
+    }else{const login=document.createElement("button");login.type="button";login.className="catalog-review-login";login.textContent="Inicia sesión para escribir una reseña";login.addEventListener("click",openAuth);formHost.append(login)}
+    feed.innerHTML="";
+    if(!reviews.length){const empty=document.createElement("p");empty.className="catalog-review-empty";empty.textContent="Todavía no hay opiniones. ¡Puedes ser el primero!";feed.append(empty);return}
+    const ids=[...new Set(reviews.map(row=>row.user_id))],profiles=ids.length?await supabase.from("profiles").select("id,display_name,username").in("id",ids):{data:[]},names=new Map((profiles.data||[]).map(profile=>[profile.id,profile]));
+    reviews.forEach(review=>{const row=document.createElement("article");row.className="catalog-item-review";const top=document.createElement("div");top.className="catalog-item-review-top";const name=document.createElement("b"),profile=names.get(review.user_id);name.textContent=profile?.display_name||profile?.username||"Jugador JOA";const stars=document.createElement("span");stars.className="catalog-review-stars";stars.textContent="★".repeat(review.rating)+"☆".repeat(5-review.rating);const body=document.createElement("p");body.textContent=review.body;const date=document.createElement("small");date.textContent=new Date(review.created_at).toLocaleDateString("es",{day:"numeric",month:"short",year:"numeric"});top.append(name,stars);row.append(top,body,date);feed.append(row)});
+  }
+function renderPagination(totalPages){
    ["#catalog-pagination","#catalog-pagination-bottom"].forEach(selector=>{
      const host=$(selector);if(!host)return;host.innerHTML="";
      if(totalPages<=1)return;
@@ -240,7 +292,7 @@
      const poster=document.createElement("div");poster.className="poster";const cover=resolveCover(itemCover(item));
      if(cover){const img=document.createElement("img");img.src=cover;img.alt="";img.loading="lazy";img.decoding="async";img.onerror=()=>{img.remove();if(!poster.querySelector(".catalog-type-badge"))poster.textContent=itemTitle(item).slice(0,32)};poster.append(img)}else poster.textContent=itemTitle(item).slice(0,32);
      const badge=document.createElement("span");badge.className="catalog-type-badge type-"+categoryFor(itemCategoryValue(item));badge.textContent=cardTypeLabel(item);poster.append(badge);
-     const body=document.createElement("div"),title=document.createElement("b");title.textContent=itemTitle(item);body.append(title);article.append(poster,body);article.addEventListener("click",()=>openCatalogDetail(item));
+     const body=document.createElement("div"),title=document.createElement("b");title.textContent=itemTitle(item);const reviewSummary=document.createElement("small");reviewSummary.className="catalog-review-compact";reviewSummary.dataset.reviewKey=reviewItemKey(item);reviewSummary.textContent="☆ Cargando reseñas…";body.append(title,reviewSummary);article.append(poster,body);article.addEventListener("click",()=>openCatalogDetail(item));
      const favorite=document.createElement("button");favorite.type="button";favorite.className="favorite-toggle";favorite.dataset.favoriteKey=reviewItemKey(item);favorite.addEventListener("click",event=>{event.preventDefault();event.stopPropagation();toggleCatalogFavorite(item,favorite)});
      wrap.append(article,favorite);grid.append(wrap);
    });
@@ -249,7 +301,7 @@
    const tag=$(".demo-tag");if(tag)tag.textContent=filtered.length.toLocaleString("es")+" ELEMENTOS";
    if(!shown.length)grid.innerHTML='<p class="catalog-empty">No encontramos contenido con esos criterios.</p>';
    const count=$("#catalog-count");if(count)count.textContent=filtered.length.toLocaleString("es")+" resultados · Página "+currentPage+" de "+totalPages;
-   renderPagination(totalPages);renderFavoriteButtons();
+   renderPagination(totalPages);renderFavoriteButtons();loadCatalogReviewSummaries(shown);
  }
 
   function favoriteSnapshot(item){return {id:item.id??item.external_id??item.igdb_id??item.tmdb_id??null,slug:item.slug||null,year:item.year||item.ano||item.año||item.release_year||null,platform:item.platform||item.platforms||item.consola||null,genre:item.genre||item.genres||item.generos||item.genero||null,description:itemDescription(item)}}
