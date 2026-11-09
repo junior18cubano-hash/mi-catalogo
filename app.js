@@ -70,7 +70,7 @@
  const CATALOG_VERSION_URL="https://raw.githubusercontent.com/junior18cubano-hash/Actualizacion-Catalogo/main/version.json";
  const CATALOG_DATA_URL=window.JOA_CONFIG?.catalogJsonUrl||"https://raw.githubusercontent.com/junior18cubano-hash/Actualizacion-Catalogo/main/Update.json";
  const CATALOG_CACHE="joa-web-catalog-v1";
- let catalogItems=[],catalogMeta={},activeCategory="",activeSubcategory="",activePlatform="",searchTerm="",sortMode="name",pageSize=18,currentPage=1;
+ let catalogItems=[],catalogMeta={},activeCategory="",activeSubcategory="",activePlatform="",searchTerm="",sortMode="name",pageSize=20,currentPage=1;
   let catalogFavorites=[],catalogFavoritesByKey=new Map();
  const categoryAliases={
  juego:["juego","juego_emulado","game","games","videojuego","videojuegos"],
@@ -380,7 +380,7 @@
  $("#catalog-type-filter")?.addEventListener("change",e=>{activeCategory=e.target.value;activeSubcategory="";activePlatform="";cards.forEach(c=>c.classList.toggle("selected",c.dataset.category===activeCategory));updateSubcategoryControls();currentPage=1;renderCatalog()});
  $("#catalog-subcategory-filter")?.addEventListener("change",e=>{activeSubcategory=e.target.value;activePlatform="";updateSubcategoryControls();currentPage=1;renderCatalog()});
  $("#catalog-platform-filter")?.addEventListener("change",e=>{activePlatform=e.target.value;currentPage=1;renderCatalog()});
- $("#catalog-page-size")?.addEventListener("change",e=>{pageSize=Number(e.target.value)||18;currentPage=1;renderCatalog()});
+ $("#catalog-page-size")?.addEventListener("change",e=>{pageSize=Number(e.target.value)||20;currentPage=1;renderCatalog()});
  $("#catalog-detail-close")?.addEventListener("click",()=>$("#catalog-detail-dialog").close());
  $("#catalog-detail-dialog")?.addEventListener("click",e=>{if(e.target.id==="catalog-detail-dialog")e.currentTarget.close()});
  cards.forEach(card=>card.addEventListener("click",()=>{
