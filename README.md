@@ -28,6 +28,8 @@ La web lee el JSON remoto configurado en `config.js` mediante `catalogJsonUrl`. 
 
 ## Supabase y comunidad
 
+La comunidad también permite guardar una colección personal de favoritos del catálogo (`catalog_favorites`). Los favoritos se sincronizan con la cuenta, se pueden quitar desde la colección y compartir como texto por WhatsApp o mediante un mensaje privado a un amigo aceptado de JOA. La tabla tiene RLS por propietario y no hace públicos los favoritos.
+
 La aplicación cliente usa una clave pública *publishable* y las tablas que ya existen en el proyecto Supabase: `profiles`, `friendships`, `conversations`, `conversation_members`, `messages`, `community_groups`, `group_members`, `notifications`, `posts`, `post_comments`, `post_reactions` y `catalog_reviews`.
 
 No coloques nunca claves `service_role`, contraseñas ni secretos privados en `config.js` o en ningún archivo servido al navegador. El acceso a los datos debe seguir protegido por las políticas RLS de Supabase.
