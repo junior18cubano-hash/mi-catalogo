@@ -631,3 +631,35 @@ dialog.notification-panel::backdrop{background:rgba(2,5,14,.78);backdrop-filter:
 .community-list-row button.danger{border-color:#ff7f9a55;background:#421c31;color:#ffb4c6}
 .community-friend-state{color:#9aa9c4;font-size:10px}
 @media(max-width:560px){.community-list-row{gap:8px}.community-list-row button{flex:1 1 calc(50% - 8px);padding:9px 7px;font-size:10px}}
+
+
+/* JOA favorites: controls on catalog cards and personal collection */
+.catalog-card-wrap{position:relative;min-width:0;height:100%}
+.catalog-card-wrap>.catalog-live-card{width:100%;height:100%}
+.favorite-toggle{position:absolute;z-index:3;top:10px;right:10px;width:38px;height:38px;border:1px solid #8feeff66;border-radius:50%;background:rgba(5,10,24,.88);backdrop-filter:blur(10px);color:#e8f8ff;font-size:23px;line-height:1;display:grid;place-items:center;cursor:pointer;box-shadow:0 5px 20px #0007;transition:transform .18s ease,background .18s ease,color .18s ease}
+.favorite-toggle:hover{transform:scale(1.08);background:#12364c}
+.favorite-toggle.is-favorite{color:#ff6eae;border-color:#ff6eae99;background:#35152d}
+.favorite-toggle:disabled{opacity:.55;cursor:wait}
+.community-favorites-actions{display:flex;gap:9px;align-items:center;flex-wrap:wrap}
+.favorite-count{display:inline-grid;place-items:center;min-width:26px;height:26px;margin-left:5px;padding:0 7px;border-radius:20px;background:#15334a;color:#9cefff;font-size:12px;vertical-align:middle}
+.community-favorites-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,270px),1fr));gap:12px;margin-top:18px}
+.favorite-list-item{display:grid;grid-template-columns:58px minmax(0,1fr) auto;align-items:center;gap:12px;min-width:0;padding:10px;border:1px solid #9ac9ff1c;border-radius:14px;background:linear-gradient(145deg,#101a30,#0b1120)}
+.favorite-list-item>img{width:58px;height:72px;object-fit:cover;border-radius:9px;background:#111a2b}
+.favorite-list-item>div:nth-child(2){display:grid;gap:5px;min-width:0}
+.favorite-list-item b{font-size:12px;line-height:1.4;color:#edf6ff;overflow-wrap:anywhere}
+.favorite-list-item small{font-size:9px;letter-spacing:.08em;color:#8da4c4}
+.favorite-list-actions{display:flex;flex-direction:column;gap:6px}
+.favorite-list-actions button,.favorite-friend-row button{border:1px solid #5ddcf566;border-radius:9px;background:#10283a;color:#b9f6ff;padding:7px 10px;font-size:10px;font-weight:700;cursor:pointer}
+.favorite-list-actions button.danger{border-color:#ff7e9a55;background:#3b1b2b;color:#ffb9ca}
+.favorite-friend-row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid #9ac9ff1c}
+.favorite-friend-row:last-child{border-bottom:0}
+.favorite-friend-row span{color:#eaf4ff;font-size:13px;font-weight:700;overflow-wrap:anywhere}
+@media(max-width:600px){
+ .community-favorites-actions{width:100%}
+ .community-favorites-actions .button,.community-favorites-actions .catalog-refresh{flex:1 1 100%;justify-content:center}
+ .community-favorites-list{grid-template-columns:1fr}
+ .favorite-list-item{grid-template-columns:52px minmax(0,1fr) auto;gap:9px;padding:9px}
+ .favorite-list-item>img{width:52px;height:66px}
+ .favorite-list-actions button{padding:8px 9px}
+ .favorite-toggle{width:35px;height:35px;top:8px;right:8px}
+}

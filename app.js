@@ -71,6 +71,7 @@
  const CATALOG_DATA_URL=window.JOA_CONFIG?.catalogJsonUrl||"https://raw.githubusercontent.com/junior18cubano-hash/Actualizacion-Catalogo/main/Update.json";
  const CATALOG_CACHE="joa-web-catalog-v1";
  let catalogItems=[],catalogMeta={},activeCategory="",activeSubcategory="",activePlatform="",searchTerm="",sortMode="name",pageSize=18,currentPage=1;
+  let catalogFavorites=[],catalogFavoritesByKey=new Map();
  const categoryAliases={
  juego:["juego","juego_emulado","game","games","videojuego","videojuegos"],
  pelicula:["pelicula","pelicula_animada","movie","movies","film"],
@@ -234,20 +235,59 @@
    const shown=filtered.slice((currentPage-1)*pageSize,currentPage*pageSize);
    grid.innerHTML="";
    shown.forEach(item=>{
+     const wrap=document.createElement("div");wrap.className="catalog-card-wrap";
      const article=document.createElement("button");article.type="button";article.className="content-card catalog-live-card";article.setAttribute("aria-label","Ver detalles de "+itemTitle(item));
      const poster=document.createElement("div");poster.className="poster";const cover=resolveCover(itemCover(item));
      if(cover){const img=document.createElement("img");img.src=cover;img.alt="";img.loading="lazy";img.decoding="async";img.onerror=()=>{img.remove();if(!poster.querySelector(".catalog-type-badge"))poster.textContent=itemTitle(item).slice(0,32)};poster.append(img)}else poster.textContent=itemTitle(item).slice(0,32);
      const badge=document.createElement("span");badge.className="catalog-type-badge type-"+categoryFor(itemCategoryValue(item));badge.textContent=cardTypeLabel(item);poster.append(badge);
-     const body=document.createElement("div"),title=document.createElement("b");title.textContent=itemTitle(item);body.append(title);article.append(poster,body);
-     article.addEventListener("click",()=>openCatalogDetail(item));grid.append(article);
+     const body=document.createElement("div"),title=document.createElement("b");title.textContent=itemTitle(item);body.append(title);article.append(poster,body);article.addEventListener("click",()=>openCatalogDetail(item));
+     const favorite=document.createElement("button");favorite.type="button";favorite.className="favorite-toggle";favorite.dataset.favoriteKey=reviewItemKey(item);favorite.addEventListener("click",event=>{event.preventDefault();event.stopPropagation();toggleCatalogFavorite(item,favorite)});
+     wrap.append(article,favorite);grid.append(wrap);
    });
    const labels={juego:"Juegos",pelicula:"Películas",serie:"Series TV",anime:"Anime",novela:"Telenovelas",software:"Software",musica:"Música",otros:"Otros"};
    $("#results-title").textContent=activeCategory?(labels[activeCategory]||"Catálogo"):searchTerm?"Resultados de búsqueda":"Catálogo JOA";
    const tag=$(".demo-tag");if(tag)tag.textContent=filtered.length.toLocaleString("es")+" ELEMENTOS";
    if(!shown.length)grid.innerHTML='<p class="catalog-empty">No encontramos contenido con esos criterios.</p>';
    const count=$("#catalog-count");if(count)count.textContent=filtered.length.toLocaleString("es")+" resultados · Página "+currentPage+" de "+totalPages;
-   renderPagination(totalPages);
+   renderPagination(totalPages);renderFavoriteButtons();
  }
+
+  function favoriteSnapshot(item){return {id:item.id??item.external_id??item.igdb_id??item.tmdb_id??null,slug:item.slug||null,year:item.year||item.ano||item.año||item.release_year||null,platform:item.platform||item.platforms||item.consola||null,genre:item.genre||item.genres||item.generos||item.genero||null,description:itemDescription(item)}}
+  function renderFavoriteButtons(){$$(".favorite-toggle").forEach(button=>{const active=catalogFavoritesByKey.has(button.dataset.favoriteKey);button.classList.toggle("is-favorite",active);button.setAttribute("aria-pressed",String(active));button.textContent=active?"♥":"♡";button.setAttribute("aria-label",active?"Quitar de favoritos":"Añadir a favoritos")})}
+  async function loadCatalogFavorites(){
+    if(!currentUser||!supabase){catalogFavorites=[];catalogFavoritesByKey.clear();renderFavoriteButtons();return}
+    const userId=currentUser.id,{data,error}=await supabase.from("catalog_favorites").select("user_id,item_key,item_title,item_type,cover_url,item_data,created_at").eq("user_id",userId).order("created_at",{ascending:false});
+    if(currentUser?.id!==userId)return;if(error){console.warn("JOA favorites:",error);const host=$("#community-favorites-list");if(host)host.textContent="No se pudieron cargar tus favoritos: "+communityError(error);return}
+    catalogFavorites=data||[];catalogFavoritesByKey=new Map(catalogFavorites.map(row=>[row.item_key,row]));renderFavoriteButtons();
+    if($("#community-favorites-panel")&&!$("#community-favorites-panel").hidden){renderCommunityFavorites();loadCommunityFavoriteFriends()}
+  }
+  async function toggleCatalogFavorite(item,button){
+    if(!currentUser||!supabase){openAuth();toast("Inicia sesión para guardar tus favoritos.");return}
+    const key=reviewItemKey(item),existing=catalogFavoritesByKey.get(key);if(button)button.disabled=true;
+    try{
+      if(existing){const result=await supabase.from("catalog_favorites").delete().eq("user_id",currentUser.id).eq("item_key",key).select("item_key").maybeSingle();if(result.error)throw result.error;if(!result.data)throw new Error("No se pudo quitar este elemento de favoritos.");catalogFavorites=catalogFavorites.filter(row=>row.item_key!==key);catalogFavoritesByKey.delete(key);toast("Se quitó de tu lista de favoritos.")}
+      else{const result=await supabase.from("catalog_favorites").insert({user_id:currentUser.id,item_key:key,item_title:itemTitle(item).slice(0,300),item_type:itemType(item),cover_url:resolveCover(itemCover(item))||null,item_data:favoriteSnapshot(item)}).select("user_id,item_key,item_title,item_type,cover_url,item_data,created_at").single();if(result.error)throw result.error;catalogFavorites.unshift(result.data);catalogFavoritesByKey.set(key,result.data);toast("Añadido a tu lista de favoritos.")}
+      renderFavoriteButtons();if($("#community-favorites-panel")&&!$("#community-favorites-panel").hidden)renderCommunityFavorites();
+    }catch(error){toast(communityError(error))}finally{if(button)button.disabled=false}
+  }
+  async function removeCatalogFavorite(itemKey,button){
+    if(!currentUser||!supabase)return;if(button)button.disabled=true;
+    try{
+      const result=await supabase.from("catalog_favorites").delete().eq("user_id",currentUser.id).eq("item_key",itemKey).select("item_key").maybeSingle();
+      if(result.error)throw result.error;if(!result.data)throw new Error("No se pudo quitar este elemento de favoritos.");
+      catalogFavorites=catalogFavorites.filter(row=>row.item_key!==itemKey);catalogFavoritesByKey.delete(itemKey);
+      renderFavoriteButtons();renderCommunityFavorites();toast("Se quitó de tu lista de favoritos.");
+    }catch(error){toast(communityError(error))}finally{if(button)button.disabled=false}
+  }
+  function favoriteItemFromRow(row){return {...(row.item_data||{}),id:row.item_data?.id||row.item_key,title:row.item_title,type:row.item_type,cover:row.cover_url||""}}
+  function renderCommunityFavorites(){
+    const host=$("#community-favorites-list"),count=$("#community-favorites-count"),share=$("#favorites-share-whatsapp");if(!host)return;if(count)count.textContent=String(catalogFavorites.length);if(share)share.disabled=!catalogFavorites.length;host.innerHTML="";
+    if(!catalogFavorites.length){const empty=document.createElement("div");empty.className="community-empty";empty.innerHTML="<h3>Tu lista está esperando</h3><p>Explora el catálogo y pulsa el corazón de los contenidos que quieras guardar.</p>";host.append(empty);return}
+    catalogFavorites.forEach(row=>{const item=favoriteItemFromRow(row),card=document.createElement("article");card.className="favorite-list-item";const cover=document.createElement("img");cover.alt="";cover.loading="lazy";cover.src=row.cover_url||"assets/ioa-multiverso-icon.svg";cover.onerror=()=>{cover.src="assets/ioa-multiverso-icon.svg"};const info=document.createElement("div"),title=document.createElement("b"),meta=document.createElement("small");title.textContent=row.item_title;meta.textContent=String(row.item_type||"otros").replace(/_/g," ").toLocaleUpperCase("es");info.append(title,meta);const actions=document.createElement("div");actions.className="favorite-list-actions";const detail=document.createElement("button");detail.type="button";detail.textContent="Ver";detail.addEventListener("click",()=>openCatalogDetail(item));const remove=document.createElement("button");remove.type="button";remove.className="danger";remove.textContent="Quitar";remove.addEventListener("click",()=>removeCatalogFavorite(row.item_key,remove));actions.append(detail,remove);card.append(cover,info,actions);host.append(card)});
+  }
+  function buildFavoritesShareText(rows,ownerName){const heading="⭐ LISTA DE FAVORITOS DE "+(ownerName||"UN JUGADOR JOA")+"\n",footer="\nDescubre más en JOA GAMERs: https://junior18cubano-hash.github.io/mi-catalogo/#catalog";let text=heading+"\n",shown=0;for(const row of rows){const line="• "+row.item_title+" ("+String(row.item_type||"otros").replace(/_/g," ")+")\n";if((text+line+footer).length>4700)break;text+=line;shown++}if(shown<rows.length)text+="\n… y "+(rows.length-shown)+" elementos más en mi lista.\n";return text+footer}
+  function shareFavoritesWhatsApp(){if(!catalogFavorites.length){toast("Añade primero algún elemento a tus favoritos.");return}const text=buildFavoritesShareText(catalogFavorites,communityProfile?.display_name||communityProfile?.username||"Jugador JOA"),link=document.createElement("a");link.href="https://wa.me/?text="+encodeURIComponent(text);link.target="_blank";link.rel="noopener noreferrer";document.body.append(link);link.click();link.remove()}
+
  const CATALOG_DB_NAME="joa-catalog-db",CATALOG_DB_VERSION=1,CATALOG_STORE="catalogs",CATALOG_RECORD_KEY="main";
  let catalogLoadPromise=null;
  function openCatalogDB(){
@@ -440,13 +480,14 @@
  function activateCommunityTab(tab){
    communityTab=tab;
    $$("[data-community-tab]").forEach(button=>button.classList.toggle("active",button.dataset.communityTab===tab));
-   ["feed","friends","messages","groups","reviews","profile"].forEach(name=>{
+   ["feed","friends","messages","groups","reviews","favorites","profile"].forEach(name=>{
      const panel=$("#community-"+name+"-panel");if(panel)panel.hidden=name!==tab;
    });
    if(tab==="messages")loadCommunityChats();
    if(tab==="friends")loadCommunityDirectory();
    if(tab==="groups")loadCommunityGroups();
    if(tab==="reviews")loadCommunityReviews();
+   if(tab==="favorites"){renderCommunityFavorites();loadCommunityFavoriteFriends();}
  }
  async function openNotification(item){
    const panel=$("#notification-panel");if(panel?.open)panel.close();$("#notifications-toggle")?.setAttribute("aria-expanded","false");
@@ -630,6 +671,8 @@
    }catch(error){$("#community-profile-status").textContent=communityError(error)}finally{button.disabled=false}
  });
  $$("[data-community-tab]").forEach(button=>button.addEventListener("click",()=>activateCommunityTab(button.dataset.communityTab)));
+ $("#favorites-share-whatsapp").addEventListener("click",shareFavoritesWhatsApp);
+ $("#favorites-refresh").addEventListener("click",async()=>{await loadCatalogFavorites();await loadCommunityFavoriteFriends()});
  function openPublicProfile(profile){
    const dialog=$("#community-public-profile-dialog"),host=$("#community-public-profile-content");
    if(!dialog||!host||!profile)return;
@@ -775,21 +818,58 @@
  $("#community-friend-refresh").addEventListener("click",loadCommunityDirectory);
 
 
+ async function getOrCreateDirectConversation(friendId,friendName){
+   const found=await supabase.from("conversations").select("id,created_at").or("and(created_by.eq."+currentUser.id+",direct_user_id.eq."+friendId+"),and(created_by.eq."+friendId+",direct_user_id.eq."+currentUser.id+")").order("created_at",{ascending:false}).limit(1);
+   if(found.error)throw found.error;let conversationId=found.data?.[0]?.id;
+   if(!conversationId){
+     const created=await supabase.from("conversations").insert({created_by:currentUser.id,direct_user_id:friendId,title:friendName}).select("id").single();
+     if(created.error)throw created.error;conversationId=created.data.id;
+     const members=await supabase.from("conversation_members").insert([{conversation_id:conversationId,user_id:currentUser.id},{conversation_id:conversationId,user_id:friendId}]);
+     if(members.error)throw members.error;
+   }
+   return conversationId;
+ }
  async function startDirectChat(friendId,friendName){
    try{
-     const found=await supabase.from("conversations").select("id,created_at").or("and(created_by.eq."+currentUser.id+",direct_user_id.eq."+friendId+"),and(created_by.eq."+friendId+",direct_user_id.eq."+currentUser.id+")").order("created_at",{ascending:false}).limit(1);
-     if(found.error)throw found.error;let conversationId=found.data?.[0]?.id;
-     if(!conversationId){
-       const created=await supabase.from("conversations").insert({created_by:currentUser.id,direct_user_id:friendId,title:friendName}).select("id").single();
-       if(created.error)throw created.error;conversationId=created.data.id;
-       const members=await supabase.from("conversation_members").insert([{conversation_id:conversationId,user_id:currentUser.id},{conversation_id:conversationId,user_id:friendId}]);
-       if(members.error)throw members.error;
-     }
+     const conversationId=await getOrCreateDirectConversation(friendId,friendName);
      activeConversationId=conversationId;communityTab="messages";
      $$("[data-community-tab]").forEach(b=>b.classList.toggle("active",b.dataset.communityTab==="messages"));
-     ["feed","friends","messages","groups","reviews","profile"].forEach(tab=>$("#community-"+tab+"-panel").hidden=tab!=="messages");
+     ["feed","friends","messages","groups","reviews","favorites","profile"].forEach(tab=>$("#community-"+tab+"-panel").hidden=tab!=="messages");
+     await loadCommunityChats();await openCommunityChat(conversationId,friendName);return conversationId;
+   }catch(error){toast(communityError(error));return null}
+ }
+ async function loadCommunityFavoriteFriends(){
+   const host=$("#community-favorites-friends");if(!host||!currentUser||!supabase)return;
+   host.innerHTML='<p class="community-loading">Buscando tus amigos…</p>';
+   const relations=await supabase.from("friendships").select("requester_id,addressee_id,status").or("requester_id.eq."+currentUser.id+",addressee_id.eq."+currentUser.id).eq("status","accepted");
+   if(relations.error){host.textContent=communityError(relations.error);return}
+   const ids=[...new Set((relations.data||[]).map(row=>row.requester_id===currentUser.id?row.addressee_id:row.requester_id))];
+   if(!ids.length){host.innerHTML='<p class="community-empty">Todavía no tienes amigos añadidos. Cuando aceptes una solicitud, podrás compartir tu lista aquí.</p>';return}
+   const profiles=await supabase.from("profiles").select("id,username,display_name,avatar_url").in("id",ids);
+   if(profiles.error){host.textContent=communityError(profiles.error);return}
+   host.innerHTML="";
+   (profiles.data||[]).forEach(profile=>{
+     const row=document.createElement("div");row.className="favorite-friend-row";
+     const name=document.createElement("span");name.textContent=profile.display_name||profile.username||"Jugador JOA";
+     const send=document.createElement("button");send.type="button";send.className="primary";send.textContent="Enviar lista";send.disabled=!catalogFavorites.length;
+     send.addEventListener("click",()=>shareFavoritesWithFriend(profile.id,profile.display_name||profile.username||"Amigo",send));
+     row.append(name,send);host.append(row);
+   });
+ }
+ async function shareFavoritesWithFriend(friendId,friendName,button){
+   if(!catalogFavorites.length){toast("Añade primero algún elemento a tus favoritos.");return}
+   if(button)button.disabled=true;
+   try{
+     const conversationId=await getOrCreateDirectConversation(friendId,friendName);
+     const body=buildFavoritesShareText(catalogFavorites,communityProfile?.display_name||communityProfile?.username||"Jugador JOA");
+     const sent=await supabase.from("messages").insert({conversation_id:conversationId,sender_id:currentUser.id,body}).select("id,conversation_id,sender_id,body,created_at").single();
+     if(sent.error)throw sent.error;
+     toast("Tu lista se envió a "+friendName+".");
+     communityTab="messages";$$("[data-community-tab]").forEach(b=>b.classList.toggle("active",b.dataset.communityTab==="messages"));
+     ["feed","friends","messages","groups","reviews","favorites","profile"].forEach(tab=>$("#community-"+tab+"-panel").hidden=tab!=="messages");
      await loadCommunityChats();await openCommunityChat(conversationId,friendName);
    }catch(error){toast(communityError(error))}
+   finally{if(button)button.disabled=false}
  }
  function ensureCommunityChatListRealtime(){
    if(communityChatListChannel||!supabase||!currentUser)return;
@@ -1291,7 +1371,8 @@
      communityProfilePromise=null;communityProfilePromiseUserId=null;stopNotificationRealtime();
    }
    renderAuthMode();
-   if(!user)return;
+   if(!user){catalogFavorites=[];catalogFavoritesByKey.clear();renderFavoriteButtons();return}
+   loadCatalogFavorites();
    if(communityProfile?.id===user.id){
      startNotificationRealtime();loadNotifications();
      if(communityRequested)openCommunity();
