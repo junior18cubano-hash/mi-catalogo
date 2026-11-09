@@ -629,7 +629,7 @@
      if(error)throw error;communityProfile=data;$("#community-user-name").textContent=data.display_name;$("#community-avatar").textContent=communityInitials(data.display_name);$("#community-profile-status").textContent="Perfil actualizado correctamente.";toast("Perfil guardado.");
    }catch(error){$("#community-profile-status").textContent=communityError(error)}finally{button.disabled=false}
  });
- $$("[data-community-tab]").forEach(button=>button.addEventListener("click",()=>activateCommunityTab(button.dataset.communityTab));
+ $$("[data-community-tab]").forEach(button=>button.addEventListener("click",()=>activateCommunityTab(button.dataset.communityTab)));
  function openPublicProfile(profile){
    const dialog=$("#community-public-profile-dialog"),host=$("#community-public-profile-content");
    if(!dialog||!host||!profile)return;
@@ -662,7 +662,7 @@
      const line=document.createElement("div");line.className="community-list-row";
      const label=document.createElement("span");label.textContent=(profile.display_name||profile.username||"Jugador")+" · "+row.status;line.append(label);
      const view=document.createElement("button");view.type="button";view.textContent="Ver perfil";view.addEventListener("click",()=>openPublicProfile(profile));line.append(view);
-     const makeAction=(text,handler,kind="")=>{const button=document.createElement("button");button.type="button";button.textContent=text;if(kind)button.classList.add(kind);button.addEventListener("click",handler);line.append(button);return button};
+     const makeAction=(text,handler,kind="")=>{const button=document.createElement("button");button.type="button";button.textContent=text;if(kind)button.classList.add(kind);button.addEventListener("click",()=>handler(button));line.append(button);return button};
      const refresh=async()=>{await loadCommunityFriends();await loadCommunityDirectory()};
      if(row.status==="accepted"){
        makeAction("Mensaje",()=>startDirectChat(other,profile.display_name||profile.username||"Amigo"));
@@ -736,7 +736,7 @@
        if(profile.game_preferences){const games=document.createElement("p");games.className="community-player-games";games.textContent="🎮 Busca jugar: "+profile.game_preferences;row.append(games)}
        const actions=document.createElement("div");actions.className="community-player-actions";
        const view=document.createElement("button");view.type="button";view.textContent="Ver perfil";view.addEventListener("click",()=>openPublicProfile(profile));actions.append(view);
-       const addAction=(label,handler,kind="")=>{const button=document.createElement("button");button.type="button";button.textContent=label;if(kind)button.classList.add(kind);button.addEventListener("click",handler);actions.append(button);return button};
+       const addAction=(label,handler,kind="")=>{const button=document.createElement("button");button.type="button";button.textContent=label;if(kind)button.classList.add(kind);button.addEventListener("click",()=>handler(button));actions.append(button);return button};
        const refreshRelations=async()=>{await loadCommunityFriends();await loadCommunityDirectory()};
        if(relation?.status==="accepted"){
          addAction("Enviar mensaje",()=>startDirectChat(profile.id,profile.display_name||profile.username||"Amigo"));
