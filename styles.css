@@ -766,3 +766,28 @@ dialog.notification-panel::backdrop{background:rgba(2,5,14,.78);backdrop-filter:
   }
   .hero-art{overflow:visible}
 }
+
+
+/* Cuenta JOA: avatar compacto al iniciar sesión, sin mostrar el correo en la barra */
+.login-btn.is-logged-in{
+  position:relative;width:42px;height:42px;min-width:42px;padding:3px;
+  display:grid;place-items:center;border-radius:50%;
+  border:1px solid #48e9ff99;background:linear-gradient(145deg,#102b45,#24163d);
+  box-shadow:0 0 18px #48e9ff22;
+}
+.login-user-avatar{
+  width:34px;height:34px;display:grid;place-items:center;overflow:hidden;border-radius:50%;
+  background:linear-gradient(135deg,#126078,#53317b);color:#d9fbff;font:800 11px Inter,sans-serif;
+}
+.login-user-avatar img{display:block;width:100%;height:100%;object-fit:cover;border-radius:50%}
+.login-user-indicator{
+  position:absolute;right:-1px;bottom:-1px;width:11px;height:11px;border:2px solid #070914;
+  border-radius:50%;background:#39e58c;box-shadow:0 0 9px #39e58c99;
+}
+.login-btn.is-logged-in span{margin:0}
+.login-btn.is-logged-in:hover{transform:translateY(-1px);box-shadow:0 0 24px #48e9ff44}
+@media(max-width:650px){
+  .top-actions{gap:7px}
+  .login-btn.is-logged-in{width:38px;height:38px;min-width:38px;padding:2px}
+  .login-user-avatar{width:31px;height:31px}
+}

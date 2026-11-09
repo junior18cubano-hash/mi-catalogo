@@ -1363,7 +1363,21 @@
    currentUser=user||null;currentSession=session||null;
    const btn=$("#login-open");
    if(user){
-     btn.innerHTML='<span class="user-status">● '+escapeHtml(user.email||"Mi cuenta")+'</span>';btn.title="Abrir comunidad y cuenta";
+     const meta=user.user_metadata||{};
+     const avatarUrl=communityProfile?.id===user.id?communityProfile.avatar_url:(meta.avatar_url||meta.picture);
+     const accountLabel=communityProfile?.display_name||meta.full_name||meta.name||user.email||"Mi cuenta";
+     const initials=communityInitials(accountLabel);
+     btn.innerHTML='<span class="login-user-avatar" aria-hidden="true">'+initials+'</span><span class="login-user-indicator" aria-hidden="true"></span>';
+     if(avatarUrl){
+       const avatar=btn.querySelector(".login-user-avatar");
+       const image=document.createElement("img");
+       image.src=avatarUrl;image.alt="";image.referrerPolicy="no-referrer";
+       image.addEventListener("error",()=>image.remove(),{once:true});
+       avatar.replaceChildren(image);
+     }
+     btn.title="Sesión iniciada: "+accountLabel+" · Abrir comunidad";
+     btn.setAttribute("aria-label","Sesión iniciada. Abrir cuenta y comunidad");
+     btn.classList.add("is-logged-in");
      $("#community-join").textContent="Ir a mi comunidad";$("#community-join").querySelector("b")?.remove();
    }else{
      btn.innerHTML='Entrar <span>↗</span>';btn.title="Iniciar sesión";
