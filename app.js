@@ -1346,7 +1346,7 @@ function renderPagination(totalPages){
    catch(error){toast(authError(error))}
  });
  async function oauth(provider,chooseAccount=false){
-   const button=$("#auth-google");
+   const button=$(chooseAccount?"#auth-google-other":"#auth-google");
    if(oauthInProgress)return;
    oauthInProgress=true;
    const originalText=button?.textContent||"Continuar";
