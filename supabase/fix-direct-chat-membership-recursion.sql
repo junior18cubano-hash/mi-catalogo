@@ -1,4 +1,6 @@
 -- JOA GAMERs · Corrección de acceso a chats directos
+-- HISTÓRICO: el ajuste ya fue aplicado al proyecto Supabase activo.
+-- No volver a ejecutar como parte de esta actualización de frontend.
 -- Aplicado al proyecto Supabase activo el 2026-11-09.
 -- Evita la recursión RLS: la política de conversation_members ya no consulta
 -- conversations directamente bajo RLS; delega la comprobación a esta función
