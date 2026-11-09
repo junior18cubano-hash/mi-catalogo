@@ -807,21 +807,58 @@
  $("#community-friend-refresh").addEventListener("click",loadCommunityDirectory);
 
 
+ async function getOrCreateDirectConversation(friendId,friendName){
+   const found=await supabase.from("conversations").select("id,created_at").or("and(created_by.eq."+currentUser.id+",direct_user_id.eq."+friendId+"),and(created_by.eq."+friendId+",direct_user_id.eq."+currentUser.id+")").order("created_at",{ascending:false}).limit(1);
+   if(found.error)throw found.error;let conversationId=found.data?.[0]?.id;
+   if(!conversationId){
+     const created=await supabase.from("conversations").insert({created_by:currentUser.id,direct_user_id:friendId,title:friendName}).select("id").single();
+     if(created.error)throw created.error;conversationId=created.data.id;
+     const members=await supabase.from("conversation_members").insert([{conversation_id:conversationId,user_id:currentUser.id},{conversation_id:conversationId,user_id:friendId}]);
+     if(members.error)throw members.error;
+   }
+   return conversationId;
+ }
  async function startDirectChat(friendId,friendName){
    try{
-     const found=await supabase.from("conversations").select("id,created_at").or("and(created_by.eq."+currentUser.id+",direct_user_id.eq."+friendId+"),and(created_by.eq."+friendId+",direct_user_id.eq."+currentUser.id+")").order("created_at",{ascending:false}).limit(1);
-     if(found.error)throw found.error;let conversationId=found.data?.[0]?.id;
-     if(!conversationId){
-       const created=await supabase.from("conversations").insert({created_by:currentUser.id,direct_user_id:friendId,title:friendName}).select("id").single();
-       if(created.error)throw created.error;conversationId=created.data.id;
-       const members=await supabase.from("conversation_members").insert([{conversation_id:conversationId,user_id:currentUser.id},{conversation_id:conversationId,user_id:friendId}]);
-       if(members.error)throw members.error;
-     }
+     const conversationId=await getOrCreateDirectConversation(friendId,friendName);
      activeConversationId=conversationId;communityTab="messages";
      $$("[data-community-tab]").forEach(b=>b.classList.toggle("active",b.dataset.communityTab==="messages"));
-     ["feed","friends","messages","groups","reviews","profile"].forEach(tab=>$("#community-"+tab+"-panel").hidden=tab!=="messages");
+     ["feed","friends","messages","groups","reviews","favorites","profile"].forEach(tab=>$("#community-"+tab+"-panel").hidden=tab!=="messages");
+     await loadCommunityChats();await openCommunityChat(conversationId,friendName);return conversationId;
+   }catch(error){toast(communityError(error));return null}
+ }
+ async function loadCommunityFavoriteFriends(){
+   const host=$("#community-favorites-friends");if(!host||!currentUser||!supabase)return;
+   host.innerHTML='<p class="community-loading">Buscando tus amigos…</p>';
+   const relations=await supabase.from("friendships").select("requester_id,addressee_id,status").or("requester_id.eq."+currentUser.id+",addressee_id.eq."+currentUser.id).eq("status","accepted");
+   if(relations.error){host.textContent=communityError(relations.error);return}
+   const ids=[...new Set((relations.data||[]).map(row=>row.requester_id===currentUser.id?row.addressee_id:row.requester_id))];
+   if(!ids.length){host.innerHTML='<p class="community-empty">Todavía no tienes amigos añadidos. Cuando aceptes una solicitud, podrás compartir tu lista aquí.</p>';return}
+   const profiles=await supabase.from("profiles").select("id,username,display_name,avatar_url").in("id",ids);
+   if(profiles.error){host.textContent=communityError(profiles.error);return}
+   host.innerHTML="";
+   (profiles.data||[]).forEach(profile=>{
+     const row=document.createElement("div");row.className="favorite-friend-row";
+     const name=document.createElement("span");name.textContent=profile.display_name||profile.username||"Jugador JOA";
+     const send=document.createElement("button");send.type="button";send.className="primary";send.textContent="Enviar lista";
+     send.addEventListener("click",()=>shareFavoritesWithFriend(profile.id,profile.display_name||profile.username||"Amigo",send));
+     row.append(name,send);host.append(row);
+   });
+ }
+ async function shareFavoritesWithFriend(friendId,friendName,button){
+   if(!catalogFavorites.length){toast("Añade primero algún elemento a tus favoritos.");return}
+   if(button)button.disabled=true;
+   try{
+     const conversationId=await getOrCreateDirectConversation(friendId,friendName);
+     const body=buildFavoritesShareText(catalogFavorites,communityProfile?.display_name||currentUser?.email||"Jugador JOA");
+     const sent=await supabase.from("messages").insert({conversation_id:conversationId,sender_id:currentUser.id,body}).select("id,conversation_id,sender_id,body,created_at").single();
+     if(sent.error)throw sent.error;
+     toast("Tu lista se envió a "+friendName+".");
+     communityTab="messages";$$("[data-community-tab]").forEach(b=>b.classList.toggle("active",b.dataset.communityTab==="messages"));
+     ["feed","friends","messages","groups","reviews","favorites","profile"].forEach(tab=>$("#community-"+tab+"-panel").hidden=tab!=="messages");
      await loadCommunityChats();await openCommunityChat(conversationId,friendName);
    }catch(error){toast(communityError(error))}
+   finally{if(button)button.disabled=false}
  }
  function ensureCommunityChatListRealtime(){
    if(communityChatListChannel||!supabase||!currentUser)return;
