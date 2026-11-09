@@ -4,6 +4,16 @@
  const $$ = (s,root=document) => [...root.querySelectorAll(s)];
  const dialog=$("#auth-dialog"), toastEl=$("#toast");
  let authMode="signin", supabase=null, currentUser=null, authReadyPromise=Promise.resolve(false), authInitError=null, oauthInProgress=false;
+ const OAUTH_PENDING_KEY="joa_google_oauth_pending";
+ function readOAuthPending(){
+   try{const raw=localStorage.getItem(OAUTH_PENDING_KEY);return raw?JSON.parse(raw):null}catch(error){return null}
+ }
+ function writeOAuthPending(){
+   try{localStorage.setItem(OAUTH_PENDING_KEY,JSON.stringify({startedAt:Date.now()}));return true}catch(error){return false}
+ }
+ function clearOAuthPending(){
+   try{localStorage.removeItem(OAUTH_PENDING_KEY)}catch(error){}
+ }
  // Registrar el clic desde el inicio del script, antes de inicializar el resto de la comunidad.
  // Así el botón de Google sigue respondiendo aunque falle algún módulo secundario.
  document.addEventListener("click",event=>{
@@ -1079,8 +1089,27 @@
      let ready=await authReadyPromise;
      if(!ready&&!authInitError)ready=await initSupabase();
      if(!ready||!supabase)throw authInitError||new Error("El servicio de acceso no está listo. Recarga la página e inténtalo otra vez.");
-     // En este sitio estático usamos navegación explícita: algunos navegadores móviles
-     // no completan de forma fiable la redirección automática del SDK.
+     // Si la recuperación de sesión ya terminó con un usuario, no iniciar otro OAuth encima.
+     if(currentUser){
+       clearOAuthPending();
+       oauthInProgress=false;
+       if(button){button.disabled=false;button.textContent=originalText}
+       if(dialog?.open)dialog.close();
+       toast("Tu sesión ya está iniciada. No necesitas volver a conectar Google.");
+       return;
+     }
+     // Evitar dos flujos PKCE simultáneos, incluso si el navegador duplica el toque
+     // o hay otra pestaña de JOA abierta en el mismo dispositivo.
+     const pending=readOAuthPending();
+     if(pending?.startedAt&&Date.now()-pending.startedAt<180000){
+       oauthInProgress=false;
+       if(button){button.disabled=false;button.textContent=originalText}
+       $("#auth-message").textContent="Ya hay un acceso de Google en curso. Espera a que termine y vuelve a JOA.";
+       return;
+     }
+     clearOAuthPending();
+     writeOAuthPending();
+     // En este sitio estático usamos navegación explícita y un solo flujo PKCE.
      const {data,error}=await supabase.auth.signInWithOAuth({
        provider,
        options:{
@@ -1101,6 +1130,7 @@
        }
      },12000);
    }catch(error){
+     clearOAuthPending();
      console.error("JOA OAuth:",error);
      const message=authError(error);
      $("#auth-message").textContent=message;
@@ -1122,7 +1152,7 @@
    return msg||"No se pudo completar el acceso. Inténtalo de nuevo.";
  }
  function updateHeader(user,session=null){
-   currentUser=user;currentSession=session||currentSession;
+   currentUser=user;currentSession=session||null;
    const btn=$("#login-open");
    if(user){btn.innerHTML='<span class="user-status">● '+escapeHtml(user.email||"Mi cuenta")+'</span>';btn.title="Abrir comunidad y cuenta";$("#community-join").textContent="Ir a mi comunidad";$("#community-join").querySelector("b")?.remove()}
    else{btn.innerHTML='Entrar <span>↗</span>';btn.title="Iniciar sesión";$("#community-join").textContent="Entrar a la comunidad";closeCommunity();communityProfile=null;stopNotificationRealtime()}
@@ -1194,6 +1224,8 @@
      if(error)throw error;
      currentSession=session||null;
      updateHeader(session?.user||null,session||null);
+     // La sesión se recuperó al volver de Google: cerrar el marcador del flujo PKCE.
+     if(session?.user||new URLSearchParams(window.location.search).has("error")||new URLSearchParams(window.location.search).has("error_description"))clearOAuthPending();
      if(session?.user&&dialog?.open)dialog.close();
      document.documentElement.dataset.supabase="ready";
      if(!session?.user)$("#auth-message").textContent="Servicio de acceso listo. Puedes iniciar sesión o crear una cuenta.";
