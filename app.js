@@ -1151,9 +1151,12 @@
        return true;
      }catch(error){lastError=error;console.warn("JOA Auth módulo:",src,error)}
    }
+   // Cargar el bundle UMD explícito; la raíz del paquete puede resolver
+   // a un archivo CommonJS que el navegador no puede ejecutar como script.
    const scriptSources=[
-     "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0",
-     "https://unpkg.com/@supabase/supabase-js@2.119.0"
+     "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/dist/umd/supabase.js",
+     "https://unpkg.com/@supabase/supabase-js@2.119.0/dist/umd/supabase.js",
+     "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.js"
    ];
    for(const src of scriptSources){
      try{
