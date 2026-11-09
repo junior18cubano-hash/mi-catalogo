@@ -1,6 +1,15 @@
 let latestRelease = null;
 const $ = (s) => document.querySelector(s);
 
+function showToast(message) {
+  const el = $("#toast");
+  if (!el) return;
+  el.textContent = String(message || "");
+  el.classList.add("show");
+  clearTimeout(window.__joaUpdateToast);
+  window.__joaUpdateToast = window.setTimeout(() => el.classList.remove("show"), 3600);
+}
+
 function isConfigured() {
   return JOA_CONFIG.GITHUB_REPO &&
     !JOA_CONFIG.GITHUB_REPO.includes("TU-USUARIO");
