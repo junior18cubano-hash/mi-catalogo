@@ -1085,14 +1085,20 @@
    try{
      let ready=await authReadyPromise;
      if(!ready&&!authInitError)ready=await initSupabase();
-     if(!ready||!supabase)throw authInitError||new Error("La inicialización de Supabase no llegó a completarse. Revisa la conexión e inténtalo otra vez.");
-     // Supabase controla la navegación y procesa el retorno OAuth/PKCE.
-     // Evitamos abrir manualmente la URL, que puede fallar en navegadores móviles.
-     const {error}=await supabase.auth.signInWithOAuth({
+     if(!ready||!supabase)throw authInitError||new Error("El servicio de acceso no está listo. Recarga la página e inténtalo otra vez.");
+     // En este sitio estático usamos navegación explícita: algunos navegadores móviles
+     // no completan de forma fiable la redirección automática del SDK.
+     const {data,error}=await supabase.auth.signInWithOAuth({
        provider,
-       options:{redirectTo:window.JOA_CONFIG.authRedirectUrl}
+       options:{
+         redirectTo:window.JOA_CONFIG.authRedirectUrl,
+         skipBrowserRedirect:true
+       }
      });
      if(error)throw error;
+     if(!data?.url)throw new Error("Google no devolvió la dirección de acceso.");
+     $("#auth-message").textContent="Abriendo Google…";
+     window.location.href=data.url;
    }catch(error){
      console.error("JOA OAuth:",error);
      const message=authError(error);
