@@ -3,7 +3,20 @@
  const $ = (s,root=document) => root.querySelector(s);
  const $$ = (s,root=document) => [...root.querySelectorAll(s)];
  const dialog=$("#auth-dialog"), toastEl=$("#toast");
- let authMode="signin", supabase=null, currentUser=null, authReadyPromise=Promise.resolve(false), authInitError=null;
+ let authMode="signin", supabase=null, currentUser=null, authReadyPromise=Promise.resolve(false), authInitError=null, oauthInProgress=false;
+ // Registrar el clic desde el inicio del script, antes de inicializar el resto de la comunidad.
+ // Así el botón de Google sigue respondiendo aunque falle algún módulo secundario.
+ document.addEventListener("click",event=>{
+   const button=event.target?.closest?.("#auth-google");
+   if(!button)return;
+   event.preventDefault();
+   event.stopPropagation();
+   if(typeof oauth==="function")oauth("google");
+   else{
+     const message=$("#auth-message");
+     if(message)message.textContent="El acceso todavía no terminó de inicializarse. Recarga la página.";
+   }
+ },true);
  const toast=(message)=>{if(!toastEl)return;toastEl.textContent=message;toastEl.classList.add("show");clearTimeout(window.__joaToast);window.__joaToast=setTimeout(()=>toastEl.classList.remove("show"),3600)};
  function safeSessionGet(key){try{return window.sessionStorage?.getItem(key)||null}catch(error){console.warn("JOA: sessionStorage no disponible",error);return null}}
  function safeSessionSet(key,value){try{window.sessionStorage?.setItem(key,value);return true}catch(error){console.warn("JOA: no se pudo guardar el estado temporal",error);return false}}
@@ -1055,7 +1068,6 @@
    try{const {error}=await supabase.auth.resetPasswordForEmail(email,{redirectTo:window.JOA_CONFIG.authRedirectUrl});if(error)throw error;toast("Si el correo está registrado, recibirás instrucciones para recuperar el acceso.");$("#auth-message").textContent="Revisa tu correo para continuar con la recuperación."}
    catch(error){toast(authError(error))}
  });
- let oauthInProgress=false;
  async function oauth(provider){
    const button=$("#auth-google");
    if(oauthInProgress)return;
@@ -1097,12 +1109,6 @@
      if(button){button.disabled=false;button.textContent=originalText}
    }
  }
- // Listener directo: evita que la captura global intercepte o cancele otros controles.
- $("#auth-google").addEventListener("click",event=>{
-   event.preventDefault();
-   oauth("google");
- });
-
  function authError(error){
    const msg=String(error?.message||"");
    if(/invalid login credentials/i.test(msg))return "Correo o contraseña incorrectos.";
