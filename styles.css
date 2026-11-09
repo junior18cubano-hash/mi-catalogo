@@ -704,3 +704,65 @@ dialog.notification-panel::backdrop{background:rgba(2,5,14,.78);backdrop-filter:
 @media(max-width:900px){.hero-art{min-height:360px}.hero-scene{object-position:center}.category-card{min-height:165px}}
 @media(max-width:650px){.hero-art{height:330px;min-height:330px;border-radius:20px;margin-top:12px}.hero-scene{opacity:.58;mask-image:linear-gradient(90deg,#000,#000);-webkit-mask-image:linear-gradient(90deg,#000,#000)}.category-card{min-height:158px;padding:14px}.category-scene{opacity:.66}.category-card:after{background-image:linear-gradient(90deg,rgba(7,10,22,.91),rgba(7,10,22,.58)),linear-gradient(0deg,rgba(7,10,22,.48),transparent 75%)}}
 @media(prefers-reduced-motion:reduce){.category-card:after,.category-scene{transition:none}}
+
+
+/* JOA GAMERs: fondo panorámico de videojuegos en toda la franja principal */
+.hero{
+  position:relative;
+  isolation:isolate;
+}
+.hero::before{
+  content:"";
+  position:absolute;
+  z-index:-1;
+  top:0;
+  bottom:0;
+  left:50%;
+  width:100vw;
+  transform:translateX(-50%);
+  background:
+    linear-gradient(90deg,rgba(5,8,19,.94) 0%,rgba(5,8,19,.78) 38%,rgba(5,8,19,.52) 72%,rgba(5,8,19,.72) 100%),
+    linear-gradient(0deg,#070914 0%,rgba(7,9,20,.12) 34%,rgba(7,9,20,.24) 100%),
+    url("https://images.unsplash.com/photo-1775410633801-5d7997f795c6?auto=format&fit=crop&w=2200&q=82");
+  background-size:cover;
+  background-position:center 48%;
+  background-repeat:no-repeat;
+}
+.hero-art{overflow:visible;background:transparent;border-radius:0}
+.hero-art:after{display:none}
+.hero-core{background:linear-gradient(145deg,rgba(20,45,79,.91),rgba(10,14,34,.94) 65%,rgba(42,16,61,.9));backdrop-filter:blur(7px)}
+
+/* La fotografía esports anterior pasa al panel azul LEVEL UP de la comunidad */
+.post-art{
+  isolation:isolate;
+  background:#101b33;
+}
+.post-art-scene{
+  position:absolute;
+  inset:0;
+  z-index:-2;
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  object-position:center 48%;
+  filter:saturate(1.22) contrast(1.06);
+}
+.post-art:after{
+  content:"";
+  position:absolute;
+  inset:0;
+  z-index:-1;
+  background:linear-gradient(90deg,rgba(5,10,24,.88),rgba(5,10,24,.34)),linear-gradient(0deg,rgba(5,10,24,.58),transparent 75%);
+  pointer-events:none;
+}
+.post-art>*:not(.post-art-scene){position:relative;z-index:1}
+@media(max-width:650px){
+  .hero::before{
+    background-position:center;
+    background-image:
+      linear-gradient(90deg,rgba(5,8,19,.86),rgba(5,8,19,.58)),
+      linear-gradient(0deg,#070914 0%,rgba(7,9,20,.1) 45%,rgba(7,9,20,.28) 100%),
+      url("https://images.unsplash.com/photo-1775410633801-5d7997f795c6?auto=format&fit=crop&w=1400&q=78");
+  }
+  .hero-art{overflow:visible}
+}
