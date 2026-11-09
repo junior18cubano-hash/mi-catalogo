@@ -1125,7 +1125,8 @@
      }
      clearOAuthPending();
      writeOAuthPending();
-     // En este sitio estático usamos navegación explícita y un solo flujo PKCE.
+     // No liberar el bloqueo por tiempo: en Android Google puede seguir abierto
+     // mientras esta pestaña permanece visible, lo que permitiría duplicar el flujo.
      const {data,error}=await supabase.auth.signInWithOAuth({
        provider,
        options:{
@@ -1137,14 +1138,6 @@
      if(!data?.url)throw new Error("Google no devolvió la dirección de acceso.");
      $("#auth-message").textContent="Abriendo Google…";
      window.location.assign(data.url);
-     // Si el navegador integrado bloquea la navegación, libera el botón para reintentar.
-     window.setTimeout(()=>{
-       if(document.visibilityState==="visible"&&oauthInProgress){
-         oauthInProgress=false;
-         if(button){button.disabled=false;button.textContent=originalText}
-         $("#auth-message").textContent="Google no se abrió. Vuelve a intentarlo o abre la página en Chrome.";
-       }
-     },12000);
    }catch(error){
      clearOAuthPending();
      console.error("JOA OAuth:",error);
@@ -1250,13 +1243,11 @@
      if(!window.JOA_CONFIG?.enableSupabase||!window.JOA_CONFIG.supabaseUrl||!window.JOA_CONFIG.supabasePublishableKey)throw new Error("Falta la configuración pública de Supabase.");
      await loadSupabaseSdk();
      supabase=window.supabase.createClient(window.JOA_CONFIG.supabaseUrl,window.JOA_CONFIG.supabasePublishableKey,{
-       auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true,flowType:"pkce"},
-       global:{headers:{"X-Client-Info":"joa-gamers-web-auth/1.0.1"}}
+       auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false,flowType:"pkce"},
+       global:{headers:{"X-Client-Info":"joa-gamers-web-auth/1.0.2"}}
      });
      window.joaSupabase=supabase;
-     // Registrar primero el observador para no perder el evento de sesión durante la recuperación OAuth.
      supabase.auth.onAuthStateChange((event,newSession)=>{
-       // Mantener este callback síncrono: no ejecutar consultas Supabase bajo el bloqueo de Auth.
        if(event==="INITIAL_SESSION"&&!newSession)return;
        const eventVersion=++authEventVersion;
        currentSession=newSession||null;
@@ -1267,20 +1258,34 @@
          updateHeader(newSession?.user||null,newSession||null);
        },0);
      });
+
+     // Intercambiar el código PKCE al regresar de Google antes de leer la sesión.
+     const callbackUrl=new URL(window.location.href);
+     const callbackCode=callbackUrl.searchParams.get("code");
+     const callbackError=callbackUrl.searchParams.get("error_description")||callbackUrl.searchParams.get("error");
+     if(callbackError)throw new Error("Google no pudo completar el acceso: "+callbackError);
+     if(callbackCode){
+       const {data:callbackData,error:callbackExchangeError}=await supabase.auth.exchangeCodeForSession(callbackCode);
+       if(callbackExchangeError)throw callbackExchangeError;
+       if(!callbackData?.session?.user)throw new Error("Google devolvió el código, pero no se pudo recuperar la sesión.");
+       currentSession=callbackData.session;
+       updateHeader(callbackData.session.user,callbackData.session);
+       clearOAuthPending();
+       ["code","state","error","error_description"].forEach(key=>callbackUrl.searchParams.delete(key));
+       history.replaceState(history.state,document.title,callbackUrl.pathname+callbackUrl.search+callbackUrl.hash);
+     }
+
      const versionBeforeGetSession=authEventVersion;
      const {data:{session},error}=await supabase.auth.getSession();
      if(error)throw error;
-     // Si llegó un evento más reciente mientras getSession esperaba, no sobrescribirlo
-     // con una respuesta antigua (por ejemplo, una sesión vacía).
      if(authEventVersion===versionBeforeGetSession){
        currentSession=session||null;
        updateHeader(session?.user||null,session||null);
      }
-     // La sesión se recuperó al volver de Google: cerrar el marcador del flujo PKCE.
-     if(session?.user||new URLSearchParams(window.location.search).has("error")||new URLSearchParams(window.location.search).has("error_description"))clearOAuthPending();
+     if(session?.user)clearOAuthPending();
      if(session?.user&&dialog?.open)dialog.close();
      document.documentElement.dataset.supabase="ready";
-     if(!session?.user)$("#auth-message").textContent="Servicio de acceso listo. Puedes iniciar sesión o crear una cuenta.";
+     if(!session?.user&&!callbackCode)$("#auth-message").textContent="Servicio de acceso listo. Puedes iniciar sesión o crear una cuenta.";
      return true;
    })().catch(error=>{
      authInitError=error;
