@@ -895,11 +895,11 @@
    $("#community-chat-form").hidden=false;
    $("#community-chat-title").textContent=title||"Chat JOA";
    const host=$("#community-chat-messages");host.innerHTML='<p class="community-loading">Cargando mensajes…</p>';
-   const {data,error}=await supabase.from("messages").select("id,conversation_id,sender_id,body,created_at").in("conversation_id",activeConversationIds).order("created_at",{ascending:true}).limit(300);
+   const {data,error}=await supabase.from("messages").select("id,conversation_id,sender_id,body,created_at").in("conversation_id",activeConversationIds).order("created_at",{ascending:false}).limit(300);
    if(error){host.textContent=communityError(error);return}
    host.innerHTML="";
    if(!data?.length)host.innerHTML='<p class="community-empty">Saluda y empieza la conversación.</p>';
-   data?.forEach(appendCommunityMessage);
+   data?.slice().reverse().forEach(appendCommunityMessage);
    host.scrollTop=host.scrollHeight;
    if(activeChatChannel)supabase.removeChannel(activeChatChannel);
    let channel=supabase.channel("joa-chat-"+conversationId);
@@ -1146,7 +1146,7 @@
    panel.innerHTML="";panel.append(box);box.scrollIntoView({behavior:"smooth",block:"nearest"});
  }
  $("#community-group-form").addEventListener("submit",async e=>{
-   e.preventDefault();const form=e.currentTarget,button=e.submitter;button.disabled=true;
+   e.preventDefault();const form=e.currentTarget,button=e.submitter||e.currentTarget.querySelector('button[type="submit"]');button.disabled=true;
    try{
      const name=$("#community-group-name").value.trim(),slug=name.toLocaleLowerCase("es").normalize("NFD").replace(/[\\u0300-\\u036f]/g,"").replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"")+"-"+Math.random().toString(36).slice(2,6);
      const payload={name,slug,description:$("#community-group-description").value.trim(),category:$("#community-group-category").value.trim()||"General",platform:$("#community-group-platform").value.trim()||"Todas",tags:$("#community-group-tags").value.trim(),rules:$("#community-group-rules").value.trim(),is_public:$("#community-group-visibility").value==="true",created_by:currentUser.id};
