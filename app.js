@@ -1514,6 +1514,7 @@ function renderPagination(totalPages){
        updateHeader(session?.user||null,session||null);
        authInitError=null;
        document.documentElement.dataset.supabase="ready";
+      loadCatalogReviewSummaries(sortedItems().slice((currentPage-1)*pageSize,currentPage*pageSize));
        return true;
      })().catch(error=>{
        authInitError=error;
@@ -1569,6 +1570,7 @@ function renderPagination(totalPages){
      if(session?.user)clearOAuthPending();
      if(session?.user&&dialog?.open)dialog.close();
      document.documentElement.dataset.supabase="ready";
+      loadCatalogReviewSummaries(sortedItems().slice((currentPage-1)*pageSize,currentPage*pageSize));
      if(!session?.user&&!callbackCode)$("#auth-message").textContent="Servicio de acceso listo. Puedes iniciar sesión o crear una cuenta.";
      return true;
    })().catch(error=>{
