@@ -1,3 +1,9 @@
+-- ARCHIVO HISTÓRICO / NO EJECUTAR EN EL PROYECTO SUPABASE ACTUAL.
+-- La aplicación vigente usa profiles, friendships, conversations, messages,
+-- community_groups, group_members, posts, post_comments, post_reactions y
+-- catalog_reviews. Este script crea tablas paralelas joa_* que la web no consulta.
+-- Se conserva únicamente como referencia de una propuesta antigua.
+
 -- JOA GAMERs: base social inicial. Ejecutar en Supabase SQL Editor.
 -- Tablas nuevas con prefijo joa_; no altera las tablas del catálogo existente.
 create extension if not exists pgcrypto;
