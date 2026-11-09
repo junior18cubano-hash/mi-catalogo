@@ -257,7 +257,7 @@
   async function loadCatalogFavorites(){
     if(!currentUser||!supabase){catalogFavorites=[];catalogFavoritesByKey.clear();renderFavoriteButtons();return}
     const userId=currentUser.id,{data,error}=await supabase.from("catalog_favorites").select("user_id,item_key,item_title,item_type,cover_url,item_data,created_at").eq("user_id",userId).order("created_at",{ascending:false});
-    if(currentUser?.id!==userId)return;if(error){console.warn("JOA favorites:",error);return}
+    if(currentUser?.id!==userId)return;if(error){console.warn("JOA favorites:",error);const host=$("#community-favorites-list");if(host)host.textContent="No se pudieron cargar tus favoritos: "+communityError(error);return}
     catalogFavorites=data||[];catalogFavoritesByKey=new Map(catalogFavorites.map(row=>[row.item_key,row]));renderFavoriteButtons();
     if($("#community-favorites-panel")&&!$("#community-favorites-panel").hidden)renderCommunityFavorites();
   }
@@ -270,14 +270,23 @@
       renderFavoriteButtons();if($("#community-favorites-panel")&&!$("#community-favorites-panel").hidden)renderCommunityFavorites();
     }catch(error){toast(communityError(error))}finally{if(button)button.disabled=false}
   }
+  async function removeCatalogFavorite(itemKey,button){
+    if(!currentUser||!supabase)return;if(button)button.disabled=true;
+    try{
+      const result=await supabase.from("catalog_favorites").delete().eq("user_id",currentUser.id).eq("item_key",itemKey).select("item_key").maybeSingle();
+      if(result.error)throw result.error;if(!result.data)throw new Error("No se pudo quitar este elemento de favoritos.");
+      catalogFavorites=catalogFavorites.filter(row=>row.item_key!==itemKey);catalogFavoritesByKey.delete(itemKey);
+      renderFavoriteButtons();renderCommunityFavorites();toast("Se quitó de tu lista de favoritos.");
+    }catch(error){toast(communityError(error))}finally{if(button)button.disabled=false}
+  }
   function favoriteItemFromRow(row){return {...(row.item_data||{}),id:row.item_data?.id||row.item_key,title:row.item_title,type:row.item_type,cover:row.cover_url||""}}
   function renderCommunityFavorites(){
-    const host=$("#community-favorites-list"),count=$("#community-favorites-count");if(!host)return;if(count)count.textContent=String(catalogFavorites.length);host.innerHTML="";
+    const host=$("#community-favorites-list"),count=$("#community-favorites-count"),share=$("#favorites-share-whatsapp");if(!host)return;if(count)count.textContent=String(catalogFavorites.length);if(share)share.disabled=!catalogFavorites.length;host.innerHTML="";
     if(!catalogFavorites.length){const empty=document.createElement("div");empty.className="community-empty";empty.innerHTML="<h3>Tu lista está esperando</h3><p>Explora el catálogo y pulsa el corazón de los contenidos que quieras guardar.</p>";host.append(empty);return}
-    catalogFavorites.forEach(row=>{const item=favoriteItemFromRow(row),card=document.createElement("article");card.className="favorite-list-item";const cover=document.createElement("img");cover.alt="";cover.loading="lazy";cover.src=row.cover_url||"assets/ioa-multiverso-icon.svg";cover.onerror=()=>{cover.src="assets/ioa-multiverso-icon.svg"};const info=document.createElement("div"),title=document.createElement("b"),meta=document.createElement("small");title.textContent=row.item_title;meta.textContent=String(row.item_type||"otros").replace(/_/g," ").toLocaleUpperCase("es");info.append(title,meta);const actions=document.createElement("div");actions.className="favorite-list-actions";const detail=document.createElement("button");detail.type="button";detail.textContent="Ver";detail.addEventListener("click",()=>openCatalogDetail(item));const remove=document.createElement("button");remove.type="button";remove.className="danger";remove.textContent="Quitar";remove.addEventListener("click",()=>toggleCatalogFavorite(item));actions.append(detail,remove);card.append(cover,info,actions);host.append(card)});
+    catalogFavorites.forEach(row=>{const item=favoriteItemFromRow(row),card=document.createElement("article");card.className="favorite-list-item";const cover=document.createElement("img");cover.alt="";cover.loading="lazy";cover.src=row.cover_url||"assets/ioa-multiverso-icon.svg";cover.onerror=()=>{cover.src="assets/ioa-multiverso-icon.svg"};const info=document.createElement("div"),title=document.createElement("b"),meta=document.createElement("small");title.textContent=row.item_title;meta.textContent=String(row.item_type||"otros").replace(/_/g," ").toLocaleUpperCase("es");info.append(title,meta);const actions=document.createElement("div");actions.className="favorite-list-actions";const detail=document.createElement("button");detail.type="button";detail.textContent="Ver";detail.addEventListener("click",()=>openCatalogDetail(item));const remove=document.createElement("button");remove.type="button";remove.className="danger";remove.textContent="Quitar";remove.addEventListener("click",()=>removeCatalogFavorite(row.item_key,remove));actions.append(detail,remove);card.append(cover,info,actions);host.append(card)});
   }
   function buildFavoritesShareText(rows,ownerName){const heading="⭐ LISTA DE FAVORITOS DE "+(ownerName||"UN JUGADOR JOA")+"\n",footer="\nDescubre más en JOA GAMERs: https://junior18cubano-hash.github.io/mi-catalogo/#catalog";let text=heading+"\n",shown=0;for(const row of rows){const line="• "+row.item_title+" ("+String(row.item_type||"otros").replace(/_/g," ")+")\n";if((text+line+footer).length>4700)break;text+=line;shown++}if(shown<rows.length)text+="\n… y "+(rows.length-shown)+" elementos más en mi lista.\n";return text+footer}
-  function shareFavoritesWhatsApp(){if(!catalogFavorites.length){toast("Añade primero algún elemento a tus favoritos.");return}const text=buildFavoritesShareText(catalogFavorites,communityProfile?.display_name||currentUser?.email||"Jugador JOA"),link=document.createElement("a");link.href="https://wa.me/?text="+encodeURIComponent(text);link.target="_blank";link.rel="noopener noreferrer";document.body.append(link);link.click();link.remove()}
+  function shareFavoritesWhatsApp(){if(!catalogFavorites.length){toast("Añade primero algún elemento a tus favoritos.");return}const text=buildFavoritesShareText(catalogFavorites,communityProfile?.display_name||communityProfile?.username||"Jugador JOA"),link=document.createElement("a");link.href="https://wa.me/?text="+encodeURIComponent(text);link.target="_blank";link.rel="noopener noreferrer";document.body.append(link);link.click();link.remove()}
 
  const CATALOG_DB_NAME="joa-catalog-db",CATALOG_DB_VERSION=1,CATALOG_STORE="catalogs",CATALOG_RECORD_KEY="main";
  let catalogLoadPromise=null;
@@ -842,7 +851,7 @@
    (profiles.data||[]).forEach(profile=>{
      const row=document.createElement("div");row.className="favorite-friend-row";
      const name=document.createElement("span");name.textContent=profile.display_name||profile.username||"Jugador JOA";
-     const send=document.createElement("button");send.type="button";send.className="primary";send.textContent="Enviar lista";
+     const send=document.createElement("button");send.type="button";send.className="primary";send.textContent="Enviar lista";send.disabled=!catalogFavorites.length;
      send.addEventListener("click",()=>shareFavoritesWithFriend(profile.id,profile.display_name||profile.username||"Amigo",send));
      row.append(name,send);host.append(row);
    });
@@ -852,7 +861,7 @@
    if(button)button.disabled=true;
    try{
      const conversationId=await getOrCreateDirectConversation(friendId,friendName);
-     const body=buildFavoritesShareText(catalogFavorites,communityProfile?.display_name||currentUser?.email||"Jugador JOA");
+     const body=buildFavoritesShareText(catalogFavorites,communityProfile?.display_name||communityProfile?.username||"Jugador JOA");
      const sent=await supabase.from("messages").insert({conversation_id:conversationId,sender_id:currentUser.id,body}).select("id,conversation_id,sender_id,body,created_at").single();
      if(sent.error)throw sent.error;
      toast("Tu lista se envió a "+friendName+".");
