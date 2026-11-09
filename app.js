@@ -456,6 +456,12 @@
  }
  function openCommunity(){
    if(!currentUser){openAuth();return}
+   // Esperar al perfil social antes de abrir las funciones que dependen de él.
+   if(!communityProfile||communityProfile.id!==currentUser.id){
+     setCommunityIntent(true);
+     toast("Tu cuenta está conectada. Estamos preparando tu comunidad…");
+     return;
+   }
    setCommunityIntent(false);
    const workspace=$("#community-workspace"),layout=$(".community-layout");
    if(workspace)workspace.hidden=false;if(layout)layout.hidden=true;
@@ -1250,13 +1256,16 @@
      window.joaSupabase=supabase;
      // Registrar primero el observador para no perder el evento de sesión durante la recuperación OAuth.
      supabase.auth.onAuthStateChange((event,newSession)=>{
-       authEventVersion++;
-       // INITIAL_SESSION vacío no debe borrar una sesión que el SDK aún está recuperando.
+       // Mantener este callback síncrono: no ejecutar consultas Supabase bajo el bloqueo de Auth.
        if(event==="INITIAL_SESSION"&&!newSession)return;
+       const eventVersion=++authEventVersion;
        currentSession=newSession||null;
-       updateHeader(newSession?.user||null,newSession||null);
        if(newSession?.user&&dialog?.open)dialog.close();
        if(event==="SIGNED_IN"&&newSession?.user)toast("Sesión activa. ¡Bienvenido a JOA!");
+       window.setTimeout(()=>{
+         if(authEventVersion!==eventVersion)return;
+         updateHeader(newSession?.user||null,newSession||null);
+       },0);
      });
      const versionBeforeGetSession=authEventVersion;
      const {data:{session},error}=await supabase.auth.getSession();
