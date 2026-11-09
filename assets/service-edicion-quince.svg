@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 600" role="img" aria-labelledby="t d">
+<title id="t">Edición digital de fotografía de quinceañera</title><desc id="d">Una estación de edición fotográfica profesional muestra el retrato artístico de una quinceañera con vestido de gala rosa, rodeado de herramientas de retoque, capas y controles de color.</desc>
+<defs>
+ <linearGradient id="bg" x2="1" y2="1"><stop stop-color="#101b3b"/><stop offset=".55" stop-color="#31235a"/><stop offset="1" stop-color="#091322"/></linearGradient>
+ <linearGradient id="dress" x2=".8" y2="1"><stop stop-color="#fff0fa"/><stop offset=".4" stop-color="#f59bd2"/><stop offset="1" stop-color="#9c4fba"/></linearGradient>
+ <linearGradient id="skin" x2="0" y2="1"><stop stop-color="#f6c9aa"/><stop offset="1" stop-color="#c9826c"/></linearGradient>
+ <linearGradient id="screen" x2="0" y2="1"><stop stop-color="#28365b"/><stop offset="1" stop-color="#121b33"/></linearGradient>
+ <filter id="glow"><feGaussianBlur stdDeviation="18"/></filter>
+</defs>
+<rect width="1200" height="600" fill="url(#bg)"/>
+<circle cx="600" cy="280" r="260" fill="#e65ec7" opacity=".18" filter="url(#glow)"/>
+<rect x="65" y="48" width="1070" height="475" rx="24" fill="#080d1b" stroke="#8ca8ff" stroke-opacity=".55" stroke-width="3"/>
+<rect x="83" y="67" width="1034" height="435" rx="13" fill="url(#screen)"/>
+<rect x="83" y="67" width="1034" height="35" rx="13" fill="#0b1226"/>
+<circle cx="105" cy="84" r="5" fill="#ff6d9d"/><circle cx="123" cy="84" r="5" fill="#ffc66d"/><circle cx="141" cy="84" r="5" fill="#62e9c1"/>
+<text x="600" y="89" fill="#dce6ff" font-family="Arial,sans-serif" font-size="13" text-anchor="middle" letter-spacing="3">STUDIO RETOUCH · QUINCEAÑERA SESSION</text>
+<rect x="98" y="117" width="62" height="365" rx="8" fill="#0b1429"/>
+<g fill="none" stroke="#83eaff" stroke-width="3" opacity=".9"><path d="M119 143h20m-10-10v20M115 194l22 22m0-22-22 22M116 263h25l-12 23zM116 330h25m-25 12h25M116 397h25v25h-25z"/></g>
+<rect x="174" y="117" width="680" height="365" rx="9" fill="#1b2140"/>
+<rect x="190" y="132" width="648" height="335" rx="5" fill="#46365e"/>
+<circle cx="520" cy="272" r="156" fill="#ffb2df" opacity=".18"/>
+<g opacity=".9" fill="#ffd6ed"><circle cx="260" cy="180" r="4"/><circle cx="785" cy="205" r="5"/><circle cx="735" cy="390" r="4"/><circle cx="300" cy="400" r="5"/></g>
+<!-- portrait backdrop -->
+<path d="M190 400 Q320 280 430 365 T838 360V467H190Z" fill="#7c4b88" opacity=".55"/>
+<!-- hair and head -->
+<path d="M454 224q-18-93 68-112 88 4 99 91l-7 130H459z" fill="#3a2035"/>
+<ellipse cx="520" cy="236" rx="65" ry="79" fill="url(#skin)"/>
+<path d="M455 220q-7-93 67-104 81 7 91 87-39-27-75-49-36 51-83 66z" fill="#382034"/>
+<path d="M490 251q13 10 25 0m23 0q13 10 25 0" fill="none" stroke="#593445" stroke-width="4" stroke-linecap="round"/>
+<path d="M510 284q13 10 27 0" fill="none" stroke="#a34e70" stroke-width="4" stroke-linecap="round"/>
+<!-- tiara -->
+<path d="M470 170l15-30 23 20 17-37 21 37 24-20 15 30" fill="none" stroke="#ffe7a8" stroke-width="7" stroke-linejoin="round"/>
+<g fill="#fff3c9"><circle cx="485" cy="140" r="5"/><circle cx="525" cy="123" r="6"/><circle cx="570" cy="140" r="5"/></g>
+<!-- shoulders and gown -->
+<path d="M458 320q62-44 124 0l53 42q76 46 104 105H300q26-63 104-105z" fill="#f2b1d7"/>
+<path d="M455 323q-72 20-103 95l-45 49h430l-47-49q-31-75-108-95-63 42-127 0z" fill="url(#dress)" stroke="#ffe3f6" stroke-width="4"/>
+<path d="M520 325q-15 55-75 142m75-142q18 57 79 142m-79-120v120" fill="none" stroke="#fff0fa" stroke-width="5" opacity=".75"/>
+<g fill="#fff4fc"><circle cx="430" cy="385" r="6"/><circle cx="615" cy="392" r="6"/><circle cx="520" cy="440" r="7"/></g>
+<rect x="868" y="117" width="232" height="365" rx="9" fill="#0c152b"/>
+<text x="890" y="151" fill="#8feaff" font-family="Arial,sans-serif" font-size="13" font-weight="bold" letter-spacing="2">AJUSTES</text>
+<text x="890" y="184" fill="#dce6ff" font-family="Arial,sans-serif" font-size="12">Luz y exposición</text>
+<path d="M890 202h185" stroke="#3a4d71" stroke-width="6" stroke-linecap="round"/><path d="M890 202h125" stroke="#50dff4" stroke-width="6" stroke-linecap="round"/><circle cx="1015" cy="202" r="8" fill="#fff"/>
+<text x="890" y="244" fill="#dce6ff" font-family="Arial,sans-serif" font-size="12">Tono y color</text>
+<path d="M890 262h185" stroke="#3a4d71" stroke-width="6" stroke-linecap="round"/><path d="M890 262h150" stroke="#bd79ff" stroke-width="6" stroke-linecap="round"/><circle cx="1040" cy="262" r="8" fill="#fff"/>
+<text x="890" y="304" fill="#dce6ff" font-family="Arial,sans-serif" font-size="12">Retoque de piel</text>
+<rect x="890" y="321" width="185" height="46" rx="7" fill="#192849" stroke="#6e7da6"/><text x="982" y="349" fill="#b8c7e8" font-family="Arial,sans-serif" font-size="11" text-anchor="middle">Suavizado · Detalle</text>
+<text x="890" y="405" fill="#dce6ff" font-family="Arial,sans-serif" font-size="12">Capas del proyecto</text>
+<rect x="890" y="420" width="185" height="42" rx="6" fill="#28234c" stroke="#c27bff"/><circle cx="910" cy="441" r="7" fill="#ff8dcf"/><text x="927" y="445" fill="#f3dfff" font-family="Arial,sans-serif" font-size="10">Retrato · Vestido · Brillo</text>
+<path d="M570 524v34m-95 0h190" stroke="#7d91ba" stroke-width="12" stroke-linecap="round"/>
+<rect x="435" y="556" width="330" height="12" rx="6" fill="#263657"/>
+<text x="600" y="590" fill="#b9c8ea" font-family="Arial,sans-serif" font-size="12" text-anchor="middle" letter-spacing="4">CREATIVIDAD · RETOQUE · RECUERDOS</text>
+</svg>

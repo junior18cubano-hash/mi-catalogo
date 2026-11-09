@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 600" role="img" aria-labelledby="t d">
+<title id="t">Mantenimiento de PC con componentes desarmados</title><desc id="d">Una computadora de escritorio se desarma creativamente en el aire: carcasa abierta, placa base, ventiladores, memoria, tarjeta gráfica, cables y tornillos flotando en una composición tecnológica.</desc>
+<defs>
+ <linearGradient id="bg" x2="1" y2="1"><stop stop-color="#071426"/><stop offset=".5" stop-color="#12284a"/><stop offset="1" stop-color="#17112d"/></linearGradient>
+ <linearGradient id="metal" x2="1" y2="1"><stop stop-color="#c8d8ed"/><stop offset=".4" stop-color="#526987"/><stop offset="1" stop-color="#1a2b46"/></linearGradient>
+ <linearGradient id="cyan" x2="1"><stop stop-color="#41eaff"/><stop offset="1" stop-color="#8c78ff"/></linearGradient>
+ <filter id="glow"><feGaussianBlur stdDeviation="18"/></filter>
+</defs>
+<rect width="1200" height="600" fill="url(#bg)"/>
+<circle cx="600" cy="300" r="250" fill="#32cfff" opacity=".15" filter="url(#glow)"/>
+<g fill="none" stroke="#5ceaff" opacity=".3"><path d="M40 110h170l35 35h90M900 80h180l35 35h45M65 490h160l35-35h95M930 500h160l35-35h45"/></g>
+<!-- case chassis -->
+<g transform="translate(350 155) skewY(-7)">
+ <path d="M0 70L250 15l210 70-250 65z" fill="#91a7c2" opacity=".9" stroke="#d8e8ff" stroke-width="4"/>
+ <path d="M0 70v250l210 80V150z" fill="#243a59" stroke="#91a8c8" stroke-width="4"/>
+ <path d="M210 150l250-65v250l-250 65z" fill="#101d34" stroke="#7892b7" stroke-width="4"/>
+ <path d="M236 174l195-52v188l-195 53z" fill="#0a1428" stroke="#4de5ff" stroke-width="3" stroke-dasharray="8 7"/>
+ <circle cx="330" cy="238" r="62" fill="none" stroke="#6feaff" stroke-width="10" opacity=".8"/>
+ <circle cx="330" cy="238" r="42" fill="none" stroke="#8c78ff" stroke-width="5"/>
+ <path d="M330 196v84m-42-42h84m-72-30 60 60m0-60-60 60" stroke="#d8faff" stroke-width="5" opacity=".8"/>
+ <path d="M35 100l145 55v190L35 290z" fill="#13253f" stroke="#5c779e" stroke-width="3"/>
+ <path d="M55 130l100 38v8l-100-38zM55 155l100 38v8l-100-38z" fill="#51e4f7" opacity=".6"/>
+</g>
+<!-- exploded motherboard -->
+<g transform="translate(665 150) rotate(-12)">
+ <rect x="0" y="0" width="185" height="140" rx="9" fill="#1b705f" stroke="#6bf4d2" stroke-width="5"/>
+ <path d="M18 18h45v35H18zm105 4h42v29h-42zM25 92h38v30H25zm105 22h36v12h-36z" fill="#0b2634" stroke="#b2f9e9" stroke-width="3"/>
+ <rect x="75" y="47" width="52" height="48" rx="5" fill="#152039" stroke="#ffd56d" stroke-width="4"/>
+ <path d="M0 30h-25m210 40h25M90 0V-25m45 165v25" stroke="#68e8ff" stroke-width="4" stroke-dasharray="5 7"/>
+</g>
+<!-- GPU -->
+<g transform="translate(170 330) rotate(12)">
+ <rect x="0" y="0" width="225" height="66" rx="9" fill="url(#metal)" stroke="#b8d5f4" stroke-width="4"/>
+ <circle cx="63" cy="33" r="24" fill="#102039" stroke="#58e9ff" stroke-width="5"/>
+ <circle cx="63" cy="33" r="7" fill="#58e9ff"/>
+ <circle cx="128" cy="33" r="24" fill="#102039" stroke="#9c85ff" stroke-width="5"/>
+ <circle cx="128" cy="33" r="7" fill="#9c85ff"/>
+ <path d="M185 16h26m-26 12h26m-26 12h26" stroke="#182a43" stroke-width="4"/>
+</g>
+<!-- ram sticks -->
+<g transform="translate(870 355) rotate(18)">
+ <rect width="185" height="24" rx="5" fill="#263b57" stroke="#8fa9cc" stroke-width="3"/>
+ <g fill="#53e8ed"><rect x="12" y="5" width="22" height="13" rx="2"/><rect x="43" y="5" width="22" height="13" rx="2"/><rect x="74" y="5" width="22" height="13" rx="2"/><rect x="105" y="5" width="22" height="13" rx="2"/><rect x="136" y="5" width="22" height="13" rx="2"/></g>
+ <path d="M18 24v10m15-10v10m15-10v10m15-10v10m15-10v10m15-10v10m15-10v10m15-10v10" stroke="#e8c56e" stroke-width="3"/>
+</g>
+<g transform="translate(845 210) rotate(-22)">
+ <circle cx="0" cy="0" r="60" fill="#101c30" stroke="#8299ba" stroke-width="7"/>
+ <circle cx="0" cy="0" r="12" fill="#51eaff"/>
+ <g fill="#5f789d"><path d="M-8-13Q-22-50 0-48L-2-14zM13-8Q50-22 48 0L14-2zM8 13Q22 50 0 48L2 14zM-13 8Q-50 22-48 0L-14 2z"/></g>
+</g>
+<!-- SSD -->
+<g transform="translate(210 175) rotate(-15)">
+ <rect width="140" height="80" rx="8" fill="#293b56" stroke="#b2c6e1" stroke-width="4"/>
+ <rect x="18" y="14" width="48" height="49" rx="4" fill="#132139" stroke="#4ce8f7" stroke-width="3"/>
+ <text x="83" y="43" font-family="Arial,sans-serif" font-size="16" font-weight="bold" fill="#e5f3ff">SSD</text>
+</g>
+<!-- cables, screws, shards -->
+<g fill="none" stroke-linecap="round"><path d="M440 120q-80-80-145-10t-60 5M790 470q95 70 140-5t100-12M520 450q-70 80-125 40" stroke="#f06bc7" stroke-width="9"/><path d="M500 95q-20 70 45 80t35 70M700 470q-35-65 35-90t40-75" stroke="#52e7f2" stroke-width="7"/></g>
+<g fill="#e8f4ff" stroke="#56e9ff" stroke-width="2"><path d="M300 90l12-18 12 18-12 18zM960 150l10-16 10 16-10 16zM1010 435l11-17 11 17-11 17zM420 490l9-14 9 14-9 14zM720 80l10-16 10 16-10 16z"/></g>
+<g fill="#f5d27d"><circle cx="280" cy="285" r="7"/><circle cx="1000" cy="280" r="6"/><circle cx="610" cy="120" r="5"/><circle cx="585" cy="470" r="7"/><circle cx="150" cy="455" r="5"/></g>
+<g font-family="Arial,sans-serif" font-weight="bold" letter-spacing="4"><text x="600" y="548" fill="#f3f7ff" font-size="25" text-anchor="middle">REPARA · LIMPIA · RENUEVA</text><text x="600" y="578" fill="#60e9ff" font-size="12" text-anchor="middle">MANTENIMIENTO Y DIAGNÓSTICO DE HARDWARE</text></g>
+</svg>
