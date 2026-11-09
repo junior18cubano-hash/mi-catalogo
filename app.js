@@ -392,9 +392,15 @@
    notificationsUserId=currentUser.id;
    notificationsChannel=supabase.channel("joa-notifications-"+currentUser.id)
      .on("postgres_changes",{event:"INSERT",schema:"public",table:"notifications",filter:"user_id=eq."+currentUser.id},payload=>{
-       loadNotifications();
-       const panel=$("#notification-panel");
-       if(panel?.hidden)toast(payload.new?.title||"Tienes una nueva notificación.");
+       loadNotifications().then(()=>{
+         const panel=$("#notification-panel");
+         if(document.visibilityState==="visible"&&panel&&!panel.open){
+           panel.showModal();
+           $("#notifications-toggle")?.setAttribute("aria-expanded","true");
+         }else if(document.visibilityState!=="visible"){
+           toast(payload.new?.title||"Tienes una nueva notificación.");
+         }
+       });
      }).subscribe();
  }
  function stopNotificationRealtime(){
@@ -403,7 +409,8 @@
    const badge=$("#notification-count"),host=$("#notification-list");
    if(badge){badge.hidden=true;badge.textContent="0"}
    if(host)host.innerHTML='<div class="notification-empty">Inicia sesión para ver tus notificaciones.</div>';
-   const panel=$("#notification-panel");if(panel)panel.hidden=true;
+   const panel=$("#notification-panel");if(panel?.open)panel.close();
+   $("#notifications-toggle")?.setAttribute("aria-expanded","false");
  }
  async function markAllNotificationsRead(){
    if(!currentUser||!supabase)return;
@@ -571,19 +578,29 @@
  $("#community-feed-refresh").addEventListener("click",loadCommunityFeed);
  $("#notifications-toggle").addEventListener("click",async()=>{
    if(!currentUser){openAuth();return}
-   const panel=$("#notification-panel");panel.hidden=!panel.hidden;
-   $("#notifications-toggle").setAttribute("aria-expanded",String(!panel.hidden));
-   if(!panel.hidden)await loadNotifications();
+   const panel=$("#notification-panel");if(!panel)return;
+   if(panel.open){panel.close();return}
+   panel.showModal();
+   $("#notifications-toggle").setAttribute("aria-expanded","true");
+   await loadNotifications();
+ });
+ $("#notifications-close").addEventListener("click",()=>$("#notification-panel")?.close());
+ $("#notification-panel").addEventListener("close",()=>$("#notifications-toggle")?.setAttribute("aria-expanded","false"));
+ $("#notification-panel").addEventListener("click",event=>{
+   if(event.target===$("#notification-panel"))$("#notification-panel").close();
  });
  $("#notifications-mark-all").addEventListener("click",markAllNotificationsRead);
- document.addEventListener("click",event=>{
-   const wrap=$("#notifications-wrap");
-   if(wrap&&!wrap.contains(event.target))$("#notification-panel").hidden=true;
- });
 
  $("#community-signout").addEventListener("click",async()=>{
-   if(!supabase)return;const {error}=await supabase.auth.signOut({scope:"local"});if(error){toast(communityError(error));return}
-   closeCommunity();setCommunityIntent(false);toast("Sesión cerrada en este dispositivo.");
+   if(!supabase)return;
+   if(!window.confirm("¿Seguro que quieres cerrar tu sesión de JOA en este dispositivo?"))return;
+   const button=$("#community-signout");if(button)button.disabled=true;
+   try{
+     const {error}=await supabase.auth.signOut({scope:"local"});
+     if(error)throw error;
+     closeCommunity();setCommunityIntent(false);toast("Sesión cerrada en este dispositivo.");
+   }catch(error){toast(communityError(error))}
+   finally{if(button)button.disabled=false}
  });
  $("#community-profile-form").addEventListener("submit",async e=>{
    e.preventDefault();const button=e.submitter;button.disabled=true;
@@ -594,14 +611,30 @@
    }catch(error){$("#community-profile-status").textContent=communityError(error)}finally{button.disabled=false}
  });
  $("[data-community-tab]").forEach(button=>button.addEventListener("click",()=>activateCommunityTab(button.dataset.communityTab)));
+ function openPublicProfile(profile){
+   const dialog=$("#community-public-profile-dialog"),host=$("#community-public-profile-content");
+   if(!dialog||!host||!profile)return;
+   host.innerHTML="";
+   const card=document.createElement("div");card.className="public-profile-card";
+   const avatar=document.createElement("div");avatar.className="public-profile-avatar";avatar.textContent=communityInitials(profile.display_name||profile.username);
+   const name=document.createElement("h2");name.textContent=profile.display_name||profile.username||"Jugador JOA";
+   const handle=document.createElement("p");handle.className="public-profile-handle";handle.textContent="@"+(profile.username||"jugador");
+   card.append(avatar,name,handle);
+   if(profile.bio){const bioTitle=document.createElement("h3");bioTitle.textContent="Sobre mí";const bio=document.createElement("p");bio.textContent=profile.bio;card.append(bioTitle,bio)}
+   if(profile.game_preferences){const gamesTitle=document.createElement("h3");gamesTitle.textContent="Juegos y plataformas";const games=document.createElement("p");games.textContent=profile.game_preferences;card.append(gamesTitle,games)}
+   host.append(card);
+   if(!dialog.open)dialog.showModal();
+ }
+ $("#community-public-profile-close").addEventListener("click",()=>$("#community-public-profile-dialog")?.close());
  async function loadCommunityFriends(){
    if(!currentUser||!supabase)return;const host=$("#community-friend-list");if(!host)return;
    const {data,error}=await supabase.from("friendships").select("*").or("requester_id.eq."+currentUser.id+",addressee_id.eq."+currentUser.id).order("created_at",{ascending:false});
    if(error){host.textContent=communityError(error);return}
    if(!data?.length){host.textContent="Todavía no tienes amistades ni solicitudes.";return}
    const others=[...new Set(data.map(x=>x.requester_id===currentUser.id?x.addressee_id:x.requester_id))];
-   const p=await supabase.from("profiles").select("id,username,display_name").in("id",others);const map=new Map((p.data||[]).map(x=>[x.id,x]));
+   const p=await supabase.from("profiles").select("id,username,display_name,avatar_url,bio,game_preferences").in("id",others);const map=new Map((p.data||[]).map(x=>[x.id,x]));
    host.innerHTML="";data.forEach(row=>{const other=row.requester_id===currentUser.id?row.addressee_id:row.requester_id,profile=map.get(other)||{},line=document.createElement("div");line.className="community-list-row";const label=document.createElement("span");label.textContent=(profile.display_name||profile.username||"Jugador")+" · "+row.status;line.append(label);
+     const view=document.createElement("button");view.type="button";view.textContent="Ver perfil";view.addEventListener("click",()=>openPublicProfile(profile));line.append(view);
      if(row.status==="accepted"){const chat=document.createElement("button");chat.textContent="Mensaje";chat.addEventListener("click",()=>startDirectChat(other,profile.display_name||profile.username||"Amigo"));line.append(chat)}
      if(row.status==="pending"&&row.addressee_id===currentUser.id){const accept=document.createElement("button");accept.textContent="Aceptar";accept.addEventListener("click",async()=>{const {error}=await supabase.from("friendships").update({status:"accepted",updated_at:new Date().toISOString()}).eq("id",row.id);if(error)toast(communityError(error));else loadCommunityFriends()});line.append(accept)}
      host.append(line);
@@ -635,6 +668,7 @@
        if(profile.bio){const bio=document.createElement("p");bio.className="community-player-bio";bio.textContent=profile.bio;row.append(bio)}
        if(profile.game_preferences){const games=document.createElement("p");games.className="community-player-games";games.textContent="🎮 Busca jugar: "+profile.game_preferences;row.append(games)}
        const actions=document.createElement("div");actions.className="community-player-actions";
+       const view=document.createElement("button");view.type="button";view.textContent="Ver perfil";view.addEventListener("click",()=>openPublicProfile(profile));actions.append(view);
        const action=document.createElement("button");action.type="button";
        if(relation?.status==="accepted"){action.textContent="✓ Ya son amigos";action.disabled=true}
        else if(relation?.status==="pending"&&relation.requester_id===currentUser.id){action.textContent="Solicitud enviada";action.disabled=true}
@@ -1288,6 +1322,7 @@
      if(!session?.user&&!callbackCode)$("#auth-message").textContent="Servicio de acceso listo. Puedes iniciar sesión o crear una cuenta.";
      return true;
    })().catch(error=>{
+     if(/[?&](code|error|error_description)=/.test(window.location.search))clearOAuthPending();
      authInitError=error;
      console.error("JOA Auth initialization:",error);
      document.documentElement.dataset.supabase="error";
