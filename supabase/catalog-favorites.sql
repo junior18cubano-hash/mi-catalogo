@@ -16,6 +16,7 @@ create index if not exists catalog_favorites_user_created_idx
   on public.catalog_favorites (user_id, created_at desc);
 alter table public.catalog_favorites enable row level security;
 revoke all on table public.catalog_favorites from anon;
+revoke update, truncate, references, trigger on table public.catalog_favorites from authenticated;
 grant select, insert, delete on table public.catalog_favorites to authenticated;
 drop policy if exists "Users read own catalog favorites" on public.catalog_favorites;
 create policy "Users read own catalog favorites"
