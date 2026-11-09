@@ -1373,13 +1373,14 @@
        const image=document.createElement("img");
        image.src=avatarUrl;image.alt="";image.referrerPolicy="no-referrer";
        image.addEventListener("error",()=>image.remove(),{once:true});
-       avatar.replaceChildren(image);
+       avatar.append(image);
      }
      btn.title="Sesión iniciada: "+accountLabel+" · Abrir comunidad";
      btn.setAttribute("aria-label","Sesión iniciada. Abrir cuenta y comunidad");
      btn.classList.add("is-logged-in");
      $("#community-join").textContent="Ir a mi comunidad";$("#community-join").querySelector("b")?.remove();
    }else{
+     btn.classList.remove("is-logged-in");btn.removeAttribute("aria-label");
      btn.innerHTML='Entrar <span>↗</span>';btn.title="Iniciar sesión";
      $("#community-join").textContent="Entrar a la comunidad";closeCommunity();communityProfile=null;
      communityProfilePromise=null;communityProfilePromiseUserId=null;stopNotificationRealtime();
