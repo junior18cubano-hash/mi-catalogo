@@ -1,65 +1,43 @@
-# JOA GAMERs — Landing Page V2
+# JOA GAMERs · IOA Multiverso
 
-Página estática futurista para descargar la APK de JOA GAMERs.
+Web estática del catálogo multimedia y la comunidad JOA, publicada mediante GitHub Pages.
 
-## Archivos
+## Estructura principal
 
-- `index.html` — estructura completa.
-- `styles.css` — diseño, responsive y animaciones.
-- `config.js` — configuración de GitHub/APK.
-- `script.js` — detección de versiones, descarga, QR y UI.
-- `assets/logo.svg` — logo.
+- `index.html`: página principal, catálogo y comunidad.
+- `styles.css`: diseño responsive, modales y estilos de la comunidad.
+- `app.js`: catálogo, autenticación, perfiles, amigos, chats, grupos y notificaciones.
+- `config.js`: configuración pública de Supabase y URL del catálogo JSON.
+- `actualizacion/`: página pública para consultar y descargar la APK desde GitHub Releases.
+- `assets/`: iconos y logotipos.
+- `supabase/`: notas y scripts SQL históricos.
 
-## Configuración de GitHub Releases
+## Publicación
 
-Abre `config.js` y cambia:
+GitHub Pages utiliza la rama `main` y la carpeta raíz (`/ `). La página principal está en:
 
-```js
-GITHUB_REPO: "TU-USUARIO/joa-gamers-apk",
-APK_ASSET_NAME: "JOA-GAMERs.apk",
-```
+`https://junior18cubano-hash.github.io/mi-catalogo/`
 
-Ejemplo:
+La página de descarga de la APK está en:
 
-```js
-GITHUB_REPO: "junior18cubano-hash/joa-gamers-apk",
-APK_ASSET_NAME: "JOA-GAMERs.apk",
-```
+`https://junior18cubano-hash.github.io/mi-catalogo/actualizacion/`
 
-Luego crea una Release en ese repositorio y adjunta el APK como asset.
+## Catálogo
 
-La página consulta automáticamente:
+La web lee el JSON remoto configurado en `config.js` mediante `catalogJsonUrl`. El catálogo se conserva localmente en IndexedDB para permitir que se muestre una copia cuando la conexión falle.
 
-`https://api.github.com/repos/USUARIO/REPOSITORIO/releases/latest`
+## Supabase y comunidad
 
-y obtiene:
+La aplicación cliente usa una clave pública *publishable* y las tablas que ya existen en el proyecto Supabase: `profiles`, `friendships`, `conversations`, `conversation_members`, `messages`, `community_groups`, `group_members`, `notifications`, `posts`, `post_comments`, `post_reactions` y `catalog_reviews`.
 
-- número/tag de versión;
-- enlace del APK;
-- cantidad de descargas del asset;
-- última Release disponible.
+No coloques nunca claves `service_role`, contraseñas ni secretos privados en `config.js` o en ningún archivo servido al navegador. El acceso a los datos debe seguir protegido por las políticas RLS de Supabase.
 
-## GitHub Pages
+### Importante sobre los SQL
 
-1. Crea un repositorio para la web.
-2. Sube todo el contenido.
-3. GitHub → Settings → Pages.
-4. Source: Deploy from a branch.
-5. Branch: `main`.
-6. Folder: `/ (root)`.
-7. Guardar.
+- `supabase/joa-social-schema.sql` es un archivo histórico que crea tablas paralelas `joa_*`. **No ejecutarlo en el proyecto actual**: la web no utiliza esas tablas.
+- `supabase/fix-direct-chat-membership-recursion.sql` documenta una corrección RLS que ya fue aplicada al proyecto activo. No forma parte de la actualización de frontend.
+- Esta versión de la web no ejecuta migraciones ni modifica tablas, políticas o datos de Supabase.
 
-## QR
+## Categorías
 
-El QR apunta automáticamente a la URL actual de la web. En PC, un usuario puede escanearlo con su Android y abrir la página en el teléfono.
-
-## Importante
-
-La API pública de GitHub tiene límites de consulta. Para una página normal con visitas moderadas funciona bien. No requiere servidor propio.
-
-
-## Categoría NOVELAS TV
-
-En JOA GAMERs, **Novelas TV** significa telenovelas y novelas de televisión,
-no libros ni novelas literarias. Incluye contenido mexicano, turco, coreano,
-brasileño e internacional.
+La categoría «Telenovelas» incluye novelas de televisión mexicanas, coreanas, turcas, brasileñas e internacionales; no se refiere a libros o novelas literarias.
