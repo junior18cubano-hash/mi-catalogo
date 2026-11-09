@@ -1074,39 +1074,31 @@
    try{const {error}=await supabase.auth.resetPasswordForEmail(email,{redirectTo:window.JOA_CONFIG.authRedirectUrl});if(error)throw error;toast("Si el correo está registrado, recibirás instrucciones para recuperar el acceso.");$("#auth-message").textContent="Revisa tu correo para continuar con la recuperación."}
    catch(error){toast(authError(error))}
  });
+ let oauthInProgress=false;
  async function oauth(provider){
    const button=$("#auth-google");
+   if(oauthInProgress)return;
+   oauthInProgress=true;
    const originalText=button?.textContent||"Continuar";
    if(button){button.disabled=true;button.textContent="Conectando…"}
    $("#auth-message").textContent="Preparando el acceso seguro…";
    try{
      let ready=await authReadyPromise;
-     // Recuperación defensiva: si algún error previo impidió iniciar Supabase,
-     // el primer intento de acceso vuelve a lanzar la inicialización.
-     if(!ready&&!authInitError){
-       console.warn("JOA Auth: la inicialización no se había iniciado; reintentando ahora.");
-       ready=await initSupabase();
-     }
-     if(!ready||!supabase)throw authInitError||new Error("La inicialización de Supabase no llegó a completarse. Revisa la consola del navegador para ver el error anterior.");
-     // Navegación explícita: evita que algunos navegadores embebidos dejen el diálogo abierto
-     // después de que Supabase haya generado correctamente la URL OAuth.
-     const {data,error}=await supabase.auth.signInWithOAuth({
+     if(!ready&&!authInitError)ready=await initSupabase();
+     if(!ready||!supabase)throw authInitError||new Error("La inicialización de Supabase no llegó a completarse. Revisa la conexión e inténtalo otra vez.");
+     // Supabase controla la navegación y procesa el retorno OAuth/PKCE.
+     // Evitamos abrir manualmente la URL, que puede fallar en navegadores móviles.
+     const {error}=await supabase.auth.signInWithOAuth({
        provider,
-       options:{
-         redirectTo:window.JOA_CONFIG.authRedirectUrl,
-         skipBrowserRedirect:true,
-         queryParams:provider==="google"?{access_type:"offline",prompt:"select_account"}:undefined
-       }
+       options:{redirectTo:window.JOA_CONFIG.authRedirectUrl}
      });
      if(error)throw error;
-     if(!data?.url)throw new Error("Supabase no devolvió la dirección de acceso del proveedor.");
-     $("#auth-message").textContent="Abriendo el acceso seguro…";
-     window.location.assign(data.url);
    }catch(error){
      console.error("JOA OAuth:",error);
      const message=authError(error);
      $("#auth-message").textContent=message;
      toast(message);
+     oauthInProgress=false;
      if(button){button.disabled=false;button.textContent=originalText}
    }
  }
