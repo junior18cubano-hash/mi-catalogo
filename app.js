@@ -2,16 +2,6 @@
  "use strict";
  const $ = (s,root=document) => root.querySelector(s);
  const $$ = (s,root=document) => [...root.querySelectorAll(s)];
- // Captura global temprana de los botones de acceso: evita depender de listeners tardíos.
- document.addEventListener("click",event=>{
-   const target=event.target;
-   const button=target&&target.closest?target.closest("#auth-google"):null;
-   if(!button)return;
-   event.preventDefault();
-   event.stopImmediatePropagation();
-   console.info("JOA Auth: clic detectado",button.id);
-   oauth("google");
- },true);
  const dialog=$("#auth-dialog"), toastEl=$("#toast");
  let authMode="signin", supabase=null, currentUser=null, authReadyPromise=Promise.resolve(false), authInitError=null;
  const toast=(message)=>{if(!toastEl)return;toastEl.textContent=message;toastEl.classList.add("show");clearTimeout(window.__joaToast);window.__joaToast=setTimeout(()=>toastEl.classList.remove("show"),3600)};
@@ -1020,53 +1010,44 @@
  $("#auth-form").addEventListener("submit",async e=>{
    e.preventDefault();
    const submit=$("#auth-submit");
+   const email=$("#auth-email").value.trim(),password=$("#auth-password").value;
+   if(!email||!password){$("#auth-message").textContent="Escribe tu correo y contraseña para continuar.";toast("Escribe tu correo y contraseña.");return}
+   if(!$("#auth-email").checkValidity()){ $("#auth-email").reportValidity(); return; }
+   if(password.length<6){$("#auth-message").textContent="La contraseña debe tener al menos 6 caracteres.";toast("La contraseña debe tener al menos 6 caracteres.");return}
    submit.disabled=true;submit.textContent="Conectando…";
    try{
-     const ready=await authReadyPromise;
-     if(!ready||!supabase)throw new Error("El servicio de acceso no ha podido inicializarse. Comprueba tu conexión e inténtalo otra vez.");
-   }catch(error){$("#auth-message").textContent=authError(error);toast(authError(error));submit.disabled=false;renderAuthMode();return}
-   const email=$("#auth-email").value.trim(),password=$("#auth-password").value;
-   if(!email||!password){toast("Escribe tu correo y contraseña.");return}
-   submit.textContent="Procesando…";
-   try{
+     let ready=await authReadyPromise;
+     if(!ready||!supabase){authInitError=null;ready=await initSupabase()}
+     if(!ready||!supabase)throw authInitError||new Error("El servicio de acceso no está listo. Recarga la página e inténtalo otra vez.");
+     submit.textContent="Procesando…";
      let result;
      if(authMode==="signup"){
-       console.info("JOA Auth: enviando solicitud de registro por correo", {emailDomain:email.split("@")[1]||""});
+       console.info("JOA Auth: enviando solicitud de registro por correo",{emailDomain:email.split("@")[1]||""});
        result=await supabase.auth.signUp({email,password,options:{emailRedirectTo:window.JOA_CONFIG.authRedirectUrl}});
-       console.info("JOA Auth: respuesta de registro", {hasUser:!!result.data?.user,hasSession:!!result.data?.session,identityCount:result.data?.user?.identities?.length??null,hasError:!!result.error});
+       console.info("JOA Auth: respuesta de registro",{hasUser:!!result.data?.user,hasSession:!!result.data?.session,identityCount:result.data?.user?.identities?.length??null,hasError:!!result.error});
        if(result.error)throw result.error;
-       const createdUser=result.data?.user||null;
-       const createdSession=result.data?.session||null;
-       const returnedIdentities=createdUser?.identities;
-       // Supabase oculta si un correo ya existe: en ese caso devuelve un usuario ficticio sin identidades.
-       if(createdUser && Array.isArray(returnedIdentities) && returnedIdentities.length===0){
-         $("#auth-message").textContent="Ese correo ya está asociado a una cuenta. Inicia sesión con ese correo o continúa con el proveedor con el que te registraste (por ejemplo, Google).";
+       const createdUser=result.data?.user||null,createdSession=result.data?.session||null;
+       if(createdUser&&Array.isArray(createdUser.identities)&&createdUser.identities.length===0){
+         $("#auth-message").textContent="Ese correo ya está asociado a una cuenta. Inicia sesión o continúa con el proveedor con el que te registraste.";
          toast("Ese correo ya tiene una cuenta. Inicia sesión.");
        }else if(!createdUser){
-         $("#auth-message").textContent="No se pudo confirmar la creación de la cuenta. Si ese correo ya está registrado, inicia sesión o usa «¿Olvidaste tu contraseña?»."; 
-         toast("No se confirmó el registro. Comprueba si ya tienes una cuenta.");
+         throw new Error("Supabase no confirmó la creación de la cuenta. Comprueba el correo o intenta iniciar sesión.");
        }else if(createdSession){
-         updateHeader(createdUser,createdSession);
-         dialog.close();
-         toast("¡Cuenta creada y sesión iniciada!");
+         updateHeader(createdUser,createdSession);dialog.close();toast("¡Cuenta creada y sesión iniciada!");
        }else{
-         $("#auth-message").textContent="La cuenta fue creada, pero todavía está pendiente de confirmar. Abre el correo de Supabase y pulsa el enlace de verificación. Después volverás aquí para iniciar sesión.";
-         toast("Revisa tu correo y confirma la cuenta antes de entrar.");
+         $("#auth-message").textContent="Solicitud de registro recibida. Revisa la bandeja de entrada y el spam; confirma el correo para activar tu cuenta.";
+         toast("Registro enviado. Revisa tu correo para confirmar la cuenta.");
        }
      }else{
        result=await supabase.auth.signInWithPassword({email,password});
        if(result.error)throw result.error;
-       updateHeader(result.data.user,result.data.session);
-       dialog.close();
-       toast("¡Bienvenido de nuevo a JOA!");
+       updateHeader(result.data.user,result.data.session);dialog.close();toast("¡Bienvenido de nuevo a JOA!");
      }
    }catch(error){
      console.error("JOA email auth:",error);
-     $("#auth-message").textContent=authError(error);
-     toast(authError(error));
+     $("#auth-message").textContent=authError(error);toast(authError(error));
    }finally{
-     submit.disabled=false;
-     renderAuthMode();
+     submit.disabled=false;renderAuthMode();
    }
  });
  $("#auth-forgot").addEventListener("click",async()=>{
@@ -1098,7 +1079,15 @@
      if(error)throw error;
      if(!data?.url)throw new Error("Google no devolvió la dirección de acceso.");
      $("#auth-message").textContent="Abriendo Google…";
-     window.location.href=data.url;
+     window.location.assign(data.url);
+     // Si el navegador integrado bloquea la navegación, libera el botón para reintentar.
+     window.setTimeout(()=>{
+       if(document.visibilityState==="visible"&&oauthInProgress){
+         oauthInProgress=false;
+         if(button){button.disabled=false;button.textContent=originalText}
+         $("#auth-message").textContent="Google no se abrió. Vuelve a intentarlo o abre la página en Chrome.";
+       }
+     },12000);
    }catch(error){
      console.error("JOA OAuth:",error);
      const message=authError(error);
@@ -1108,7 +1097,12 @@
      if(button){button.disabled=false;button.textContent=originalText}
    }
  }
- // Los botones OAuth se atienden desde el listener global de captura.
+ // Listener directo: evita que la captura global intercepte o cancele otros controles.
+ $("#auth-google").addEventListener("click",event=>{
+   event.preventDefault();
+   oauth("google");
+ });
+
  function authError(error){
    const msg=String(error?.message||"");
    if(/invalid login credentials/i.test(msg))return "Correo o contraseña incorrectos.";
