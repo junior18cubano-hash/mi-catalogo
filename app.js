@@ -37,6 +37,13 @@
      if(message)message.textContent="El acceso todavía no terminó de inicializarse. Recarga la página.";
    }
  },true);
+ window.addEventListener("pageshow",event=>{
+   if(!event.persisted)return;
+   oauthInProgress=false;
+   clearOAuthPending();
+   const button=$("#auth-google");
+   if(button){button.disabled=false;button.textContent="Continuar con Google"}
+ });
  const toast=(message)=>{if(!toastEl)return;toastEl.textContent=message;toastEl.classList.add("show");clearTimeout(window.__joaToast);window.__joaToast=setTimeout(()=>toastEl.classList.remove("show"),3600)};
  function safeSessionGet(key){try{return window.sessionStorage?.getItem(key)||null}catch(error){console.warn("JOA: sessionStorage no disponible",error);return null}}
  function safeSessionSet(key,value){try{window.sessionStorage?.setItem(key,value);return true}catch(error){console.warn("JOA: no se pudo guardar el estado temporal",error);return false}}
@@ -1137,7 +1144,7 @@
    $("#auth-message").textContent="Preparando el acceso seguro…";
    try{
      let ready=await authReadyPromise;
-     if(!ready&&!authInitError)ready=await initSupabase();
+     if(!ready){authInitError=null;ready=await initSupabase();}
      if(!ready||!supabase)throw authInitError||new Error("El servicio de acceso no está listo. Recarga la página e inténtalo otra vez.");
      // Si la recuperación de sesión ya terminó con un usuario, no iniciar otro OAuth encima.
      if(currentUser){
@@ -1273,6 +1280,23 @@
    throw lastError||new Error("No se pudo descargar el SDK de Supabase desde los CDN disponibles.");
  }
  function initSupabase(){
+   if(supabase){
+     authReadyPromise=(async()=>{
+       const {data:{session},error}=await supabase.auth.getSession();
+       if(error)throw error;
+       currentSession=session||null;
+       updateHeader(session?.user||null,session||null);
+       authInitError=null;
+       document.documentElement.dataset.supabase="ready";
+       return true;
+     })().catch(error=>{
+       authInitError=error;
+       console.error("JOA Auth recovery:",error);
+       return false;
+     });
+     return authReadyPromise;
+   }
+   authInitError=null;
    authReadyPromise=(async()=>{
      if(!window.JOA_CONFIG?.enableSupabase||!window.JOA_CONFIG.supabaseUrl||!window.JOA_CONFIG.supabasePublishableKey)throw new Error("Falta la configuración pública de Supabase.");
      await loadSupabaseSdk();
@@ -1322,7 +1346,12 @@
      if(!session?.user&&!callbackCode)$("#auth-message").textContent="Servicio de acceso listo. Puedes iniciar sesión o crear una cuenta.";
      return true;
    })().catch(error=>{
-     if(/[?&](code|error|error_description)=/.test(window.location.search))clearOAuthPending();
+     if(/[?&](code|error|error_description)=/.test(window.location.search)){
+       clearOAuthPending();
+       const failedUrl=new URL(window.location.href);
+       ["code","state","error","error_description"].forEach(key=>failedUrl.searchParams.delete(key));
+       history.replaceState(history.state,document.title,failedUrl.pathname+failedUrl.search+failedUrl.hash);
+     }
      authInitError=error;
      console.error("JOA Auth initialization:",error);
      document.documentElement.dataset.supabase="error";
