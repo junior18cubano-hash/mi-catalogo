@@ -670,7 +670,7 @@
      if(error)throw error;communityProfile=data;$("#community-user-name").textContent=data.display_name;$("#community-avatar").textContent=communityInitials(data.display_name);$("#community-profile-status").textContent="Perfil actualizado correctamente.";toast("Perfil guardado.");
    }catch(error){$("#community-profile-status").textContent=communityError(error)}finally{button.disabled=false}
  });
- $("[data-community-tab]").forEach(button=>button.addEventListener("click",()=>activateCommunityTab(button.dataset.communityTab)));
+ $$("[data-community-tab]").forEach(button=>button.addEventListener("click",()=>activateCommunityTab(button.dataset.communityTab)));
  $("#favorites-share-whatsapp").addEventListener("click",shareFavoritesWhatsApp);
  $("#favorites-refresh").addEventListener("click",async()=>{await loadCatalogFavorites();await loadCommunityFavoriteFriends()});
  function openPublicProfile(profile){
