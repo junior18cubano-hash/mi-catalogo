@@ -621,3 +621,13 @@ dialog.notification-panel::backdrop{background:rgba(2,5,14,.78);backdrop-filter:
 .community-player-actions{flex-wrap:wrap}
 .community-player-actions button{min-width:95px}
 @media(max-width:650px){dialog.notification-panel{width:calc(100vw - 20px);max-height:calc(100dvh - 28px);border-radius:16px}.notification-panel-head{padding:14px 15px;gap:8px}.notification-head-actions{gap:8px}.notification-item{padding:15px 14px}.notification-copy b{font-size:13px}.notification-copy>span{font-size:12px;line-height:1.6}.notification-copy small{font-size:10px}}
+
+
+/* Acciones de amistad: botones legibles y adaptables a pantallas estrechas */
+.community-list-row{flex-wrap:wrap;justify-content:flex-start}
+.community-list-row>span{flex:1 1 100%}
+.community-list-row button{min-width:0;max-width:100%;white-space:normal;overflow-wrap:anywhere}
+.community-list-row button.primary{border-color:#48e9ff88;background:linear-gradient(110deg,#103c54,#32265d);color:#b8f5ff}
+.community-list-row button.danger{border-color:#ff7f9a55;background:#421c31;color:#ffb4c6}
+.community-friend-state{color:#9aa9c4;font-size:10px}
+@media(max-width:560px){.community-list-row{gap:8px}.community-list-row button{flex:1 1 calc(50% - 8px);padding:9px 7px;font-size:10px}}
