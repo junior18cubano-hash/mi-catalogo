@@ -663,3 +663,26 @@ dialog.notification-panel::backdrop{background:rgba(2,5,14,.78);backdrop-filter:
  .favorite-list-actions button{padding:8px 9px}
  .favorite-toggle{width:35px;height:35px;top:8px;right:8px}
 }
+
+
+/* Cuadrícula equilibrada del catálogo: columnas adaptadas al espacio real.
+   En escritorio se priorizan 5 columnas para evitar filas finales demasiado cortas;
+   en tablet se usan 4 y en móvil se conserva la distribución de 2 columnas. */
+@media (min-width: 901px) {
+  #catalog-results .content-grid:not(:has(.catalog-feature-card)) {
+    grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+    gap: 18px;
+  }
+}
+@media (min-width: 651px) and (max-width: 900px) {
+  #catalog-results .content-grid:not(:has(.catalog-feature-card)) {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    gap: 14px;
+  }
+}
+@media (max-width: 650px) {
+  #catalog-results .content-grid:not(:has(.catalog-feature-card)) {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 10px;
+  }
+}
