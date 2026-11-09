@@ -591,3 +591,33 @@
 .brand-mark{overflow:hidden}
 .brand-mark img{display:block;width:100%;height:100%;object-fit:cover;border-radius:inherit}
 @media(max-width:600px){.community-group-chat-card{padding:12px}.community-group-chat-messages{max-height:320px;min-height:160px}.community-group-message{max-width:96%}.community-group-chat-form{gap:6px}.community-group-chat-form button{padding:0 11px}}
+
+
+/* Centro de notificaciones JOA: modal real, legible en escritorio y móvil */
+dialog.notification-panel{position:fixed;inset:0;margin:auto;padding:0;width:min(560px,calc(100vw - 28px));max-width:560px;max-height:min(82dvh,760px);height:auto;overflow:hidden;display:flex;flex-direction:column;border:1px solid #48e9ff77;border-radius:18px;background:linear-gradient(150deg,#14213b,#080d1a);color:#edf5ff;box-shadow:0 28px 90px #000d}
+dialog.notification-panel:not([open]){display:none}
+dialog.notification-panel::backdrop{background:rgba(2,5,14,.78);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+.notification-panel-head{flex:0 0 auto;min-height:76px;padding:17px 20px}
+.notification-head-actions{display:flex;align-items:center;gap:12px}
+.notification-panel-head b{font-size:15px}
+.notification-panel-head small{font-size:11px}
+.notification-panel-head button{font-size:12px}
+.notification-dialog-close{width:34px;height:34px;border:1px solid #ffffff22!important;border-radius:9px!important;background:#ffffff0b!important;color:#eaf5ff!important;font-size:23px!important;line-height:1;display:grid;place-items:center}
+.notification-list{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain}
+.notification-item{align-items:flex-start;gap:13px;padding:17px 20px}
+.notification-dot{margin-top:7px}
+.notification-copy{gap:7px}
+.notification-copy b{font-size:14px;line-height:1.4}
+.notification-copy>span{font-size:13px;line-height:1.65;white-space:normal;overflow-wrap:anywhere}
+.notification-copy small{font-size:11px;margin-top:1px}
+.notification-empty{font-size:13px;padding:30px 22px}
+.community-public-profile-dialog{width:min(520px,calc(100vw - 28px));max-height:82dvh;overflow:auto}
+.public-profile-card{padding:18px 8px 8px;text-align:center}
+.public-profile-avatar{width:76px;height:76px;margin:0 auto 14px;display:grid;place-items:center;border-radius:22px;background:linear-gradient(135deg,#123d57,#4b2d78);border:1px solid #67eaff88;color:#b7f5ff;font:800 22px Orbitron,sans-serif}
+.public-profile-card h2{margin:0;color:#f2f7ff;font:800 clamp(20px,4vw,28px) Orbitron,sans-serif;overflow-wrap:anywhere}
+.public-profile-handle{margin:8px 0 24px;color:#78eaff;font-size:12px}
+.public-profile-card h3{text-align:left;margin:18px 0 7px;color:#8cecff;font:700 11px Orbitron,sans-serif}
+.public-profile-card>p:not(.public-profile-handle){margin:0;text-align:left;color:#c6d3e8;font-size:13px;line-height:1.7;white-space:pre-wrap;overflow-wrap:anywhere}
+.community-player-actions{flex-wrap:wrap}
+.community-player-actions button{min-width:95px}
+@media(max-width:650px){dialog.notification-panel{width:calc(100vw - 20px);max-height:calc(100dvh - 28px);border-radius:16px}.notification-panel-head{padding:14px 15px;gap:8px}.notification-head-actions{gap:8px}.notification-item{padding:15px 14px}.notification-copy b{font-size:13px}.notification-copy>span{font-size:12px;line-height:1.6}.notification-copy small{font-size:10px}}
