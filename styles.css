@@ -826,3 +826,29 @@ dialog.notification-panel::backdrop{background:rgba(2,5,14,.78);backdrop-filter:
 
 /* Imágenes temáticas para Tecnología a tu nivel */
 .service-card{overflow:hidden;padding:0 19px 20px;min-height:290px;background:linear-gradient(180deg,#11182b,#0c1120)}.service-image{display:block;width:calc(100% + 38px);height:126px;margin:0 -19px 0;object-fit:cover;object-position:center 48%;opacity:.88;mask-image:linear-gradient(to bottom,#000 66%,transparent 100%);transition:transform .45s,opacity .3s}.service-card:hover .service-image{transform:scale(1.045);opacity:1}.service-card>span{z-index:2;top:13px;right:13px;padding:6px 8px;border:1px solid #ffffff30;border-radius:6px;background:#070914a8;color:#d9e9ff}.service-icon{position:relative;margin:0 0 10px;font-size:21px;text-shadow:0 0 18px #48e9ff88}.service-card h3{font-size:13px}.service-card p{font-size:10px}@media(max-width:520px){.service-card{min-height:270px;padding:0 13px 16px}.service-image{width:calc(100% + 26px);height:108px;margin-left:-13px;margin-right:-13px}.service-card>span{top:10px;right:10px}}
+
+
+/* Sobre nosotros: contacto directo y ubicación JOA */
+.about-section{padding-top:90px}
+.about-layout{display:grid;grid-template-columns:.88fr 1.12fr;gap:18px;align-items:stretch}
+.about-info{display:grid;gap:13px;align-content:start}
+.about-contact-card{display:flex;gap:16px;align-items:flex-start;padding:21px;border:1px solid #48e9ff35;border-radius:14px;background:linear-gradient(145deg,#131e35,#0c1223);min-width:0}
+.about-card-icon{flex:0 0 43px;width:43px;height:43px;display:grid;place-items:center;border-radius:12px;background:#48e9ff14;border:1px solid #48e9ff55;color:var(--cyan);font-size:23px}
+.about-contact-card>div{min-width:0}
+.about-contact-card small{font:700 8px var(--display);letter-spacing:.14em;color:var(--cyan)}
+.about-contact-card h3{font:700 15px var(--display);margin:8px 0}
+.about-contact-card p{font-size:11px;line-height:1.65;color:var(--muted);margin:0 0 9px}
+.about-contact-card strong{display:block;font:700 19px var(--display);letter-spacing:.02em;color:#f4f8ff;overflow-wrap:anywhere}
+.about-whatsapp{margin-top:14px;padding:11px 13px;gap:12px;font-size:10px}
+.about-address-card .text-link{display:inline-block;margin-top:4px}
+.about-note{margin:2px 4px;color:#9ba7c3;font-size:10px;line-height:1.7}
+.about-map-card{min-width:0;overflow:hidden;border:1px solid #48e9ff45;border-radius:15px;background:#0d1528;box-shadow:0 18px 48px #0004}
+.about-map-heading{display:flex;align-items:center;gap:10px;padding:15px 17px;border-bottom:1px solid var(--line)}
+.about-map-heading .live-dot{flex:0 0 7px;margin:0}
+.about-map-heading b,.about-map-heading small{display:block}
+.about-map-heading b{font:700 9px var(--display);letter-spacing:.1em}
+.about-map-heading small{margin-top:5px;color:var(--muted);font-size:9px}
+.about-map-card iframe{display:block;width:100%;height:330px;border:0;background:#11182b}
+.about-directions{display:flex;justify-content:space-between;align-items:center;padding:14px 17px;color:var(--cyan);font-size:11px;font-weight:800}
+@media(max-width:800px){.about-layout{grid-template-columns:1fr}.about-map-card iframe{height:300px}}
+@media(max-width:650px){.about-section{padding-top:65px}.about-contact-card{padding:16px;gap:12px}.about-contact-card strong{font-size:17px}.about-map-card iframe{height:260px}.mobile-nav{grid-template-columns:repeat(5,minmax(0,1fr))}.mobile-nav a{font-size:clamp(7px,2.15vw,9px)}}
