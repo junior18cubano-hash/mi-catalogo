@@ -540,6 +540,75 @@ function renderPagination(totalPages){
    data.forEach(c=>{const card=document.createElement("article");card.className="reward-campaign-card";if(c.image_url){const im=document.createElement("img");im.src=c.image_url;im.alt="";im.loading="lazy";im.referrerPolicy="no-referrer";card.append(im)}const body=document.createElement("div");body.className="reward-campaign-body";const badge=document.createElement("span");badge.className="reward-state";badge.textContent="RECOMPENSA ABIERTA";const title=document.createElement("h4");title.textContent=c.title;const desc=document.createElement("p");desc.textContent=c.description||"Únete a la comunidad y participa.";const prize=document.createElement("b");prize.textContent="🎁 "+(c.reward_details||c.reward_type);const req=document.createElement("small");req.textContent="Requisitos: "+rewardRequirements(c);const btn=document.createElement("button");btn.className="button button-primary";btn.textContent="Entrar y participar";btn.addEventListener("click",()=>{if(!currentUser){openAuth();return}openCommunity();if(communityProfile?.id===currentUser.id)activateCommunityTab("rewards")});body.append(badge,title,desc,prize,req,btn);card.append(body);host.append(card)})
  }
 
+
+ // Selector de regalos directamente desde el catálogo JSON ya cargado por JOA.
+ let rewardSelectedCatalogItem=null;
+ const rewardCatalogDialog=$("#reward-catalog-dialog");
+ function rewardProductFacts(item){
+   const facts=[];
+   const add=(label,value)=>{if(value===undefined||value===null||value==="")return;const text=Array.isArray(value)?value.join(", "):typeof value==="object"?Object.values(value).filter(Boolean).join(", "):String(value);if(text.trim())facts.push(label+": "+text.trim())};
+   add("Categoría",itemType(item).replace(/_/g," "));
+   add("Año",itemYear(item)||item.year||item.ano||item.año||item.release_year);
+   add("Género",item.genre||item.genres||item.generos||item.genero);
+   add("Plataforma",itemPlatform(item)||item.platforms);
+   add("Desarrollador",item.developer||item.developers||item.desarrollador||item.studio||item.studios);
+   add("Distribuidor",item.publisher||item.publishers||item.editor||item.distributor);
+   add("Temporadas",item.seasons||item.temporadas);
+   add("Episodios",item.episodes||item.episodios);
+   add("Duración",item.runtime||item.duration||item.duracion);
+   add("Idioma",item.language||item.languages||item.idioma);
+   return facts;
+ }
+ function rewardCatalogItemKey(item){return String(item.id??item.external_id??item.igdb_id??item.tmdb_id??item.slug??itemTitle(item)).slice(0,180)}
+ function renderRewardCatalogPicker(){
+   const host=$("#reward-catalog-results");if(!host)return;
+   const query=($("#reward-catalog-search")?.value||"").trim().toLocaleLowerCase("es");
+   const category=$("#reward-catalog-category")?.value||"";
+   const matches=catalogItems.filter(item=>(!category||categoryFor(itemCategoryValue(item))===category)&&(!query||[itemTitle(item),itemDescription(item),itemType(item),itemPlatform(item),item.genre,item.genres].flat().join(" ").toLocaleLowerCase("es").includes(query))).slice(0,80);
+   host.innerHTML="";
+   if(!catalogItems.length){host.textContent="El catálogo todavía se está cargando. Espera unos segundos y vuelve a abrir esta ventana.";return}
+   if(!matches.length){host.textContent="No encontramos productos con esa búsqueda.";return}
+   matches.forEach(item=>{
+     const row=document.createElement("button");row.type="button";row.className="reward-catalog-result";
+     const cover=document.createElement("img");cover.alt="";cover.loading="lazy";cover.src=resolveCover(itemCover(item))||"assets/ioa-multiverso-icon.svg";cover.onerror=()=>{cover.src="assets/ioa-multiverso-icon.svg"};
+     const info=document.createElement("span"),name=document.createElement("b"),meta=document.createElement("small"),desc=document.createElement("small");
+     name.textContent=itemTitle(item);meta.textContent=cardTypeLabel(item)+" · "+(itemYear(item)||"Año no indicado");desc.textContent=itemDescription(item).slice(0,150);
+     info.append(name,meta,desc);const choose=document.createElement("strong");choose.textContent="Seleccionar ↗";row.append(cover,info,choose);
+     row.addEventListener("click",()=>selectRewardCatalogItem(item));host.append(row);
+   });
+ }
+ function selectRewardCatalogItem(item){
+   rewardSelectedCatalogItem=item;
+   const facts=rewardProductFacts(item),description=itemDescription(item);
+   $("#reward-title").value=itemTitle(item).slice(0,120);
+   $("#reward-image").value=resolveCover(itemCover(item));
+   $("#reward-description").value=description.slice(0,3000);
+   $("#reward-details").value=["Producto del catálogo JOA",...facts].join("\n").slice(0,2000);
+   const preview=$("#reward-product-preview");if(preview){
+     preview.hidden=false;preview.innerHTML="";
+     const img=document.createElement("img");img.alt="";img.src=resolveCover(itemCover(item))||"assets/ioa-multiverso-icon.svg";img.onerror=()=>{img.src="assets/ioa-multiverso-icon.svg"};
+     const copy=document.createElement("div"),title=document.createElement("b"),meta=document.createElement("small"),detail=document.createElement("p");
+     title.textContent=itemTitle(item);meta.textContent=cardTypeLabel(item)+" · "+(itemYear(item)||"Año no indicado");detail.textContent=facts.join(" · ")||description;
+     copy.append(title,meta,detail);preview.append(img,copy);
+   }
+   if(rewardCatalogDialog?.open)rewardCatalogDialog.close();
+   toast("Producto añadido al regalo. Puedes editar sus datos antes de guardar.");
+ }
+ $("#reward-catalog-open")?.addEventListener("click",()=>{
+   if(!catalogItems.length){toast("El catálogo todavía se está cargando. Intenta de nuevo en unos segundos.");return}
+   $("#reward-catalog-search").value="";$("#reward-catalog-category").value="";
+   renderRewardCatalogPicker();rewardCatalogDialog?.showModal();$("#reward-catalog-search")?.focus();
+ });
+ $("#reward-catalog-search")?.addEventListener("input",renderRewardCatalogPicker);
+ $("#reward-catalog-category")?.addEventListener("change",renderRewardCatalogPicker);
+ $("#reward-catalog-close")?.addEventListener("click",()=>rewardCatalogDialog?.close());
+ $("#reward-image")?.addEventListener("input",()=>{
+   if(rewardSelectedCatalogItem&&$("#reward-image").value!==resolveCover(itemCover(rewardSelectedCatalogItem)))rewardSelectedCatalogItem=null;
+ });
+ $("#reward-reset")?.addEventListener("click",()=>{
+   rewardSelectedCatalogItem=null;const preview=$("#reward-product-preview");if(preview){preview.hidden=true;preview.innerHTML=""}
+ });
+
  function rewardAdmin(){return currentUser?.app_metadata?.role==="admin"}
  async function loadRewardGroups(){const s=$("#reward-group");if(!s||!supabase)return;const r=await supabase.from("community_groups").select("id,name").order("name").limit(300);if(r.error){toast(communityError(r.error));return}s.innerHTML='<option value="">Toda la comunidad</option>';(r.data||[]).forEach(g=>{const o=document.createElement("option");o.value=g.id;o.textContent=g.name;s.append(o)})}
  function rewardDate(v){return v?new Date(v).toLocaleString("es",{dateStyle:"medium",timeStyle:"short"}):"Sin fecha límite"}
