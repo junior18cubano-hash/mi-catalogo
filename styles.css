@@ -926,3 +926,33 @@ dialog.notification-panel::backdrop{background:rgba(2,5,14,.78);backdrop-filter:
 .reward-catalog-result small:nth-of-type(1){color:var(--cyan)}
 .reward-catalog-result strong{font-size:9px;color:var(--cyan);white-space:nowrap}
 @media(max-width:600px){.reward-product-picker-head{align-items:stretch;flex-direction:column}.reward-product-picker-head .catalog-refresh{width:100%}.reward-catalog-dialog{padding:16px}.reward-catalog-filters{grid-template-columns:1fr}.reward-catalog-result{grid-template-columns:48px minmax(0,1fr)}.reward-catalog-result img{width:48px;height:62px}.reward-catalog-result strong{grid-column:2}}
+
+
+/* JOA Rewards: portadas de productos con movimiento sutil y profundidad */
+.reward-campaign-card>img{
+  position:relative;
+  display:block;
+  transform-origin:50% 55%;
+  animation:reward-cover-float 5.8s ease-in-out infinite;
+  filter:saturate(1.08) contrast(1.035) drop-shadow(0 8px 14px #0008);
+  will-change:transform;
+}
+.reward-campaign-card:hover>img{
+  animation-duration:2.8s;
+  filter:saturate(1.2) contrast(1.06) drop-shadow(0 10px 18px #48e9ff35);
+}
+.reward-campaign-card{
+  transition:border-color .3s ease,box-shadow .3s ease,transform .3s ease;
+}
+.reward-campaign-card:hover{
+  border-color:#62eaff78;
+  box-shadow:0 12px 34px #0005,0 0 22px #48e9ff12;
+  transform:translateY(-2px);
+}
+@keyframes reward-cover-float{
+  0%,100%{transform:translateY(0) scale(1)}
+  50%{transform:translateY(-5px) scale(1.012)}
+}
+@media(prefers-reduced-motion:reduce){
+  .reward-campaign-card,.reward-campaign-card>img{animation:none;transition:none;transform:none}
+}
