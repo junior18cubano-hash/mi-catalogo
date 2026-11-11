@@ -10,6 +10,10 @@ alter table public.reward_claims
   add column if not exists selected_products jsonb not null default '[]'::jsonb,
   add column if not exists username_snapshot text;
 
+-- Índice para las consultas y relaciones de campañas asociadas a servicios.
+create index if not exists reward_campaigns_service_id_idx
+  on public.reward_campaigns(service_id) where service_id is not null;
+
 do $$
 begin
   if not exists (select 1 from pg_constraint where conname='reward_campaigns_kind_check' and conrelid='public.reward_campaigns'::regclass) then
