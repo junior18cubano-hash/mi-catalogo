@@ -891,3 +891,38 @@ dialog.notification-panel::backdrop{background:rgba(2,5,14,.78);backdrop-filter:
 .reward-audit-row{justify-content:flex-start;color:#9eafca;font-size:10px;overflow-wrap:anywhere}
 @media(max-width:760px){.reward-campaign-list{grid-template-columns:1fr}.reward-campaign-card{grid-template-columns:100px minmax(0,1fr)}}
 @media(max-width:480px){.reward-campaign-card{grid-template-columns:1fr}.reward-campaign-card>img{height:145px;min-height:0}.reward-form-grid{grid-template-columns:1fr}.reward-campaign-body{padding:13px}.reward-admin-form input,.reward-admin-form select,.reward-admin-form textarea{font-size:16px}}
+
+
+/* JOA Rewards: selector de productos del catálogo */
+.reward-product-picker{display:grid;gap:12px;padding:15px;border:1px solid #48e9ff35;border-radius:12px;background:linear-gradient(130deg,#142039aa,#17152aaa);margin:10px 0 14px}
+.reward-product-picker-head{display:flex;align-items:center;justify-content:space-between;gap:14px}
+.reward-product-picker-head b,.reward-product-picker-head small{display:block}
+.reward-product-picker-head b{font-size:12px;color:#eafaff}
+.reward-product-picker-head small{font-size:10px;line-height:1.6;color:var(--muted);margin-top:5px}
+.reward-product-preview{display:flex;align-items:center;gap:13px;min-width:0;padding:10px;border:1px solid #ffffff1c;border-radius:10px;background:#080e1d}
+.reward-product-preview[hidden]{display:none}
+.reward-product-preview img{width:66px;height:88px;object-fit:cover;border-radius:7px;background:#18243b;flex:none}
+.reward-product-preview div{min-width:0}
+.reward-product-preview b,.reward-product-preview small{display:block}
+.reward-product-preview b{font-size:12px}
+.reward-product-preview small{color:var(--cyan);font-size:9px;margin-top:5px}
+.reward-product-preview p{font-size:10px;color:var(--muted);line-height:1.5;margin:7px 0 0}
+.reward-catalog-dialog{width:min(760px,calc(100% - 24px));max-height:min(82vh,780px);padding:22px;border:1px solid #48e9ff55;border-radius:17px;background:#0c1223;color:var(--text);box-shadow:0 30px 100px #000b}
+.reward-catalog-dialog::backdrop{background:#02040bdc;backdrop-filter:blur(7px)}
+.reward-catalog-dialog-head{display:flex;justify-content:space-between;align-items:flex-start;gap:16px}
+.reward-catalog-dialog-head h3{font:700 19px var(--display);margin:9px 0}
+.reward-catalog-dialog-head p{font-size:11px;color:var(--muted);margin:0}
+.reward-catalog-dialog-head .dialog-close{position:static;flex:none}
+.reward-catalog-filters{display:grid;grid-template-columns:minmax(0,1fr) 190px;gap:10px;margin:20px 0 13px}
+.reward-catalog-filters input,.reward-catalog-filters select{width:100%;min-width:0;background:#141e34;border:1px solid #ffffff22;border-radius:8px;padding:12px;color:#fff;font:inherit;font-size:11px}
+.reward-catalog-results{display:grid;gap:8px;max-height:52vh;overflow:auto;padding-right:3px}
+.reward-catalog-result{width:100%;min-width:0;display:grid;grid-template-columns:54px minmax(0,1fr) auto;align-items:center;gap:12px;text-align:left;padding:9px;border:1px solid #ffffff17;border-radius:10px;background:#121a2e;cursor:pointer}
+.reward-catalog-result:hover{border-color:#48e9ff88;background:#172541}
+.reward-catalog-result img{width:54px;height:68px;object-fit:cover;border-radius:6px;background:#202a42}
+.reward-catalog-result span{min-width:0}
+.reward-catalog-result b,.reward-catalog-result small{display:block;overflow:hidden;text-overflow:ellipsis}
+.reward-catalog-result b{font-size:11px;white-space:nowrap}
+.reward-catalog-result small{font-size:9px;color:var(--muted);line-height:1.45;margin-top:4px}
+.reward-catalog-result small:nth-of-type(1){color:var(--cyan)}
+.reward-catalog-result strong{font-size:9px;color:var(--cyan);white-space:nowrap}
+@media(max-width:600px){.reward-product-picker-head{align-items:stretch;flex-direction:column}.reward-product-picker-head .catalog-refresh{width:100%}.reward-catalog-dialog{padding:16px}.reward-catalog-filters{grid-template-columns:1fr}.reward-catalog-result{grid-template-columns:48px minmax(0,1fr)}.reward-catalog-result img{width:48px;height:62px}.reward-catalog-result strong{grid-column:2}}
