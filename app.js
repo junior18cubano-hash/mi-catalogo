@@ -90,6 +90,7 @@
    if(!value)return "";
    if(typeof value==="object")value=value.url||value.src||value.path||"";
    const raw=String(value).trim();if(!raw)return "";
+   if(raw.startsWith("//"))return "https:"+raw;
    if(/^(https?:|data:|blob:)/i.test(raw))return raw;
    const base=catalogMeta.source_url||"";
    try{return base?new URL(raw,base).href:raw}catch(_){return raw}
@@ -553,10 +554,16 @@ function renderPagination(totalPages){
    const gallery=document.createElement("div");gallery.className="reward-cover-gallery"+(products.length>1?" is-multiple":"");
    products.slice(0,12).forEach(product=>{
      const frame=document.createElement("div");frame.className="reward-cover-frame";
-     const im=document.createElement("img");im.src=product.image_url||"assets/ioa-multiverso-icon.svg";im.alt="Carátula de "+(product.title||c.title||"regalo");im.loading="lazy";im.referrerPolicy="no-referrer";
-     im.onerror=()=>{if(!im.dataset.fallback){im.dataset.fallback="1";im.src="assets/ioa-multiverso-icon.svg"}};
-     frame.append(im);
-     if(products.length>1){const name=document.createElement("small");name.textContent=product.title||"Producto";frame.append(name)}
+     const title=String(product.title||c.title||"Producto JOA");
+     const url=resolveCover(product.image_url||product.cover_url||product.poster_url||product.image||"");
+     if(url){
+       const im=document.createElement("img");im.src=url;im.alt="Carátula de "+title;im.loading="lazy";im.decoding="async";im.referrerPolicy="no-referrer";
+       im.onerror=()=>{im.remove();frame.classList.add("cover-unavailable");const missing=document.createElement("span");missing.className="reward-cover-missing";missing.textContent=title;frame.append(missing)};
+       frame.append(im);
+     }else{
+       frame.classList.add("cover-unavailable");const missing=document.createElement("span");missing.className="reward-cover-missing";missing.textContent=title;frame.append(missing);
+     }
+     if(products.length>1){const name=document.createElement("small");name.textContent=title;frame.append(name)}
      gallery.append(frame);
    });
    card.append(gallery);
