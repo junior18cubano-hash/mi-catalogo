@@ -577,7 +577,7 @@ function renderPagination(totalPages){
  function activateCommunityTab(tab){
    communityTab=tab;
    if(tab==="admin"&&!rewardAdmin()){toast("No tienes permisos para abrir este panel.");return}
-   $("[data-community-tab]").forEach(button=>button.classList.toggle("active",button.dataset.communityTab===tab));
+   document.querySelectorAll("[data-community-tab]").forEach(button=>button.classList.toggle("active",button.dataset.communityTab===tab));
    ["feed","friends","messages","groups","reviews","favorites","profile","rewards","admin"].forEach(name=>{
      const panel=$("#community-"+name+"-panel");if(panel)panel.hidden=name!==tab;
    });
@@ -933,7 +933,7 @@ function renderPagination(totalPages){
      const conversationId=await getOrCreateDirectConversation(friendId,friendName);
      activeConversationId=conversationId;communityTab="messages";
      $$("[data-community-tab]").forEach(b=>b.classList.toggle("active",b.dataset.communityTab==="messages"));
-     ["feed","friends","messages","groups","reviews","favorites","profile"].forEach(tab=>$("#community-"+tab+"-panel").hidden=tab!=="messages");
+     ["feed","friends","messages","groups","reviews","favorites","profile","rewards","admin"].forEach(tab=>$("#community-"+tab+"-panel").hidden=tab!=="messages");
      await loadCommunityChats();await openCommunityChat(conversationId,friendName);return conversationId;
    }catch(error){toast(communityError(error));return null}
  }
@@ -965,7 +965,7 @@ function renderPagination(totalPages){
      if(sent.error)throw sent.error;
      toast("Tu lista se envió a "+friendName+".");
      communityTab="messages";$$("[data-community-tab]").forEach(b=>b.classList.toggle("active",b.dataset.communityTab==="messages"));
-     ["feed","friends","messages","groups","reviews","favorites","profile"].forEach(tab=>$("#community-"+tab+"-panel").hidden=tab!=="messages");
+     ["feed","friends","messages","groups","reviews","favorites","profile","rewards","admin"].forEach(tab=>$("#community-"+tab+"-panel").hidden=tab!=="messages");
      await loadCommunityChats();await openCommunityChat(conversationId,friendName);
    }catch(error){toast(communityError(error))}
    finally{if(button)button.disabled=false}
