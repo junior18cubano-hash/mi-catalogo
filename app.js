@@ -605,10 +605,11 @@ function renderPagination(totalPages){
  function isServiceReward(c){return c?.campaign_kind==="service_purchase"}
  function toggleRewardCampaignKind(){
    const service=$("#reward-kind")?.value==="service_purchase";
-   const config=$("#reward-service-config"),requirements=$("#reward-community-requirements"),group=$("#reward-group-wrap");
+   const config=$("#reward-service-config"),requirements=$("#reward-community-requirements"),group=$("#reward-group-wrap"),picker=$("#reward-campaign-product-picker");
    if(config)config.hidden=!service;
    if(requirements)requirements.hidden=service;
    if(group)group.hidden=service;
+   if(picker)picker.hidden=service;
    if(service){$("#reward-type").value="service";$("#reward-mode").value="manual";$("#reward-winners").value="100"}
  }
  function renderServiceRewardPicker(){
