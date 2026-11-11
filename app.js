@@ -529,10 +529,45 @@ function renderPagination(totalPages){
    if(error){toast(communityError(error));return}
    await loadNotifications();toast("Notificaciones marcadas como leídas.");
  }
+
+ function rewardAdmin(){return currentUser?.app_metadata?.role==="admin"}
+ async function loadRewardGroups(){const s=$("#reward-group");if(!s||!supabase)return;const r=await supabase.from("community_groups").select("id,name").order("name").limit(300);if(r.error){toast(communityError(r.error));return}s.innerHTML='<option value="">Toda la comunidad</option>';(r.data||[]).forEach(g=>{const o=document.createElement("option");o.value=g.id;o.textContent=g.name;s.append(o)})}
+ function rewardDate(v){return v?new Date(v).toLocaleString("es",{dateStyle:"medium",timeStyle:"short"}):"Sin fecha límite"}
+ function rewardRequirements(c){const a=[];if(c.group_id)a.push("Miembros del grupo");if(c.min_days_member)a.push(c.min_days_member+" días en el grupo");if(c.min_posts)a.push(c.min_posts+" publicaciones");if(c.min_comments)a.push(c.min_comments+" comentarios");if(c.min_messages)a.push(c.min_messages+" mensajes");if(c.min_reactions)a.push(c.min_reactions+" reacciones");if(c.min_merit_points)a.push(c.min_merit_points+" puntos de mérito");return a.join(" · ")||"Sin requisitos adicionales"}
+ async function loadRewardCampaigns(){
+  const host=$("#reward-campaign-list");if(!host||!supabase)return;host.innerHTML='<p class="community-loading">Cargando recompensas…</p>';
+  const r=await supabase.from("reward_campaigns").select("*").order("created_at",{ascending:false}).limit(100);if(r.error){host.textContent=communityError(r.error);return}
+  const gr=await supabase.from("community_groups").select("id,name").limit(300),gm=new Map((gr.data||[]).map(g=>[g.id,g.name]));
+  const rows=(r.data||[]).filter(c=>rewardAdmin()||c.status==="published");host.innerHTML="";
+  if(!rows.length){host.innerHTML='<div class="community-empty"><span>🎁</span><h3>No hay campañas disponibles</h3><p>Vuelve pronto para descubrir nuevos regalos.</p></div>';return}
+  rows.forEach(c=>{const card=document.createElement("article");card.className="reward-campaign-card";if(c.image_url){const im=document.createElement("img");im.src=c.image_url;im.alt="";im.loading="lazy";im.referrerPolicy="no-referrer";card.append(im)}
+   const b=document.createElement("div");b.className="reward-campaign-body";const st=document.createElement("span");st.className="reward-state";st.textContent=c.status==="published"?"ABIERTA":c.status.toUpperCase();
+   const t=document.createElement("h4");t.textContent=c.title;const d=document.createElement("p");d.textContent=c.description||"Participa y demuestra tu compromiso con JOA.";
+   const prize=document.createElement("b");prize.textContent="🎁 "+(c.reward_details||c.reward_type);const group=document.createElement("small");group.textContent=c.group_id?"Grupo: "+(gm.get(c.group_id)||"Grupo JOA"):"Toda la comunidad";
+   const req=document.createElement("small");req.textContent="Requisitos: "+rewardRequirements(c);const end=document.createElement("small");end.textContent="Finaliza: "+rewardDate(c.ends_at);const acts=document.createElement("div");acts.className="reward-card-actions";
+   if(c.status==="published"){const btn=document.createElement("button");btn.className="button button-primary";btn.textContent="Participar";btn.addEventListener("click",()=>claimReward(c.id,btn));acts.append(btn)}
+   if(rewardAdmin()){const edit=document.createElement("button");edit.className="catalog-refresh";edit.textContent="Editar";edit.addEventListener("click",()=>fillRewardForm(c));const toggle=document.createElement("button");toggle.className="catalog-refresh";toggle.textContent=c.status==="published"?"Pausar":"Publicar";toggle.addEventListener("click",()=>changeRewardStatus(c,c.status==="published"?"paused":"published"));const del=document.createElement("button");del.className="catalog-refresh reward-danger";del.textContent="Eliminar";del.addEventListener("click",()=>deleteReward(c));acts.append(edit,toggle,del)}
+   b.append(st,t,d,prize,group,req,end,acts);card.append(b);host.append(card)
+  })
+ }
+ async function claimReward(id,btn){if(!currentUser){openAuth();return}btn.disabled=true;const r=await supabase.rpc("claim_reward_campaign",{p_campaign_id:id});btn.disabled=false;if(r.error){toast(r.error.message);return}toast("Participación registrada; queda pendiente de revisión.");await loadMyRewardClaims()}
+ async function loadMyRewardClaims(){const host=$("#reward-my-claims");if(!host||!currentUser||!supabase)return;const r=await supabase.from("reward_claims").select("id,status,merit_points_snapshot,created_at,reward_campaigns(title)").eq("user_id",currentUser.id).order("created_at",{ascending:false}).limit(50);if(r.error){host.textContent=communityError(r.error);return}host.innerHTML="";if(!r.data?.length){host.textContent="Todavía no has participado.";return}r.data.forEach(x=>{const row=document.createElement("div");row.className="reward-claim-row";const b=document.createElement("b");b.textContent=x.reward_campaigns?.title||"Recompensa JOA";const s=document.createElement("span");s.textContent=({pending:"Pendiente",approved:"Seleccionado",rejected:"No seleccionado",delivered:"Entregado"})[x.status]||x.status;const m=document.createElement("small");m.textContent=x.merit_points_snapshot+" puntos · "+rewardDate(x.created_at);row.append(b,s,m);host.append(row)})}
+ async function loadRewardAdminClaims(){const host=$("#reward-admin-claims");if(!host||!rewardAdmin()||!supabase)return;const r=await supabase.from("reward_claims").select("id,status,merit_points_snapshot,created_at,user_id,admin_note,reward_campaigns(title)").order("created_at",{ascending:false}).limit(200);if(r.error){host.textContent=communityError(r.error);return}const ids=[...new Set((r.data||[]).map(x=>x.user_id))],p=ids.length?await supabase.from("profiles").select("id,display_name,username").in("id",ids):{data:[]},pm=new Map((p.data||[]).map(x=>[x.id,x]));host.innerHTML="";if(!r.data?.length){host.textContent="No hay solicitudes todavía.";return}r.data.forEach(x=>{const row=document.createElement("article");row.className="reward-admin-claim";const who=pm.get(x.user_id)||{};const title=document.createElement("b");title.textContent=(who.display_name||who.username||"Jugador")+" · "+(x.reward_campaigns?.title||"Campaña");const meta=document.createElement("small");meta.textContent=x.status+" · "+x.merit_points_snapshot+" puntos · "+rewardDate(x.created_at);const actions=document.createElement("div");actions.className="reward-card-actions";[["approved","Aprobar"],["rejected","Rechazar"],["delivered","Entregado"]].forEach(([s,label])=>{const b=document.createElement("button");b.className="catalog-refresh";b.textContent=label;b.disabled=x.status===s||x.status==="delivered";b.addEventListener("click",()=>reviewRewardClaim(x,s));actions.append(b)});row.append(title,meta,actions);host.append(row)})}
+ async function reviewRewardClaim(x,status){if(!rewardAdmin())return;const note=prompt("Nota administrativa (opcional):",x.admin_note||"");if(note===null)return;const patch={status,admin_note:note,reviewed_by:currentUser.id,reviewed_at:new Date().toISOString()};if(status==="delivered")patch.delivered_at=new Date().toISOString();const r=await supabase.from("reward_claims").update(patch).eq("id",x.id);if(r.error){toast(communityError(r.error));return}toast("Solicitud actualizada.");await loadRewardAdminClaims();await loadMyRewardClaims()}
+ function fillRewardForm(c){$("#reward-edit-id").value=c.id;$("#reward-title").value=c.title;$("#reward-description").value=c.description||"";$("#reward-image").value=c.image_url||"";$("#reward-type").value=c.reward_type;$("#reward-details").value=c.reward_details||"";$("#reward-group").value=c.group_id||"";$("#reward-start").value=c.starts_at?new Date(c.starts_at).toISOString().slice(0,16):"";$("#reward-end").value=c.ends_at?new Date(c.ends_at).toISOString().slice(0,16):"";$("#reward-status").value=c.status;$("#reward-winners").value=c.max_winners;$("#reward-mode").value=c.selection_mode;$("#reward-days").value=c.min_days_member;$("#reward-posts").value=c.min_posts;$("#reward-comments").value=c.min_comments;$("#reward-messages").value=c.min_messages;$("#reward-reactions").value=c.min_reactions;$("#reward-points").value=c.min_merit_points;$("#reward-save").textContent="Guardar cambios";$("#reward-title").focus()}
+ async function saveRewardCampaign(e){e.preventDefault();if(!rewardAdmin()||!supabase)return;const btn=$("#reward-save");btn.disabled=true;const id=$("#reward-edit-id").value,dt=v=>v?new Date(v).toISOString():null,p={title:$("#reward-title").value.trim(),description:$("#reward-description").value.trim(),image_url:$("#reward-image").value.trim()||null,reward_type:$("#reward-type").value,reward_details:$("#reward-details").value.trim(),group_id:$("#reward-group").value||null,starts_at:dt($("#reward-start").value)||new Date().toISOString(),ends_at:dt($("#reward-end").value),status:$("#reward-status").value,max_winners:+$("#reward-winners").value,selection_mode:$("#reward-mode").value,min_days_member:+$("#reward-days").value||0,min_posts:+$("#reward-posts").value||0,min_comments:+$("#reward-comments").value||0,min_messages:+$("#reward-messages").value||0,min_reactions:+$("#reward-reactions").value||0,min_merit_points:+$("#reward-points").value||0,updated_at:new Date().toISOString()};if(!id)p.created_by=currentUser.id;const r=id?await supabase.from("reward_campaigns").update(p).eq("id",id):await supabase.from("reward_campaigns").insert(p);btn.disabled=false;if(r.error){toast(communityError(r.error));return}$("#reward-form").reset();$("#reward-edit-id").value="";$("#reward-save").textContent="Crear campaña";toast(id?"Campaña actualizada.":"Campaña creada.");await loadRewardCampaigns()}
+ async function changeRewardStatus(c,status){const r=await supabase.from("reward_campaigns").update({status,updated_at:new Date().toISOString()}).eq("id",c.id);if(r.error){toast(communityError(r.error));return}await loadRewardCampaigns()}
+ async function deleteReward(c){if(!rewardAdmin()||!confirm("¿Eliminar esta campaña y todas sus solicitudes?"))return;const r=await supabase.from("reward_campaigns").delete().eq("id",c.id);if(r.error){toast(communityError(r.error));return}await loadRewardCampaigns();await loadRewardAdminClaims()}
+ async function loadRewardAudit(){const h=$("#reward-audit-list");if(!h||!rewardAdmin()||!supabase)return;const r=await supabase.from("reward_audit_log").select("id,actor_id,action,entity_type,entity_id,created_at").order("created_at",{ascending:false}).limit(40);if(r.error){h.textContent=communityError(r.error);return}h.innerHTML="";(r.data||[]).forEach(x=>{const d=document.createElement("div");d.className="reward-audit-row";d.textContent=rewardDate(x.created_at)+" · "+x.action+" · "+x.entity_type+" · "+x.entity_id;h.append(d)});if(!r.data?.length)h.textContent="Sin movimientos registrados."}
+ async function loadRewardsWorkspace(){await loadRewardCampaigns();await loadMyRewardClaims();if(rewardAdmin()){await loadRewardGroups();await loadRewardAdminClaims();await loadRewardAudit()}}
+ $("#reward-form")?.addEventListener("submit",saveRewardCampaign);
+ $("#reward-reset")?.addEventListener("click",()=>{ $("#reward-form")?.reset();$("#reward-edit-id").value="";$("#reward-save").textContent="Crear campaña" });
+
  function activateCommunityTab(tab){
    communityTab=tab;
-   $$("[data-community-tab]").forEach(button=>button.classList.toggle("active",button.dataset.communityTab===tab));
-   ["feed","friends","messages","groups","reviews","favorites","profile"].forEach(name=>{
+   if(tab==="admin"&&!rewardAdmin()){toast("No tienes permisos para abrir este panel.");return}
+   $("[data-community-tab]").forEach(button=>button.classList.toggle("active",button.dataset.communityTab===tab));
+   ["feed","friends","messages","groups","reviews","favorites","profile","rewards","admin"].forEach(name=>{
      const panel=$("#community-"+name+"-panel");if(panel)panel.hidden=name!==tab;
    });
    if(tab==="messages")loadCommunityChats();
@@ -540,6 +575,7 @@ function renderPagination(totalPages){
    if(tab==="groups")loadCommunityGroups();
    if(tab==="reviews")loadCommunityReviews();
    if(tab==="favorites"){renderCommunityFavorites();loadCommunityFavoriteFriends();}
+   if(tab==="rewards"||tab==="admin")loadRewardsWorkspace();
  }
  async function openNotification(item){
    const panel=$("#notification-panel");if(panel?.open)panel.close();$("#notifications-toggle")?.setAttribute("aria-expanded","false");
@@ -1417,6 +1453,7 @@ function renderPagination(totalPages){
    const btn=$("#login-open");
    if(user){
      const meta=user.user_metadata||{};
+     const adminTab=$("#community-admin-tab");if(adminTab)adminTab.hidden=!rewardAdmin();
      const avatarUrl=communityProfile?.id===user.id?communityProfile.avatar_url:(meta.avatar_url||meta.picture);
      const accountLabel=communityProfile?.display_name||meta.full_name||meta.name||user.email||"Mi cuenta";
      const initials=communityInitials(accountLabel);
@@ -1433,6 +1470,7 @@ function renderPagination(totalPages){
      btn.classList.add("is-logged-in");
      $("#community-join").textContent="Ir a mi comunidad";$("#community-join").querySelector("b")?.remove();
    }else{
+     const adminTab=$("#community-admin-tab");if(adminTab)adminTab.hidden=true;
      btn.classList.remove("is-logged-in");btn.removeAttribute("aria-label");
      btn.innerHTML='Entrar <span>↗</span>';btn.title="Iniciar sesión";
      $("#community-join").textContent="Entrar a la comunidad";closeCommunity();communityProfile=null;
