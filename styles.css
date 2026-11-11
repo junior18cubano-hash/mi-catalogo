@@ -868,9 +868,6 @@ dialog.notification-panel::backdrop{background:rgba(2,5,14,.78);backdrop-filter:
 .about-business-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:20px}.about-business-actions .button{min-height:43px}
 .about-contact-actions{display:flex;gap:15px;flex-wrap:wrap;margin-top:12px}.about-action-link{color:#80eaff;font-size:11px;font-weight:800;text-decoration:none}.about-action-link:hover{text-decoration:underline}
 .about-hours-card .about-card-icon{color:#a99aff;border-color:#a98aff55;background:#a98aff14}
-.about-services-strip{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:22px}
-.about-services-strip>div{display:grid;gap:7px;min-width:0;padding:16px;border:1px solid #8bb9ff20;border-radius:13px;background:linear-gradient(145deg,#111c31,#0b1120)}
-.about-services-strip span{color:#68eaff;font:700 9px Orbitron,sans-serif;letter-spacing:.12em}.about-services-strip b{color:#eef6ff;font-size:11px}.about-services-strip small{color:#9eacc7;font-size:9px;line-height:1.5}
 .about-note{margin-top:17px}
-@media(max-width:800px){.about-business-hero{grid-template-columns:1fr}.about-business-mark{min-height:145px}.about-services-strip{grid-template-columns:repeat(2,minmax(0,1fr))}}
-@media(max-width:520px){.about-business-hero{padding:17px;border-radius:17px}.about-business-mark{min-height:125px}.about-business-copy h3{font-size:19px}.about-business-copy p{font-size:12px}.about-business-actions{display:grid;grid-template-columns:1fr}.about-business-actions .button{justify-content:center}.about-services-strip{gap:8px}.about-services-strip>div{padding:12px}.about-services-strip b{font-size:10px}.about-services-strip small{font-size:8px}}
+@media(max-width:800px){.about-business-hero{grid-template-columns:1fr}.about-business-mark{min-height:145px}}
+@media(max-width:520px){.about-business-hero{padding:17px;border-radius:17px}.about-business-mark{min-height:125px}.about-business-copy h3{font-size:19px}.about-business-copy p{font-size:12px}.about-business-actions{display:grid;grid-template-columns:1fr}.about-business-actions .button{justify-content:center}}
