@@ -610,7 +610,7 @@ function renderPagination(totalPages){
    if(requirements)requirements.hidden=service;
    if(group)group.hidden=service;
    if(picker)picker.hidden=service;
-   if(service){$("#reward-type").value="service";$("#reward-mode").value="manual";$("#reward-winners").value="100"}
+   if(service){rewardSelectedCatalogItems=[];renderRewardProductPreview();$("#reward-type").value="service";$("#reward-mode").value="manual";$("#reward-winners").value="100"}
  }
  function renderServiceRewardPicker(){
    const host=$("#service-reward-results");if(!host||!activeServiceReward)return;
