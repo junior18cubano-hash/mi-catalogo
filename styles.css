@@ -852,3 +852,25 @@ dialog.notification-panel::backdrop{background:rgba(2,5,14,.78);backdrop-filter:
 .about-directions{display:flex;justify-content:space-between;align-items:center;padding:14px 17px;color:var(--cyan);font-size:11px;font-weight:800}
 @media(max-width:800px){.about-layout{grid-template-columns:1fr}.about-map-card iframe{height:300px}}
 @media(max-width:650px){.about-section{padding-top:65px}.about-contact-card{padding:16px;gap:12px}.about-contact-card strong{font-size:17px}.about-map-card iframe{height:260px}.mobile-nav{grid-template-columns:repeat(5,minmax(0,1fr))}.mobile-nav a{font-size:clamp(7px,2.15vw,9px)}}
+
+
+/* Perfil comercial J.O.A GAMER's PC: identidad, contacto y servicios */
+.about-business-hero{position:relative;display:grid;grid-template-columns:minmax(220px,.72fr) 1.28fr;gap:clamp(20px,4vw,48px);align-items:center;overflow:hidden;margin:0 0 22px;padding:clamp(22px,4vw,42px);border:1px solid #48e9ff45;border-radius:22px;background:radial-gradient(ellipse at 15% 20%,#16466b88,transparent 48%),radial-gradient(ellipse at 90% 80%,#512b7180,transparent 44%),linear-gradient(125deg,#101c34,#0b1020 65%,#17102a);box-shadow:0 22px 65px #0005}
+.about-business-hero:after{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(110deg,transparent 45%,#48e9ff08 100%);border-radius:inherit}
+.about-business-mark{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:190px;padding:20px;border:1px solid #6eeeff55;border-radius:18px;background:linear-gradient(145deg,#071321d9,#17132be8);box-shadow:inset 0 0 45px #43dfff12,0 0 35px #36d8ff13;text-align:center}
+.about-business-mark:before,.about-business-mark:after{content:"";position:absolute;width:34px;height:34px;border-color:#63eaff;border-style:solid;opacity:.8}
+.about-business-mark:before{top:10px;left:10px;border-width:1px 0 0 1px}.about-business-mark:after{right:10px;bottom:10px;border-width:0 1px 1px 0}
+.about-business-mark span{font:900 clamp(28px,4vw,42px) Orbitron,sans-serif;letter-spacing:.1em;color:#eafaff;text-shadow:0 0 24px #49ddff77}
+.about-business-mark b{margin-top:5px;font:800 clamp(14px,2vw,20px) Orbitron,sans-serif;letter-spacing:.12em;color:#67eaff}
+.about-business-mark i{margin-top:16px;color:#a8b9d7;font:700 8px Inter,sans-serif;letter-spacing:.2em;font-style:normal}
+.about-business-copy{position:relative;z-index:1;min-width:0}.about-business-kicker{display:flex;align-items:center;gap:9px;color:#8deeff;font:700 9px Orbitron,sans-serif;letter-spacing:.13em}.about-business-kicker i{width:7px;height:7px;border-radius:50%;background:#39e58c;box-shadow:0 0 12px #39e58c}
+.about-business-copy h3{margin:15px 0 10px;color:#f3f8ff;font:800 clamp(20px,3vw,30px) Orbitron,sans-serif;line-height:1.4}.about-business-copy h3 span{color:#65eaff}.about-business-copy p{max-width:620px;margin:0;color:#b5c3dc;font-size:13px;line-height:1.8}
+.about-business-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:20px}.about-business-actions .button{min-height:43px}
+.about-contact-actions{display:flex;gap:15px;flex-wrap:wrap;margin-top:12px}.about-action-link{color:#80eaff;font-size:11px;font-weight:800;text-decoration:none}.about-action-link:hover{text-decoration:underline}
+.about-hours-card .about-card-icon{color:#a99aff;border-color:#a98aff55;background:#a98aff14}
+.about-services-strip{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:22px}
+.about-services-strip>div{display:grid;gap:7px;min-width:0;padding:16px;border:1px solid #8bb9ff20;border-radius:13px;background:linear-gradient(145deg,#111c31,#0b1120)}
+.about-services-strip span{color:#68eaff;font:700 9px Orbitron,sans-serif;letter-spacing:.12em}.about-services-strip b{color:#eef6ff;font-size:11px}.about-services-strip small{color:#9eacc7;font-size:9px;line-height:1.5}
+.about-note{margin-top:17px}
+@media(max-width:800px){.about-business-hero{grid-template-columns:1fr}.about-business-mark{min-height:145px}.about-services-strip{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:520px){.about-business-hero{padding:17px;border-radius:17px}.about-business-mark{min-height:125px}.about-business-copy h3{font-size:19px}.about-business-copy p{font-size:12px}.about-business-actions{display:grid;grid-template-columns:1fr}.about-business-actions .button{justify-content:center}.about-services-strip{gap:8px}.about-services-strip>div{padding:12px}.about-services-strip b{font-size:10px}.about-services-strip small{font-size:8px}}
