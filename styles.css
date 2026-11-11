@@ -987,3 +987,18 @@ dialog.notification-panel::backdrop{background:rgba(2,5,14,.78);backdrop-filter:
 .reward-cover-frame.cover-unavailable{display:flex;align-items:center;justify-content:center;min-height:118px;padding:12px;background:linear-gradient(145deg,#14243b,#080d1b)}
 .reward-cover-frame .reward-cover-missing{display:block;max-width:100%;color:#8deeff;font-family:inherit;font-size:clamp(11px,2vw,16px);font-weight:800;line-height:1.35;text-align:center;overflow-wrap:anywhere}
 .reward-cover-frame.cover-unavailable small{position:absolute;right:0;bottom:0;left:0}
+
+/* Regalos por contratación de servicios informáticos */
+.reward-service-config{display:grid;grid-template-columns:1.4fr .8fr;gap:12px;padding:16px;border:1px solid rgba(77,218,255,.25);border-radius:16px;background:rgba(31,172,211,.07);margin:12px 0}
+.reward-service-config[hidden]{display:none}
+.reward-service-config small{grid-column:1/-1;color:#9db7c9}
+.service-reward-picker{width:min(920px,calc(100vw - 28px));max-height:min(88vh,900px)}
+.reward-catalog-dialog-head h3{margin:4px 0}
+.reward-catalog-dialog-head p{color:#9db7c9;margin:5px 0 0}
+.service-reward-picker-tools{display:grid;grid-template-columns:1fr 190px;gap:10px;margin:14px 0}
+.service-reward-picker-tools input,.service-reward-picker-tools select{min-width:0;width:100%}
+.service-reward-selected{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}
+.service-reward-chip{border:1px solid rgba(65,224,255,.35);background:rgba(35,190,224,.12);border-radius:999px;padding:7px 11px;color:#c9f7ff;font-size:12px;cursor:pointer}
+.service-reward-picker .reward-catalog-results{max-height:48vh;overflow:auto}
+.service-reward-picker .reward-catalog-dialog-actions{display:flex;align-items:center;justify-content:space-between;gap:12px;position:sticky;bottom:0;background:#090f1d;padding-top:12px}
+@media(max-width:640px){.reward-service-config,.service-reward-picker-tools{grid-template-columns:1fr}.service-reward-picker .reward-catalog-results{max-height:42vh}.service-reward-picker .reward-catalog-dialog-actions{flex-wrap:wrap}}
