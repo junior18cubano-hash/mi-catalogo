@@ -981,3 +981,9 @@ dialog.notification-panel::backdrop{background:rgba(2,5,14,.78);backdrop-filter:
 .reward-catalog-dialog-actions button:disabled{opacity:.45;cursor:not-allowed}
 @media(max-width:760px){.reward-campaign-card{grid-template-columns:108px minmax(0,1fr)}.reward-cover-gallery,.reward-cover-frame,.reward-cover-frame img{min-height:160px}.reward-cover-gallery.is-multiple .reward-cover-frame,.reward-cover-gallery.is-multiple .reward-cover-frame img{min-height:105px;height:105px}}
 @media(max-width:480px){.reward-campaign-card{grid-template-columns:1fr}.reward-cover-gallery{grid-template-columns:repeat(2,minmax(0,1fr));min-height:0}.reward-cover-frame,.reward-cover-frame img{min-height:150px;height:150px}.reward-cover-gallery.is-multiple .reward-cover-frame,.reward-cover-gallery.is-multiple .reward-cover-frame img{min-height:130px;height:130px}.reward-product-preview{grid-template-columns:1fr}.reward-product-preview-item{grid-template-columns:52px minmax(0,1fr) auto}}
+
+
+/* JOA Rewards: si falta una portada, mostrar el nombre del producto y nunca el logo de marca como sustituto */
+.reward-cover-frame.cover-unavailable{display:flex;align-items:center;justify-content:center;min-height:118px;padding:12px;background:linear-gradient(145deg,#14243b,#080d1b)}
+.reward-cover-frame .reward-cover-missing{display:block;max-width:100%;color:#8deeff;font-family:inherit;font-size:clamp(11px,2vw,16px);font-weight:800;line-height:1.35;text-align:center;overflow-wrap:anywhere}
+.reward-cover-frame.cover-unavailable small{position:absolute;right:0;bottom:0;left:0}
