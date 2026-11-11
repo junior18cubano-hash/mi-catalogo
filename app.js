@@ -530,6 +530,16 @@ function renderPagination(totalPages){
    await loadNotifications();toast("Notificaciones marcadas como leídas.");
  }
 
+
+ async function loadPublicRewardShowcase(){
+   const host=$("#reward-public-campaign-list");if(!host||!supabase)return;
+   const {data,error}=await supabase.from("reward_campaigns").select("id,title,description,image_url,reward_type,reward_details,group_id,starts_at,ends_at,min_days_member,min_posts,min_comments,min_messages,min_reactions,min_merit_points").eq("status","published").order("created_at",{ascending:false}).limit(6);
+   if(error){host.textContent="Las recompensas estarán disponibles cuando el servicio se conecte.";return}
+   host.innerHTML="";
+   if(!data?.length){host.innerHTML='<p class="community-hint">Próximamente publicaremos los primeros paquetes de regalo.</p>';return}
+   data.forEach(c=>{const card=document.createElement("article");card.className="reward-campaign-card";if(c.image_url){const im=document.createElement("img");im.src=c.image_url;im.alt="";im.loading="lazy";im.referrerPolicy="no-referrer";card.append(im)}const body=document.createElement("div");body.className="reward-campaign-body";const badge=document.createElement("span");badge.className="reward-state";badge.textContent="RECOMPENSA ABIERTA";const title=document.createElement("h4");title.textContent=c.title;const desc=document.createElement("p");desc.textContent=c.description||"Únete a la comunidad y participa.";const prize=document.createElement("b");prize.textContent="🎁 "+(c.reward_details||c.reward_type);const req=document.createElement("small");req.textContent="Requisitos: "+rewardRequirements(c);const btn=document.createElement("button");btn.className="button button-primary";btn.textContent="Entrar y participar";btn.addEventListener("click",()=>{if(!currentUser){openAuth();return}openCommunity();if(communityProfile?.id===currentUser.id)activateCommunityTab("rewards")});body.append(badge,title,desc,prize,req,btn);card.append(body);host.append(card)})
+ }
+
  function rewardAdmin(){return currentUser?.app_metadata?.role==="admin"}
  async function loadRewardGroups(){const s=$("#reward-group");if(!s||!supabase)return;const r=await supabase.from("community_groups").select("id,name").order("name").limit(300);if(r.error){toast(communityError(r.error));return}s.innerHTML='<option value="">Toda la comunidad</option>';(r.data||[]).forEach(g=>{const o=document.createElement("option");o.value=g.id;o.textContent=g.name;s.append(o)})}
  function rewardDate(v){return v?new Date(v).toLocaleString("es",{dateStyle:"medium",timeStyle:"short"}):"Sin fecha límite"}
@@ -1612,6 +1622,7 @@ function renderPagination(totalPages){
      document.documentElement.dataset.supabase="ready";
       loadCatalogReviewSummaries(sortedItems().slice((currentPage-1)*pageSize,currentPage*pageSize));
      if(!session?.user&&!callbackCode)$("#auth-message").textContent="Servicio de acceso listo. Puedes iniciar sesión o crear una cuenta.";
+     await loadPublicRewardShowcase();
      return true;
    })().catch(error=>{
      if(/[?&](code|error|error_description)=/.test(window.location.search)){
