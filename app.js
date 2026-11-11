@@ -533,13 +533,13 @@ function renderPagination(totalPages){
 
  function readRewardBundle(details){
    const raw=String(details||"");
-   const prefix="JOA_REWARD_BUNDLE_V1\\n";
+   const prefix="JOA_REWARD_BUNDLE_V1::";
    if(!raw.startsWith(prefix))return {text:raw,products:[]};
    try{const data=JSON.parse(raw.slice(prefix.length));return {text:String(data.text||""),products:Array.isArray(data.products)?data.products.slice(0,12):[]}}catch(error){console.warn("JOA Rewards: paquete no legible",error);return {text:raw,products:[]}}
  }
  function rewardDetailsForStorage(text,products){
    const clean=(products||[]).slice(0,12).map(p=>({key:String(p.key||"").slice(0,180),title:String(p.title||"Producto").slice(0,180),image_url:String(p.image_url||"").slice(0,2000),type:String(p.type||"").slice(0,80),year:String(p.year||"").slice(0,30),description:String(p.description||"").slice(0,500),facts:Array.isArray(p.facts)?p.facts.slice(0,10).map(x=>String(x).slice(0,180)):[]}));
-   return clean.length?"JOA_REWARD_BUNDLE_V1\\n"+JSON.stringify({text:String(text||"").slice(0,1800),products:clean}):String(text||"").trim();
+   return clean.length?"JOA_REWARD_BUNDLE_V1::"+JSON.stringify({text:String(text||"").slice(0,1800),products:clean}):String(text||"").trim();
  }
  function rewardPrizeLabel(c){
    const bundle=readRewardBundle(c.reward_details);
@@ -561,7 +561,8 @@ function renderPagination(totalPages){
    });
    card.append(gallery);
  }
-\n async function loadPublicRewardShowcase(){
+
+ async function loadPublicRewardShowcase(){
    const host=$("#reward-public-campaign-list");if(!host||!supabase)return;
    const {data,error}=await supabase.from("reward_campaigns").select("id,title,description,image_url,reward_type,reward_details,group_id,starts_at,ends_at,min_days_member,min_posts,min_comments,min_messages,min_reactions,min_merit_points").eq("status","published").order("created_at",{ascending:false}).limit(6);
    if(error){host.textContent="Las recompensas estarán disponibles cuando el servicio se conecte.";return}
@@ -590,23 +591,6 @@ function renderPagination(totalPages){
    return facts;
  }
  function rewardCatalogItemKey(item){return String(item.id??item.external_id??item.igdb_id??item.tmdb_id??item.slug??itemTitle(item)).slice(0,180)}
- function renderRewardCatalogPicker(){
-   const host=$("#reward-catalog-results");if(!host)return;
-   const query=($("#reward-catalog-search")?.value||"").trim().toLocaleLowerCase("es");
-   const category=$("#reward-catalog-category")?.value||"";
-   const matches=catalogItems.filter(item=>(!category||categoryFor(itemCategoryValue(item))===category)&&(!query||[itemTitle(item),itemDescription(item),itemType(item),itemPlatform(item),item.genre,item.genres].flat().join(" ").toLocaleLowerCase("es").includes(query))).slice(0,80);
-   host.innerHTML="";
-   if(!catalogItems.length){host.textContent="El catálogo todavía se está cargando. Espera unos segundos y vuelve a abrir esta ventana.";return}
-   if(!matches.length){host.textContent="No encontramos productos con esa búsqueda.";return}
-   matches.forEach(item=>{
-     const row=document.createElement("button");row.type="button";row.className="reward-catalog-result";
-     const cover=document.createElement("img");cover.alt="";cover.loading="lazy";cover.src=resolveCover(itemCover(item))||"assets/ioa-multiverso-icon.svg";cover.onerror=()=>{cover.src="assets/ioa-multiverso-icon.svg"};
-     const info=document.createElement("span"),name=document.createElement("b"),meta=document.createElement("small"),desc=document.createElement("small");
-     name.textContent=itemTitle(item);meta.textContent=cardTypeLabel(item)+" · "+(itemYear(item)||"Año no indicado");desc.textContent=itemDescription(item).slice(0,150);
-     info.append(name,meta,desc);const choose=document.createElement("strong");choose.textContent="Seleccionar ↗";row.append(cover,info,choose);
-     row.addEventListener("click",()=>selectRewardCatalogItem(item));host.append(row);
-   });
- }
  function rewardProductRecord(item){
    return {key:rewardCatalogItemKey(item),title:itemTitle(item),image_url:resolveCover(itemCover(item)),type:cardTypeLabel(item),year:String(itemYear(item)||""),description:itemDescription(item).slice(0,500),facts:rewardProductFacts(item)};
  }
