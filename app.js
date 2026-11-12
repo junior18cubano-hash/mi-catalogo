@@ -70,6 +70,51 @@
  const CATALOG_VERSION_URL="https://raw.githubusercontent.com/junior18cubano-hash/Actualizacion-Catalogo/main/version.json";
  const CATALOG_DATA_URL=window.JOA_CONFIG?.catalogJsonUrl||"https://raw.githubusercontent.com/junior18cubano-hash/Actualizacion-Catalogo/main/Update.json";
  const CATALOG_CACHE="joa-web-catalog-v1";
+ const RECENT_ITEMS_PREFIX="joa_recent_items_v1:";
+ const HOME_VISIT_KEY="joa_home_visited_v1";
+ let firstHomeVisit=false;
+ try{firstHomeVisit=localStorage.getItem(HOME_VISIT_KEY)!=="1";localStorage.setItem(HOME_VISIT_KEY,"1")}catch(error){}
+ function renderHeroPersonalization(user=currentUser){
+   const avatar=$("#hero-welcome-avatar"),title=$("#hero-welcome-title"),subtitle=$("#hero-welcome-subtitle");
+   if(!avatar||!title||!subtitle)return;
+   avatar.replaceChildren();
+   if(user){
+     const meta=user.user_metadata||{};
+     const profile=communityProfile?.id===user.id?communityProfile:null;
+     const name=profile?.display_name||meta.full_name||meta.name||String(user.email||"").split("@")[0]||"jugador";
+     const avatarUrl=profile?.avatar_url||meta.avatar_url||meta.picture||"";
+     if(avatarUrl){
+       const image=document.createElement("img");image.src=avatarUrl;image.alt="";image.loading="lazy";image.referrerPolicy="no-referrer";
+       image.addEventListener("error",()=>{image.remove();avatar.textContent=communityInitials(name)},{once:true});avatar.append(image);
+     }else avatar.textContent=communityInitials(name);
+     title.textContent="¡Qué bueno verte, "+name+"!";
+     subtitle.textContent="Tu universo está listo. Sigue descubriendo y conecta con la comunidad.";
+   }else{
+     avatar.textContent="✦";title.textContent=firstHomeVisit?"¡Bienvenido a tu universo!":"Tu próximo nivel te espera";
+     subtitle.textContent=firstHomeVisit?"Explora el catálogo y encuentra algo que te encante.":"Descubre juegos, historias y personas que comparten tus gustos.";
+   }
+ }
+ function recentItemsStorageKey(){return RECENT_ITEMS_PREFIX+(currentUser?.id||"guest")}
+ function readRecentItemKeys(){try{const value=JSON.parse(localStorage.getItem(recentItemsStorageKey())||"[]");return Array.isArray(value)?value.filter(x=>typeof x==="string").slice(0,4):[]}catch(error){return []}}
+ function rememberRecentItem(item){
+   try{const key=reviewItemKey(item),items=[key,...readRecentItemKeys().filter(value=>value!==key)].slice(0,4);localStorage.setItem(recentItemsStorageKey(),JSON.stringify(items))}
+   catch(error){console.warn("JOA: no se pudo guardar el historial local",error)}
+   renderContinueExploring();
+ }
+ function renderContinueExploring(){
+   const section=$("#continue-section"),host=$("#continue-grid"),count=$("#continue-count");if(!section||!host)return;
+   const keys=readRecentItemKeys(),items=keys.map(key=>catalogItems.find(item=>reviewItemKey(item)===key)).filter(Boolean);
+   host.replaceChildren();section.hidden=!items.length;if(count)count.textContent=items.length+" "+(items.length===1?"contenido":"contenidos");
+   items.forEach(item=>{
+     const button=document.createElement("button");button.type="button";button.className="continue-card";
+     const cover=document.createElement("span");cover.className="continue-card-cover";const url=resolveCover(itemCover(item));
+     if(url){const image=document.createElement("img");image.src=url;image.alt="";image.loading="lazy";image.decoding="async";image.onerror=()=>{image.remove();cover.textContent=itemTitle(item).slice(0,2).toLocaleUpperCase("es")};cover.append(image)}
+     else cover.textContent=itemTitle(item).slice(0,2).toLocaleUpperCase("es");
+     const copy=document.createElement("span");copy.className="continue-card-copy";const type=document.createElement("small");type.textContent=cardTypeLabel(item);
+     const name=document.createElement("strong");name.textContent=itemTitle(item);const action=document.createElement("span");action.className="continue-card-action";action.textContent="Ver detalles ↗";
+     copy.append(type,name,action);button.append(cover,copy);button.addEventListener("click",()=>openCatalogDetail(item));host.append(button);
+   });
+ }
  let catalogItems=[],catalogMeta={},activeCategory="",activeSubcategory="",activePlatform="",searchTerm="",sortMode="name",pageSize=20,currentPage=1;
   let catalogFavorites=[],catalogFavoritesByKey=new Map();
  const categoryAliases={
@@ -175,6 +220,7 @@
  }
  function openCatalogDetail(item){
    const dialog=$("#catalog-detail-dialog"),content=$("#catalog-detail-content");if(!dialog||!content)return;
+   rememberRecentItem(item);
    content.innerHTML="";
    const cover=resolveCover(itemCover(item)),hero=document.createElement("div");hero.className="detail-hero";
    if(cover){const img=document.createElement("img");img.src=cover;img.alt="Portada de "+itemTitle(item);img.onerror=()=>img.remove();hero.append(img)}
@@ -302,7 +348,7 @@ function renderPagination(totalPages){
    const tag=$(".demo-tag");if(tag)tag.textContent=filtered.length.toLocaleString("es")+" ELEMENTOS";
    if(!shown.length)grid.innerHTML='<p class="catalog-empty">No encontramos contenido con esos criterios.</p>';
    const count=$("#catalog-count");if(count)count.textContent=filtered.length.toLocaleString("es")+" resultados · Página "+currentPage+" de "+totalPages;
-   renderPagination(totalPages);renderFavoriteButtons();loadCatalogReviewSummaries(shown);
+   renderPagination(totalPages);renderFavoriteButtons();loadCatalogReviewSummaries(shown);renderContinueExploring();
  }
 
   function favoriteSnapshot(item){return {id:item.id??item.external_id??item.igdb_id??item.tmdb_id??null,slug:item.slug||null,year:item.year||item.ano||item.año||item.release_year||null,platform:item.platform||item.platforms||item.consola||null,genre:item.genre||item.genres||item.generos||item.genero||null,description:itemDescription(item)}}
@@ -1681,6 +1727,7 @@ function renderPagination(totalPages){
  }
  function updateHeader(user,session=null){
    currentUser=user||null;currentSession=session||null;
+   renderHeroPersonalization(user);
    const btn=$("#login-open");
    if(user){
      const meta=user.user_metadata||{};
@@ -1722,7 +1769,7 @@ function renderPagination(totalPages){
    const userId=user.id;
    Promise.resolve(communityProfilePromise).then(async profile=>{
      if(!profile||currentUser?.id!==userId)return;
-     communityProfile=profile;startNotificationRealtime();await loadNotifications();
+     communityProfile=profile;renderHeroPersonalization(currentUser);startNotificationRealtime();await loadNotifications();
      if(currentUser?.id===userId&&communityRequested)openCommunity();
    }).catch(error=>{
      if(currentUser?.id!==userId)return;
@@ -1860,5 +1907,6 @@ function renderPagination(totalPages){
    });
    return authReadyPromise;
  }
+ renderHeroPersonalization(null);renderContinueExploring();
  loadCatalog();initSupabase();
 })();
