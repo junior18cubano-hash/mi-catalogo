@@ -991,6 +991,11 @@ function renderPagination(totalPages){
    // Esperar al perfil social antes de abrir las funciones que dependen de él.
    if(!communityProfile||communityProfile.id!==currentUser.id){
      setCommunityIntent(true);
+     // Si la carga anterior falló, updateHeader vuelve a iniciar la consulta.
+     // Si sigue pendiente, conserva la promesa compartida y evita duplicarla.
+     if(communityProfilePromiseUserId!==currentUser.id||!communityProfilePromise){
+       updateHeader(currentUser,currentSession);
+     }
      toast("Tu cuenta está conectada. Estamos preparando tu comunidad…");
      return;
    }
@@ -1871,19 +1876,24 @@ function renderPagination(totalPages){
      if(communityRequested)openCommunity();
      return;
    }
-   if(communityProfilePromiseUserId!==user.id){
+   if(communityProfilePromiseUserId!==user.id||!communityProfilePromise){
      communityProfilePromiseUserId=user.id;
-     communityProfilePromise=ensureCommunityProfile(user);
+     communityProfilePromise=Promise.resolve().then(()=>ensureCommunityProfile(user));
    }
    const userId=user.id;
-   Promise.resolve(communityProfilePromise).then(async profile=>{
-     if(!profile||currentUser?.id!==userId)return;
-     communityProfile=profile;renderHeroPersonalization(currentUser);startNotificationRealtime();await loadNotifications();
+   const profilePromise=communityProfilePromise;
+   Promise.resolve(profilePromise).then(async profile=>{
+     if(!profile||currentUser?.id!==userId||communityProfilePromise!==profilePromise)return;
+     communityProfile=profile;
+     communityProfilePromise=null;communityProfilePromiseUserId=userId;
+     renderHeroPersonalization(currentUser);startNotificationRealtime();await loadNotifications();
      if(currentUser?.id===userId&&communityRequested)openCommunity();
    }).catch(error=>{
-     if(currentUser?.id!==userId)return;
+     if(currentUser?.id!==userId||communityProfilePromise!==profilePromise)return;
+     // Liberar el bloqueo: el próximo intento podrá consultar el perfil otra vez.
+     communityProfilePromise=null;communityProfilePromiseUserId=null;
      console.warn("No se pudo preparar el perfil social",error);
-     toast("Tu sesión está activa, pero no se pudo cargar el perfil. Vuelve a abrir la comunidad.");
+     toast("Tu sesión sigue activa, pero no pudimos cargar el perfil. Vuelve a abrir la Comunidad para reintentar.");
    });
  }
  function escapeHtml(value){return String(value).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
