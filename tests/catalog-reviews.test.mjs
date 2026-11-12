@@ -19,8 +19,10 @@ test("aggregates every rating row by catalog item, not only the visible review p
     { external_item_id: null, rating: 5 },
     { external_item_id: "game:1", rating: "invalid" }
   ], new Map());
-  assert.deepEqual({ ...sums.get("game:1") }, { total: 9, count: 3 });
-  assert.deepEqual({ ...sums.get("movie:2") }, { total: 4, count: 1 });
+  assert.equal(sums.get("game:1").total, 9);
+  assert.equal(sums.get("game:1").count, 3);
+  assert.equal(sums.get("movie:2").total, 4);
+  assert.equal(sums.get("movie:2").count, 1);
 });
 
 test("production aggregate loader paginates beyond the REST row cap", () => {
