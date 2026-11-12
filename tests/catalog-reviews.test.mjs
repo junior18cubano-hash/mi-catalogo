@@ -50,3 +50,38 @@ test("aggregate cache expires after 90 seconds and can be invalidated", () => {
   assert.equal(isReviewAggregateCacheFresh({ cachedAt: now - 90000 }, now), false);
   assert.equal(isReviewAggregateCacheFresh(null, now), false);
 });
+
+
+test("late summary responses leave cards from other catalog pages untouched", () => {
+  const source = readFile(new URL("../app.js", import.meta.url), "utf8");
+  return source.then(text => {
+    const start = text.indexOf("function updateCatalogReviewSummaryElements");
+    const end = text.indexOf("async function loadCatalogReviewSummaries", start);
+    assert.ok(start >= 0 && end > start, "the guarded summary updater must exist");
+    const context = {};
+    const updater = vm.runInNewContext(
+      `${text.slice(start, end)}; updateCatalogReviewSummaryElements`,
+      context
+    );
+    const makeElement = key => ({
+      dataset: { reviewKey: key },
+      textContent: "existing summary",
+      classes: new Set(),
+      classList: {
+        contains(name) { return this.owner.classes.has(name); },
+        toggle(name, enabled) {
+          if (enabled) this.owner.classes.add(name);
+          else this.owner.classes.delete(name);
+        },
+        owner: null
+      }
+    });
+    const oldPage = makeElement("game:old");
+    const newPage = makeElement("game:new");
+    oldPage.classList.owner = oldPage;
+    newPage.classList.owner = newPage;
+    updater([oldPage, newPage], new Map([["game:old", { total: 4, count: 1 }]]));
+    assert.equal(oldPage.textContent, "★ 4.0 · 1 reseña");
+    assert.equal(newPage.textContent, "existing summary");
+  });
+});
