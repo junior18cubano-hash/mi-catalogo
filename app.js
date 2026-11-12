@@ -450,7 +450,8 @@ function renderPagination(totalPages){
   function shareFavoritesWhatsApp(){if(!catalogFavorites.length){toast("Añade primero algún elemento a tus favoritos.");return}const text=buildFavoritesShareText(catalogFavorites,communityProfile?.display_name||communityProfile?.username||"Jugador JOA"),link=document.createElement("a");link.href="https://wa.me/?text="+encodeURIComponent(text);link.target="_blank";link.rel="noopener noreferrer";document.body.append(link);link.click();link.remove()}
 
  const CATALOG_DB_NAME="joa-catalog-db",CATALOG_DB_VERSION=1,CATALOG_STORE="catalogs",CATALOG_RECORD_KEY="main";
- let catalogLoadPromise=null;
+ let catalogLoadPromise=null,catalogLoadGeneration=0;
+ function isCurrentCatalogLoad(generation,currentGeneration){return generation===currentGeneration}
  function openCatalogDB(){
    return new Promise((resolve,reject)=>{
      if(!("indexedDB" in window)){reject(new Error("IndexedDB no disponible"));return}
@@ -491,10 +492,13 @@ function renderPagination(totalPages){
  }
  async function loadCatalog(force=false){
    if(catalogLoadPromise&&!force)return catalogLoadPromise;
+   const generation=++catalogLoadGeneration;
    const task=(async()=>{
      let record=await readCachedRecord();
+     if(!isCurrentCatalogLoad(generation,catalogLoadGeneration))return;
      if(!record){
        const legacy=await readLegacyCatalog();
+       if(!isCurrentCatalogLoad(generation,catalogLoadGeneration))return;
        if(legacy&&Array.isArray(legacy.items)){
          const oldVersion=localStorage.getItem("joa_web_catalog_version")||"";
          record={fingerprint:oldVersion,data:legacy,cachedAt:Date.now()};
@@ -511,6 +515,7 @@ function renderPagination(totalPages){
        const versionResponse=await fetch(CATALOG_VERSION_URL,{cache:"no-cache"});
        if(!versionResponse.ok)throw new Error("No se pudo consultar version.json");
        const remoteVersion=await versionResponse.json();
+       if(!isCurrentCatalogLoad(generation,catalogLoadGeneration))return;
        const fingerprint=catalogFingerprint(remoteVersion);
        if(!force&&record&&record.fingerprint===fingerprint&&Array.isArray(record.data?.items)){
          applyCatalog(record.data,remoteVersion,false);
@@ -521,12 +526,16 @@ function renderPagination(totalPages){
        const response=await fetch(CATALOG_DATA_URL+"?v="+encodeURIComponent(remoteVersion.hash||remoteVersion.version||Date.now()),{cache:"no-store"});
        if(!response.ok)throw new Error("No se pudo descargar Update.json");
        const data=await response.json();validateCatalog(data,remoteVersion);
+       if(!isCurrentCatalogLoad(generation,catalogLoadGeneration))return;
        const nextRecord={fingerprint,data,cachedAt:Date.now()};
        try{await saveCachedRecord(nextRecord);localStorage.setItem("joa_web_catalog_version",fingerprint)}catch(cacheError){console.warn("JOA: catálogo actualizado, pero no se pudo persistir en este dispositivo",cacheError)}
+       if(!isCurrentCatalogLoad(generation,catalogLoadGeneration))return;
        applyCatalog(data,remoteVersion,false);
      }catch(error){
+       if(!isCurrentCatalogLoad(generation,catalogLoadGeneration))return;
        console.error("JOA catalog:",error);
        const fallback=record?.data&&Array.isArray(record.data.items)?record.data:await readLegacyCatalog();
+       if(!isCurrentCatalogLoad(generation,catalogLoadGeneration))return;
        if(fallback&&Array.isArray(fallback.items)){
          if(!catalogItems.length){catalogItems=fallback.items;catalogMeta=fallback;updateSubcategoryControls();renderCatalog()}
          setCatalogStatus("Sin conexión · mostrando catálogo guardado ("+catalogItems.length.toLocaleString("es")+" elementos)","offline");
