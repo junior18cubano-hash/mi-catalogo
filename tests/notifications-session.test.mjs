@@ -15,7 +15,7 @@ test("notification responses are discarded after the active account changes", ()
 
 test("realtime events are ignored when they belong to a previous account", () => {
   assert.match(block, /if\(notificationsUserId!==userId\|\|currentUser\?\.id!==userId\)return/);
-  assert.match(source, /if\(currentUser\?\.id&&currentUser\.id!==user\?\.id\)stopNotificationRealtime\(\)/);
+  assert.match(source, /if\(currentUser\?\.id&&currentUser\.id!==user\?\.id\)\{\s*stopNotificationRealtime\(\);/);
 });
 
 test("stopping notification realtime invalidates pending loads", () => {
