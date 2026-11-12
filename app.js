@@ -1442,7 +1442,7 @@ function renderPagination(totalPages){
    if(catalogIdentityIsAmbiguous(item)){selected.hidden=false;selected.textContent="No se puede reseñar «"+itemTitle(item)+"»: hay títulos duplicados sin un ID externo único.";form.hidden=true;host.textContent="Para evitar mezclar opiniones, este contenido necesita un identificador único en el catálogo.";selectedReviewItem=null;return}
    selectedReviewItem=item;selected.hidden=false;selected.textContent="Reseñando: "+itemTitle(item);
    form.hidden=false;$("#community-review-search").value=itemTitle(item);$("#community-review-matches").innerHTML="";
-   const key=reviewItemKey(item),host=$("#community-review-feed");host.innerHTML="Cargando reseñas…";
+   const key=reviewItemKey(item);host.innerHTML="Cargando reseñas…";
    const {data,error}=await supabase.from("catalog_reviews").select("id,user_id,rating,body,created_at").eq("external_item_id",key).order("created_at",{ascending:false}).limit(30);
    if(error){host.textContent=communityError(error);return}
    const ids=[...new Set((data||[]).map(x=>x.user_id))],pr=ids.length?await supabase.from("profiles").select("id,display_name,username").in("id",ids):{data:[]},map=new Map((pr.data||[]).map(p=>[p.id,p]));
