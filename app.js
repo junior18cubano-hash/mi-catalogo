@@ -463,8 +463,9 @@ function renderPagination(totalPages){
  async function readCachedRecord(){
    try{const db=await openCatalogDB();return await new Promise((resolve,reject)=>{const tx=db.transaction(CATALOG_STORE,"readonly"),req=tx.objectStore(CATALOG_STORE).get(CATALOG_RECORD_KEY);req.onsuccess=()=>resolve(req.result||null);req.onerror=()=>reject(req.error);tx.oncomplete=()=>db.close();tx.onerror=()=>{db.close();reject(tx.error)}})}catch(error){console.warn("JOA: no se pudo leer IndexedDB",error);return null}
  }
- async function saveCachedRecord(record){
+ async function saveCachedRecord(record,canWrite=()=>true){
    const db=await openCatalogDB();
+   if(!canWrite()){db.close();return false}
    return new Promise((resolve,reject)=>{
      const tx=db.transaction(CATALOG_STORE,"readwrite");
      tx.objectStore(CATALOG_STORE).put({id:CATALOG_RECORD_KEY,...record});
@@ -528,7 +529,7 @@ function renderPagination(totalPages){
        const data=await response.json();validateCatalog(data,remoteVersion);
        if(!isCurrentCatalogLoad(generation,catalogLoadGeneration))return;
        const nextRecord={fingerprint,data,cachedAt:Date.now()};
-       try{await saveCachedRecord(nextRecord);localStorage.setItem("joa_web_catalog_version",fingerprint)}catch(cacheError){console.warn("JOA: catálogo actualizado, pero no se pudo persistir en este dispositivo",cacheError)}
+       try{const saved=await saveCachedRecord(nextRecord,()=>isCurrentCatalogLoad(generation,catalogLoadGeneration));if(saved)localStorage.setItem("joa_web_catalog_version",fingerprint)}catch(cacheError){console.warn("JOA: catálogo actualizado, pero no se pudo persistir en este dispositivo",cacheError)}
        if(!isCurrentCatalogLoad(generation,catalogLoadGeneration))return;
        applyCatalog(data,remoteVersion,false);
      }catch(error){
