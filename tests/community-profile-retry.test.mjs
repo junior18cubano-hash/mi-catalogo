@@ -20,7 +20,7 @@ test("opening Community retries profile initialization after a previous failure"
 
 test("profile initialization clears a rejected promise so the same account can retry", () => {
   assert.match(header, /communityProfilePromise=Promise\.resolve\(\)\.then\(\(\)=>ensureCommunityProfile\(user\)\)/);
-  assert.match(header, /communityProfilePromise===profilePromise/);
+  assert.match(header, /communityProfilePromise!==profilePromise/);
   assert.match(header, /communityProfilePromise=null;communityProfilePromiseUserId=null/);
 });
 
