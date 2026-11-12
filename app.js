@@ -503,7 +503,7 @@ function renderPagination(totalPages){
        if(legacy&&Array.isArray(legacy.items)){
          const oldVersion=localStorage.getItem("joa_web_catalog_version")||"";
          record={fingerprint:oldVersion,data:legacy,cachedAt:Date.now()};
-         try{await saveCachedRecord(record)}catch(error){console.warn("JOA: migración de caché no disponible",error)}
+         try{await saveCachedRecord(record,()=>isCurrentCatalogLoad(generation,catalogLoadGeneration))}catch(error){console.warn("JOA: migración de caché no disponible",error)}
        }
      }
      if(record?.data&&Array.isArray(record.data.items)&&!force){
