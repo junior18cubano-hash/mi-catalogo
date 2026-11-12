@@ -97,13 +97,14 @@
  function recentItemsStorageKey(){return RECENT_ITEMS_PREFIX+(currentUser?.id||"guest")}
  function readRecentItemKeys(){try{const value=JSON.parse(localStorage.getItem(recentItemsStorageKey())||"[]");return Array.isArray(value)?value.filter(x=>typeof x==="string").slice(0,4):[]}catch(error){return []}}
  function rememberRecentItem(item){
+   if(catalogIdentityIsAmbiguous(item))return;
    try{const key=reviewItemKey(item),items=[key,...readRecentItemKeys().filter(value=>value!==key)].slice(0,4);localStorage.setItem(recentItemsStorageKey(),JSON.stringify(items))}
    catch(error){console.warn("JOA: no se pudo guardar el historial local",error)}
    renderContinueExploring();
  }
  function renderContinueExploring(){
    const section=$("#continue-section"),host=$("#continue-grid"),count=$("#continue-count");if(!section||!host)return;
-   const keys=readRecentItemKeys(),items=keys.map(key=>catalogItems.find(item=>reviewItemKey(item)===key)).filter(Boolean);
+   const keys=readRecentItemKeys(),items=keys.map(key=>catalogItems.find(item=>reviewItemKey(item)===key&&!catalogIdentityIsAmbiguous(item))).filter(Boolean);
    host.replaceChildren();section.hidden=!items.length;if(count)count.textContent=items.length+" "+(items.length===1?"contenido":"contenidos");
    items.forEach(item=>{
      const button=document.createElement("button");button.type="button";button.className="continue-card";
@@ -294,11 +295,12 @@
   }
   async function loadCatalogReviewSummaries(items){
     if(!supabase||!items?.length)return;
-    const keys=[...new Set(items.map(reviewItemKey))];
+    const keys=[...new Set(items.filter(item=>!catalogIdentityIsAmbiguous(item)).map(reviewItemKey))];
     let sums;
     try{sums=await loadCatalogReviewAggregates(keys)}
     catch(error){console.warn("JOA catalog reviews:",error);return}
     $(".catalog-review-compact").forEach(el=>{
+      if(el.classList.contains("is-ambiguous"))return;
       const value=sums.get(el.dataset.reviewKey)||{total:0,count:0};
       el.textContent=value.count?"★ "+(value.total/value.count).toFixed(1)+" · "+value.count+(value.count===1?" reseña":" reseñas"):"☆ Sin reseñas";
       el.classList.toggle("has-reviews",value.count>0);
@@ -307,6 +309,7 @@
   async function loadCatalogItemReviews(item,host){
     if(!supabase){host.querySelector(".catalog-review-summary").textContent="Las reseñas estarán disponibles cuando se conecte el servicio.";return}
     const key=reviewItemKey(item),summary=host.querySelector(".catalog-review-summary"),feed=host.querySelector(".catalog-item-review-feed"),formHost=host.querySelector(".catalog-review-form-host");
+    if(catalogIdentityIsAmbiguous(item)){summary.textContent="Identificación pendiente: hay títulos duplicados sin ID externo.";formHost.textContent="No se pueden publicar reseñas para este título hasta distinguirlo de forma segura en el catálogo.";feed.textContent="No se mezclaron opiniones de elementos que podrían ser distintos.";return}
     const [recentResult,aggregatesResult]=await Promise.all([
       supabase.from("catalog_reviews").select("id,user_id,rating,body,created_at").eq("external_item_id",key).order("created_at",{ascending:false}).limit(50),
       loadCatalogReviewAggregates([key]).then(data=>({data})).catch(error=>({error}))
@@ -391,8 +394,8 @@ function renderPagination(totalPages){
      const poster=document.createElement("div");poster.className="poster";const cover=resolveCover(itemCover(item));
      if(cover){const img=document.createElement("img");img.src=cover;img.alt="";img.loading="lazy";img.decoding="async";img.onerror=()=>{img.remove();if(!poster.querySelector(".catalog-type-badge"))poster.textContent=itemTitle(item).slice(0,32)};poster.append(img)}else poster.textContent=itemTitle(item).slice(0,32);
      const badge=document.createElement("span");badge.className="catalog-type-badge type-"+categoryFor(itemCategoryValue(item));badge.textContent=cardTypeLabel(item);poster.append(badge);
-     const body=document.createElement("div"),title=document.createElement("b");title.textContent=itemTitle(item);const reviewSummary=document.createElement("small");reviewSummary.className="catalog-review-compact";reviewSummary.dataset.reviewKey=reviewItemKey(item);reviewSummary.textContent="☆ Cargando reseñas…";body.append(title,reviewSummary);article.append(poster,body);article.addEventListener("click",()=>openCatalogDetail(item));
-     const favorite=document.createElement("button");favorite.type="button";favorite.className="favorite-toggle";favorite.dataset.favoriteKey=reviewItemKey(item);favorite.addEventListener("click",event=>{event.preventDefault();event.stopPropagation();toggleCatalogFavorite(item,favorite)});
+     const body=document.createElement("div"),title=document.createElement("b");title.textContent=itemTitle(item);const reviewSummary=document.createElement("small");reviewSummary.className="catalog-review-compact";reviewSummary.dataset.reviewKey=reviewItemKey(item);const ambiguous=catalogIdentityIsAmbiguous(item);if(ambiguous){reviewSummary.classList.add("is-ambiguous");reviewSummary.textContent="⚠ Título duplicado · ID pendiente"}else reviewSummary.textContent="☆ Cargando reseñas…";body.append(title,reviewSummary);article.append(poster,body);article.addEventListener("click",()=>openCatalogDetail(item));
+     const favorite=document.createElement("button");favorite.type="button";favorite.className="favorite-toggle";favorite.dataset.favoriteKey=reviewItemKey(item);favorite.disabled=ambiguous;favorite.title=ambiguous?"No se puede guardar hasta identificar este contenido de forma única":"";favorite.addEventListener("click",event=>{event.preventDefault();event.stopPropagation();toggleCatalogFavorite(item,favorite)});
      wrap.append(article,favorite);grid.append(wrap);
    });
    const labels={juego:"Juegos",pelicula:"Películas",serie:"Series TV",anime:"Anime",novela:"Telenovelas",software:"Software",musica:"Música",otros:"Otros"};
@@ -414,6 +417,7 @@ function renderPagination(totalPages){
   }
   async function toggleCatalogFavorite(item,button){
     if(!currentUser||!supabase){openAuth();toast("Inicia sesión para guardar tus favoritos.");return}
+    if(catalogIdentityIsAmbiguous(item)){toast("Este título aparece duplicado y no tiene un ID externo único. No lo guardé para evitar mezclar favoritos.");return}
     const key=reviewItemKey(item),existing=catalogFavoritesByKey.get(key);if(button)button.disabled=true;
     try{
       if(existing){const result=await supabase.from("catalog_favorites").delete().eq("user_id",currentUser.id).eq("item_key",key).select("item_key").maybeSingle();if(result.error)throw result.error;if(!result.data)throw new Error("No se pudo quitar este elemento de favoritos.");catalogFavorites=catalogFavorites.filter(row=>row.item_key!==key);catalogFavoritesByKey.delete(key);toast("Se quitó de tu lista de favoritos.")}
@@ -430,7 +434,7 @@ function renderPagination(totalPages){
       renderFavoriteButtons();renderCommunityFavorites();toast("Se quitó de tu lista de favoritos.");
     }catch(error){toast(communityError(error))}finally{if(button)button.disabled=false}
   }
-  function favoriteItemFromRow(row){return {...(row.item_data||{}),id:row.item_data?.id||row.item_key,title:row.item_title,type:row.item_type,cover:row.cover_url||""}}
+  function favoriteItemFromRow(row){return {...(row.item_data||{}),id:row.item_data?.id||row.item_key,title:row.item_title,type:row.item_type,cover:row.cover_url||"",_joaReviewKey:row.item_key}}
   function renderCommunityFavorites(){
     const host=$("#community-favorites-list"),count=$("#community-favorites-count"),share=$("#favorites-share-whatsapp");if(!host)return;if(count)count.textContent=String(catalogFavorites.length);if(share)share.disabled=!catalogFavorites.length;host.innerHTML="";
     if(!catalogFavorites.length){const empty=document.createElement("div");empty.className="community-empty";empty.innerHTML="<h3>Tu lista está esperando</h3><p>Explora el catálogo y pulsa el corazón de los contenidos que quieras guardar.</p>";host.append(empty);return}
@@ -1420,7 +1424,13 @@ function renderPagination(totalPages){
    }catch(error){toast(communityError(error))}
    finally{button.disabled=false;button.textContent="Enviar"}
  });
- function reviewItemKey(item){const raw=item.id??item.external_id??item.igdb_id??item.tmdb_id??item.slug??itemTitle(item);return itemType(item)+":"+String(raw).trim().toLocaleLowerCase("es")}
+ function reviewItemKey(item){if(item?._joaReviewKey)return String(item._joaReviewKey);const raw=item.id??item.external_id??item.igdb_id??item.tmdb_id??item.slug??itemTitle(item);return itemType(item)+":"+String(raw).trim().toLocaleLowerCase("es")}
+ function hasStableCatalogIdentifier(item){return ["id","external_id","igdb_id","tmdb_id","slug"].some(field=>item?.[field]!==undefined&&item?.[field]!==null&&String(item[field]).trim()!=="")}
+ function catalogIdentityIsAmbiguous(item){
+   if(!item)return false;
+   const key=reviewItemKey(item),matches=catalogItems.filter(candidate=>reviewItemKey(candidate)===key);
+   return matches.length>1&&(!hasStableCatalogIdentifier(item)||matches.some(candidate=>!hasStableCatalogIdentifier(candidate)));
+ }
  function showReviewMatches(query){
    const host=$("#community-review-matches");host.innerHTML="";if(!query)return;
    const matches=catalogItems.filter(item=>itemTitle(item).toLocaleLowerCase("es").includes(query)).slice(0,8);
@@ -1428,9 +1438,11 @@ function renderPagination(totalPages){
    matches.forEach(item=>{const b=document.createElement("button");b.type="button";b.className="community-review-match";b.textContent=itemTitle(item)+" · "+itemType(item);b.addEventListener("click",()=>selectReviewItem(item));host.append(b)})
  }
  async function selectReviewItem(item){
-   selectedReviewItem=item;const selected=$("#community-review-selected");selected.hidden=false;selected.textContent="Reseñando: "+itemTitle(item);
-   $("#community-review-form").hidden=false;$("#community-review-search").value=itemTitle(item);$("#community-review-matches").innerHTML="";
-   const key=reviewItemKey(item),host=$("#community-review-feed");host.innerHTML="Cargando reseñas…";
+   const selected=$("#community-review-selected"),form=$("#community-review-form"),host=$("#community-review-feed");
+   if(catalogIdentityIsAmbiguous(item)){selected.hidden=false;selected.textContent="No se puede reseñar «"+itemTitle(item)+"»: hay títulos duplicados sin un ID externo único.";form.hidden=true;host.textContent="Para evitar mezclar opiniones, este contenido necesita un identificador único en el catálogo.";selectedReviewItem=null;return}
+   selectedReviewItem=item;selected.hidden=false;selected.textContent="Reseñando: "+itemTitle(item);
+   form.hidden=false;$("#community-review-search").value=itemTitle(item);$("#community-review-matches").innerHTML="";
+   const key=reviewItemKey(item);host.innerHTML="Cargando reseñas…";
    const {data,error}=await supabase.from("catalog_reviews").select("id,user_id,rating,body,created_at").eq("external_item_id",key).order("created_at",{ascending:false}).limit(30);
    if(error){host.textContent=communityError(error);return}
    const ids=[...new Set((data||[]).map(x=>x.user_id))],pr=ids.length?await supabase.from("profiles").select("id,display_name,username").in("id",ids):{data:[]},map=new Map((pr.data||[]).map(p=>[p.id,p]));
