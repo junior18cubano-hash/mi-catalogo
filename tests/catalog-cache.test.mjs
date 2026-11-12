@@ -7,7 +7,7 @@ const source = await readFile(new URL("../app.js", import.meta.url), "utf8");
 
 test("only the newest catalog load may apply a response", () => {
   const start = source.indexOf("function isCurrentCatalogLoad");
-  const end = source.indexOf("async function openCatalogDB", start);
+  const end = source.indexOf("function openCatalogDB", start);
   assert.ok(start >= 0 && end > start, "catalog generation guard must exist");
   const helpers = vm.runInNewContext(
     `${source.slice(start, end)}; isCurrentCatalogLoad`
