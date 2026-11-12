@@ -25,6 +25,8 @@ test("catalog loader checks its generation after asynchronous boundaries", () =>
   assert.match(loader, /const generation=\+\+catalogLoadGeneration/);
   assert.ok((loader.match(/isCurrentCatalogLoad\(generation,catalogLoadGeneration\)/g)||[]).length >= 6);
   assert.match(loader, /if\(catalogLoadPromise&&!force\)return catalogLoadPromise/);
+  assert.match(source, /async function saveCachedRecord\(record,canWrite=\(\)=>true\)/);
+  assert.match(source, /saveCachedRecord\(nextRecord,\(\)=>isCurrentCatalogLoad\(generation,catalogLoadGeneration\)\)/);
 });
 
 test("main page busts the JavaScript cache after catalog loader changes", async () => {
