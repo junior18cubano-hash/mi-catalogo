@@ -589,7 +589,7 @@ function renderPagination(totalPages){
 
  let currentSession=null,communityProfile=null,communityTab="feed",communityRequested=readCommunityIntent(),activeConversationId=null,activeConversationIds=[],activeChatChannel=null,communityChatListChannel=null,activeGroupChatChannel=null,activeGroupChatId=null,selectedReviewItem=null,activeCommunityGroupId=null,communityGroupsCache=[];
 
- let notificationsChannel=null,notificationsUserId=null,notificationRows=[];
+ let notificationsChannel=null,notificationsUserId=null,notificationRows=[],notificationsLoadGeneration=0;
  function notificationTime(value){
    const date=new Date(value);if(!Number.isFinite(date.getTime()))return "";
    const seconds=Math.max(0,Math.floor((Date.now()-date.getTime())/1000));
@@ -626,26 +626,30 @@ function renderPagination(totalPages){
  }
  async function loadNotifications(){
    if(!currentUser||!supabase)return;
+   const userId=currentUser.id,generation=++notificationsLoadGeneration;
    const host=$("#notification-list");if(!host)return;
    const [rows,count]=await Promise.all([
-     supabase.from("notifications").select("id,user_id,type,title,body,data,read_at,created_at").eq("user_id",currentUser.id).order("created_at",{ascending:false}).limit(30),
-     supabase.from("notifications").select("id",{count:"exact",head:true}).eq("user_id",currentUser.id).is("read_at",null)
+     supabase.from("notifications").select("id,user_id,type,title,body,data,read_at,created_at").eq("user_id",userId).order("created_at",{ascending:false}).limit(30),
+     supabase.from("notifications").select("id",{count:"exact",head:true}).eq("user_id",userId).is("read_at",null)
    ]);
+   if(generation!==notificationsLoadGeneration||currentUser?.id!==userId)return;
    if(rows.error||count.error){console.warn("JOA notifications:",rows.error||count.error);return}
    renderNotifications(rows.data||[]);
    const badge=$("#notification-count");
    const unread=count.count||0;
-   badge.textContent=unread>99?"99+":String(unread);
-   badge.hidden=unread===0;
+   if(badge){badge.textContent=unread>99?"99+":String(unread);badge.hidden=unread===0}
  }
  function startNotificationRealtime(){
    if(!supabase||!currentUser)return;
-   if(notificationsChannel&&notificationsUserId===currentUser.id)return;
+   const userId=currentUser.id;
+   if(notificationsChannel&&notificationsUserId===userId)return;
    if(notificationsChannel)supabase.removeChannel(notificationsChannel);
-   notificationsUserId=currentUser.id;
-   notificationsChannel=supabase.channel("joa-notifications-"+currentUser.id)
-     .on("postgres_changes",{event:"INSERT",schema:"public",table:"notifications",filter:"user_id=eq."+currentUser.id},payload=>{
+   notificationsUserId=userId;
+   notificationsChannel=supabase.channel("joa-notifications-"+userId)
+     .on("postgres_changes",{event:"INSERT",schema:"public",table:"notifications",filter:"user_id=eq."+userId},payload=>{
+       if(notificationsUserId!==userId||currentUser?.id!==userId)return;
        loadNotifications().then(()=>{
+         if(notificationsUserId!==userId||currentUser?.id!==userId)return;
          const panel=$("#notification-panel");
          if(document.visibilityState==="visible"&&panel&&!panel.open){
            panel.showModal();
@@ -657,6 +661,7 @@ function renderPagination(totalPages){
      }).subscribe();
  }
  function stopNotificationRealtime(){
+   notificationsLoadGeneration++;
    if(notificationsChannel&&supabase)supabase.removeChannel(notificationsChannel);
    notificationsChannel=null;notificationsUserId=null;notificationRows=[];
    const badge=$("#notification-count"),host=$("#notification-list");
@@ -1829,6 +1834,7 @@ function renderPagination(totalPages){
    return msg||"No se pudo completar el acceso. Inténtalo de nuevo.";
  }
  function updateHeader(user,session=null){
+   if(currentUser?.id&&currentUser.id!==user?.id)stopNotificationRealtime();
    currentUser=user||null;currentSession=session||null;
    renderHeroPersonalization(user);
    const btn=$("#login-open");
