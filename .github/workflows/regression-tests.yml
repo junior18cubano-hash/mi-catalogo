@@ -19,4 +19,4 @@ jobs:
       - name: Check application JavaScript syntax
         run: node --check app.js
       - name: Run catalog review regression tests
-        run: node --test tests/catalog-reviews.test.mjs
+        run: node --test tests/*.test.mjs

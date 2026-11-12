@@ -1113,3 +1113,80 @@ dialog.notification-panel::backdrop{background:rgba(2,5,14,.78);backdrop-filter:
 @media(max-width:900px){.continue-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:650px){.hero-welcome{margin-top:18px;margin-bottom:4px;padding:8px 11px 8px 8px}.hero-welcome-avatar{width:38px;height:38px;flex-basis:38px}.hero-welcome-copy strong{font-size:10px}.hero-welcome-copy small{font-size:8px}.continue-section{padding-top:4px;padding-bottom:28px}.continue-heading{align-items:flex-start}.continue-heading h2{font-size:21px}.continue-heading p{font-size:9px;max-width:250px}.continue-count{font-size:8px;padding:6px 8px}.continue-grid{grid-template-columns:1fr;gap:8px}.continue-card{padding:8px}.continue-card-cover{width:47px;height:58px;flex-basis:47px}}
 @media(prefers-reduced-motion:reduce){.continue-card{transition:none}}
+
+
+/* Ajustes responsive de segunda pasada: diálogos, reseñas y chat */
+dialog.notification-panel[open]{
+  position:fixed;
+  inset:78px 18px auto auto;
+  margin:0;
+  width:min(370px,calc(100vw - 36px));
+  max-height:min(560px,calc(100dvh - 100px));
+  overflow:hidden;
+  z-index:1000;
+}
+.notification-panel-head{min-width:0;flex-wrap:wrap}
+.notification-panel-head>div:first-child{min-width:0}
+.notification-head-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.notification-copy{min-width:0;overflow-wrap:anywhere}
+.notification-copy b,.notification-copy>span{overflow-wrap:anywhere;word-break:normal}
+#catalog-detail-content,.detail-info,.catalog-item-reviews,.catalog-item-review-form{min-width:0}
+.catalog-item-review-form textarea{max-width:100%;box-sizing:border-box}
+.catalog-review-picker{flex-wrap:wrap}
+.community-chat-layout,.community-chat-window,#community-chat-list{min-width:0}
+.community-chat-entry{overflow-wrap:anywhere;white-space:normal}
+#community-chat-messages{min-width:0;overflow-x:hidden}
+#community-chat-form{min-width:0;align-items:stretch}
+#community-chat-form input{width:100%;box-sizing:border-box}
+#community-chat-form button{flex:0 0 auto;min-height:42px}
+@media(max-width:650px){
+  dialog.notification-panel[open]{
+    inset:50% 10px auto;
+    transform:translateY(-50%);
+    width:auto;
+    max-width:none;
+    max-height:calc(100dvh - 112px);
+    border-radius:16px;
+  }
+  .notification-panel-head{align-items:flex-start;padding:13px}
+  .notification-head-actions{margin-left:auto;gap:7px}
+  .notification-head-actions button{min-height:36px;padding:7px 9px}
+  .notification-list{min-height:0;max-height:calc(100dvh - 190px);overscroll-behavior:contain}
+  .notification-item{align-items:flex-start;gap:9px;padding:13px 12px}
+  .notification-copy{flex:1;min-width:0}
+  dialog.catalog-detail-dialog[open]{
+    position:fixed;
+    inset:max(10px,env(safe-area-inset-top)) 10px auto;
+    margin:0 auto;
+    width:calc(100% - 20px);
+    max-width:none;
+    max-height:calc(100dvh - 20px - env(safe-area-inset-top));
+    overflow-y:auto;
+    overscroll-behavior:contain;
+  }
+  #catalog-detail-content{padding:15px;gap:10px}
+  .detail-hero{max-height:34dvh}
+  .catalog-item-review-form{padding:11px}
+  .catalog-item-review-form .button,.catalog-review-login{width:100%;justify-self:stretch;min-height:42px}
+  .catalog-review-picker button{min-width:36px;min-height:40px}
+  .community-chat-layout{grid-template-columns:minmax(0,1fr);gap:9px}
+  .community-chat-layout>#community-chat-list{max-height:190px;padding:0 2px 5px}
+  .community-chat-window{min-height:0;padding:9px}
+  #community-chat-title{overflow-wrap:anywhere}
+  #community-chat-messages{min-height:220px;max-height:min(42dvh,360px);padding:9px}
+  .community-message{max-width:90%;overflow-wrap:anywhere}
+  #community-chat-form{gap:6px}
+  #community-chat-form button{padding:0 12px}
+  .community-section{scroll-margin-bottom:90px}
+}
+@media(max-width:380px){
+  .notification-panel-head{gap:7px}
+  .notification-panel-head b{font-size:12px}
+  .notification-head-actions{gap:4px}
+  .notification-head-actions button{font-size:9px;padding:6px}
+  #catalog-detail-content{padding:12px}
+  #community-chat-form button{padding:0 9px;font-size:10px}
+}
+@media(prefers-reduced-motion:reduce){
+  .notification-panel,.catalog-detail-dialog{scroll-behavior:auto}
+}
