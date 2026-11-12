@@ -269,7 +269,7 @@
     if(!supabase||!keys?.length)return sums;
     const pageSize=1000;
     for(let offset=0;;offset+=pageSize){
-      const {data,error}=await supabase.from("catalog_reviews").select("external_item_id,rating").in("external_item_id",keys).order("external_item_id",{ascending:true}).range(offset,offset+pageSize-1);
+      const {data,error}=await supabase.from("catalog_reviews").select("external_item_id,rating").in("external_item_id",keys).order("external_item_id",{ascending:true}).order("id",{ascending:true}).range(offset,offset+pageSize-1);
       if(error)throw error;
       const rows=data||[];
       addReviewRowsToAggregates(rows,sums);
