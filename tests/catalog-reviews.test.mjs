@@ -4,11 +4,12 @@ import { readFile } from "node:fs/promises";
 import vm from "node:vm";
 
 const source = await readFile(new URL("../app.js", import.meta.url), "utf8");
-const start = source.indexOf("function addReviewRowsToAggregates(");
+const start = source.indexOf("const REVIEW_AGGREGATE_CACHE_TTL=");
 const end = source.indexOf("  async function loadCatalogReviewAggregates", start);
 assert.ok(start >= 0 && end > start, "the production aggregation helper must exist");
 const helperSource = source.slice(start, end);
-const addRows = vm.runInNewContext(`${helperSource}; addReviewRowsToAggregates`);
+const helpers = vm.runInNewContext(`${helperSource}; ({ addReviewRowsToAggregates, isReviewAggregateCacheFresh })`);
+const { addReviewRowsToAggregates, isReviewAggregateCacheFresh } = helpers;
 
 test("aggregates every rating row by catalog item, not only the visible review page", () => {
   const sums = addRows([
@@ -41,4 +42,11 @@ test("detail modal uses all-rating aggregates while retaining the latest 50 full
 test("rating sort is explicitly identified as the external catalog rating", async () => {
   const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
   assert.match(html, /Mejor valorados · ficha externa/);
+});
+
+test("aggregate cache expires after 90 seconds and can be invalidated", () => {
+  const now = 200000;
+  assert.equal(isReviewAggregateCacheFresh({ cachedAt: now - 30000 }, now), true);
+  assert.equal(isReviewAggregateCacheFresh({ cachedAt: now - 90000 }, now), false);
+  assert.equal(isReviewAggregateCacheFresh(null, now), false);
 });
