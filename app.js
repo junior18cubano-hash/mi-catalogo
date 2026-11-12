@@ -253,27 +253,64 @@
   reviews.append(heading,formHost,feed);content.append(reviews);dialog.showModal();
   loadCatalogItemReviews(item,reviews);
  }
-   async function loadCatalogReviewSummaries(items){
+   function addReviewRowsToAggregates(rows,sums){
+    (rows||[]).forEach(row=>{
+      const key=row.external_item_id;
+      if(!key)return;
+      const value=sums.get(key)||{total:0,count:0};
+      const rating=Number(row.rating);
+      if(Number.isFinite(rating)){value.total+=rating;value.count++}
+      sums.set(key,value);
+    });
+    return sums;
+  }
+  async function loadCatalogReviewAggregates(keys){
+    const sums=new Map();
+    if(!supabase||!keys?.length)return sums;
+    const pageSize=1000;
+    for(let offset=0;;offset+=pageSize){
+      const {data,error}=await supabase.from("catalog_reviews").select("external_item_id,rating").in("external_item_id",keys).order("external_item_id",{ascending:true}).range(offset,offset+pageSize-1);
+      if(error)throw error;
+      const rows=data||[];
+      addReviewRowsToAggregates(rows,sums);
+      if(rows.length<pageSize)break;
+    }
+    return sums;
+  }
+  async function loadCatalogReviewSummaries(items){
     if(!supabase||!items?.length)return;
     const keys=[...new Set(items.map(reviewItemKey))];
-    const {data,error}=await supabase.from("catalog_reviews").select("external_item_id,rating").in("external_item_id",keys);
-    if(error){console.warn("JOA catalog reviews:",error);return}
-    const sums=new Map();
-    (data||[]).forEach(row=>{const value=sums.get(row.external_item_id)||{total:0,count:0};value.total+=Number(row.rating)||0;value.count++;sums.set(row.external_item_id,value)});
-    $$(".catalog-review-compact").forEach(el=>{const value=sums.get(el.dataset.reviewKey)||{total:0,count:0};el.textContent=value.count?"★ "+(value.total/value.count).toFixed(1)+" · "+value.count+(value.count===1?" reseña":" reseñas"):"☆ Sin reseñas";el.classList.toggle("has-reviews",value.count>0)});
+    let sums;
+    try{sums=await loadCatalogReviewAggregates(keys)}
+    catch(error){console.warn("JOA catalog reviews:",error);return}
+    $(".catalog-review-compact").forEach(el=>{
+      const value=sums.get(el.dataset.reviewKey)||{total:0,count:0};
+      el.textContent=value.count?"★ "+(value.total/value.count).toFixed(1)+" · "+value.count+(value.count===1?" reseña":" reseñas"):"☆ Sin reseñas";
+      el.classList.toggle("has-reviews",value.count>0);
+    });
   }
   async function loadCatalogItemReviews(item,host){
     if(!supabase){host.querySelector(".catalog-review-summary").textContent="Las reseñas estarán disponibles cuando se conecte el servicio.";return}
     const key=reviewItemKey(item),summary=host.querySelector(".catalog-review-summary"),feed=host.querySelector(".catalog-item-review-feed"),formHost=host.querySelector(".catalog-review-form-host");
-    const {data,error}=await supabase.from("catalog_reviews").select("id,user_id,rating,body,created_at").eq("external_item_id",key).order("created_at",{ascending:false}).limit(50);
+    const [recentResult,aggregatesResult]=await Promise.all([
+      supabase.from("catalog_reviews").select("id,user_id,rating,body,created_at").eq("external_item_id",key).order("created_at",{ascending:false}).limit(50),
+      loadCatalogReviewAggregates([key]).then(data=>({data})).catch(error=>({error}))
+    ]);
     if(host.dataset.itemKey!==key)return;
-    if(error){summary.textContent="No se pudieron cargar las valoraciones.";feed.textContent=communityError(error);return}
-    const reviews=data||[],count=reviews.length,average=count?reviews.reduce((sum,row)=>sum+Number(row.rating),0)/count:0;
+    if(recentResult.error||aggregatesResult.error){const error=recentResult.error||aggregatesResult.error;summary.textContent="No se pudieron cargar las valoraciones.";feed.textContent=communityError(error);return}
+    const reviews=recentResult.data||[],aggregate=aggregatesResult.data.get(key)||{total:0,count:0},count=aggregate.count,average=count?aggregate.total/count:0;
+    let ownReview=currentUser?reviews.find(row=>row.user_id===currentUser.id)||null:null;
+    if(currentUser&&!ownReview){
+      const ownResult=await supabase.from("catalog_reviews").select("id,user_id,rating,body,created_at").eq("external_item_id",key).eq("user_id",currentUser.id).maybeSingle();
+      if(host.dataset.itemKey!==key)return;
+      if(ownResult.error){summary.textContent="No se pudo comprobar tu reseña.";feed.textContent=communityError(ownResult.error);return}
+      ownReview=ownResult.data||null;
+    }
     summary.innerHTML="";
     const score=document.createElement("strong");score.textContent=count?average.toFixed(1)+"/5":"—";
     const stars=document.createElement("span");stars.className="catalog-review-stars";stars.textContent=count?"★".repeat(Math.round(average))+"☆".repeat(5-Math.round(average)):"☆☆☆☆☆";
     const total=document.createElement("small");total.textContent=count?count+(count===1?" reseña":" reseñas"):"Sé el primero en valorar";summary.append(score,stars,total);
-    formHost.innerHTML="";const own=currentUser?reviews.find(row=>row.user_id===currentUser.id):null;
+    formHost.innerHTML="";const own=ownReview;
     if(currentUser){
       const form=document.createElement("form");form.className="catalog-item-review-form";
       const label=document.createElement("label");label.textContent=own?"Actualiza tu reseña":"Deja tu reseña";
