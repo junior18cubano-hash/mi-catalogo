@@ -1002,3 +1002,86 @@ dialog.notification-panel::backdrop{background:rgba(2,5,14,.78);backdrop-filter:
 .service-reward-picker .reward-catalog-results{max-height:48vh;overflow:auto}
 .service-reward-picker .reward-catalog-dialog-actions{display:flex;align-items:center;justify-content:space-between;gap:12px;position:sticky;bottom:0;background:#090f1d;padding-top:12px}
 @media(max-width:640px){.reward-service-config,.service-reward-picker-tools{grid-template-columns:1fr}.service-reward-picker .reward-catalog-results{max-height:42vh}.service-reward-picker .reward-catalog-dialog-actions{flex-wrap:wrap}}
+
+
+/* JOA mobile navigation: six compact items in one glass row */
+@media (max-width: 650px) {
+  .mobile-nav {
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    align-items: center;
+    justify-content: stretch;
+    gap: 0;
+    left: 8px;
+    right: 8px;
+    bottom: max(8px, env(safe-area-inset-bottom));
+    width: auto;
+    max-width: calc(100vw - 16px);
+    min-width: 0;
+    padding: 7px 3px;
+    overflow: hidden;
+    box-sizing: border-box;
+    border: 1px solid rgba(112, 222, 255, .27);
+    border-radius: 17px;
+    background: linear-gradient(115deg, rgba(12, 25, 45, .72), rgba(16, 17, 39, .66));
+    -webkit-backdrop-filter: blur(22px) saturate(165%);
+    backdrop-filter: blur(22px) saturate(165%);
+    box-shadow: 0 9px 32px rgba(0, 0, 0, .48), inset 0 1px 0 rgba(255,255,255,.09), 0 0 22px rgba(62, 211, 255, .07);
+  }
+  .mobile-nav a {
+    position: relative;
+    display: flex;
+    flex: initial;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    min-height: 43px;
+    padding: 2px 1px;
+    box-sizing: border-box;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    color: rgba(218, 232, 250, .88);
+    font-size: clamp(6.8px, 2.05vw, 8px);
+    font-weight: 600;
+    line-height: 1.1;
+    letter-spacing: -.025em;
+    text-align: center;
+    text-decoration: none;
+    transition: color .2s ease, transform .2s ease, text-shadow .2s ease;
+  }
+  .mobile-nav a:not(:last-child)::after {
+    content: "";
+    position: absolute;
+    top: 19%;
+    right: 0;
+    width: 1px;
+    height: 62%;
+    background: linear-gradient(180deg, transparent, rgba(120, 225, 255, .48) 28%, rgba(176, 150, 255, .34) 72%, transparent);
+    box-shadow: 0 0 5px rgba(72, 220, 255, .22);
+    pointer-events: none;
+  }
+  .mobile-nav a span {
+    display: block;
+    flex: 0 0 auto;
+    margin: 0;
+    font-size: clamp(15px, 4.4vw, 18px);
+    line-height: 1;
+    filter: drop-shadow(0 0 5px rgba(72, 220, 255, .16));
+  }
+  .mobile-nav a:active,
+  .mobile-nav a:focus-visible {
+    color: #82efff;
+    outline: none;
+    text-shadow: 0 0 10px rgba(72, 220, 255, .55);
+  }
+}
+@media (max-width: 360px) {
+  .mobile-nav { left: 6px; right: 6px; max-width: calc(100vw - 12px); padding-inline: 2px; }
+  .mobile-nav a { font-size: 6.6px; }
+  .mobile-nav a span { font-size: 15px; }
+}
