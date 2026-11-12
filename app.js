@@ -293,18 +293,24 @@
     });
     return result;
   }
+  function updateCatalogReviewSummaryElements(elements,sums){
+    (elements||[]).forEach(el=>{
+      if(el.classList.contains("is-ambiguous"))return;
+      const key=el.dataset.reviewKey;
+      // Una consulta iniciada para otra página no debe borrar ni falsear el resumen actual.
+      if(!sums.has(key))return;
+      const value=sums.get(key)||{total:0,count:0};
+      el.textContent=value.count?"★ "+(value.total/value.count).toFixed(1)+" · "+value.count+(value.count===1?" reseña":" reseñas"):"☆ Sin reseñas";
+      el.classList.toggle("has-reviews",value.count>0);
+    });
+  }
   async function loadCatalogReviewSummaries(items){
     if(!supabase||!items?.length)return;
     const keys=[...new Set(items.filter(item=>!catalogIdentityIsAmbiguous(item)).map(reviewItemKey))];
     let sums;
     try{sums=await loadCatalogReviewAggregates(keys)}
     catch(error){console.warn("JOA catalog reviews:",error);return}
-    $(".catalog-review-compact").forEach(el=>{
-      if(el.classList.contains("is-ambiguous"))return;
-      const value=sums.get(el.dataset.reviewKey)||{total:0,count:0};
-      el.textContent=value.count?"★ "+(value.total/value.count).toFixed(1)+" · "+value.count+(value.count===1?" reseña":" reseñas"):"☆ Sin reseñas";
-      el.classList.toggle("has-reviews",value.count>0);
-    });
+    updateCatalogReviewSummaryElements($(".catalog-review-compact"),sums);
   }
   async function loadCatalogItemReviews(item,host){
     if(!supabase){host.querySelector(".catalog-review-summary").textContent="Las reseñas estarán disponibles cuando se conecte el servicio.";return}
