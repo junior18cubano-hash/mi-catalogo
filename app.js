@@ -117,7 +117,7 @@
    });
  }
  let catalogItems=[],catalogMeta={},activeCategory="",activeSubcategory="",activePlatform="",searchTerm="",sortMode="name",pageSize=20,currentPage=1;
-  let catalogFavorites=[],catalogFavoritesByKey=new Map();
+  let catalogFavorites=[],catalogFavoritesByKey=new Map(),catalogFavoritesPromise=null,catalogFavoritesPromiseUserId=null,catalogFavoritesLoadedForUser=null,catalogFavoritesLoadingUserId=null,catalogFavoritesLoadGeneration=0;
  const REVIEW_AGGREGATE_CACHE_TTL=90_000;
  const reviewAggregateCache=new Map();
  const categoryAliases={
@@ -413,16 +413,39 @@ function renderPagination(totalPages){
  }
 
   function favoriteSnapshot(item){return {id:item.id??item.external_id??item.igdb_id??item.tmdb_id??null,slug:item.slug||null,year:item.year||item.ano||item.año||item.release_year||null,platform:item.platform||item.platforms||item.consola||null,genre:item.genre||item.genres||item.generos||item.genero||null,description:itemDescription(item)}}
-  function renderFavoriteButtons(){$$(".favorite-toggle").forEach(button=>{const active=catalogFavoritesByKey.has(button.dataset.favoriteKey);button.classList.toggle("is-favorite",active);button.setAttribute("aria-pressed",String(active));button.textContent=active?"♥":"♡";button.setAttribute("aria-label",active?"Quitar de favoritos":"Añadir a favoritos")})}
-  async function loadCatalogFavorites(){
-    if(!currentUser||!supabase){catalogFavorites=[];catalogFavoritesByKey.clear();renderFavoriteButtons();return}
-    const userId=currentUser.id,{data,error}=await supabase.from("catalog_favorites").select("user_id,item_key,item_title,item_type,cover_url,item_data,created_at").eq("user_id",userId).order("created_at",{ascending:false});
-    if(currentUser?.id!==userId)return;if(error){console.warn("JOA favorites:",error);const host=$("#community-favorites-list");if(host)host.textContent="No se pudieron cargar tus favoritos: "+communityError(error);return}
-    catalogFavorites=data||[];catalogFavoritesByKey=new Map(catalogFavorites.map(row=>[row.item_key,row]));renderFavoriteButtons();
-    if($("#community-favorites-panel")&&!$("#community-favorites-panel").hidden){renderCommunityFavorites();loadCommunityFavoriteFriends()}
+  function renderFavoriteButtons(){$(".favorite-toggle").forEach(button=>{const active=catalogFavoritesByKey.has(button.dataset.favoriteKey),ambiguous=button.disabled&&button.title.startsWith("No se puede guardar");const loading=!!currentUser&&catalogFavoritesLoadingUserId===currentUser.id;button.disabled=ambiguous||loading;button.classList.toggle("is-favorite",active);button.setAttribute("aria-pressed",String(active));button.textContent=active?"♥":"♡";button.setAttribute("aria-label",active?"Quitar de favoritos":"Añadir a favoritos");if(loading)button.title="Cargando tus favoritos…";else if(!ambiguous)button.title=""})}
+  async function loadCatalogFavorites(force=false){
+    if(!currentUser||!supabase){
+      catalogFavoritesLoadGeneration++;catalogFavoritesPromise=null;catalogFavoritesPromiseUserId=null;catalogFavoritesLoadedForUser=null;catalogFavoritesLoadingUserId=null;
+      catalogFavorites=[];catalogFavoritesByKey.clear();renderFavoriteButtons();return [];
+    }
+    const userId=currentUser.id;
+    if(!force&&catalogFavoritesLoadedForUser===userId)return catalogFavorites;
+    if(!force&&catalogFavoritesPromise&&catalogFavoritesPromiseUserId===userId)return catalogFavoritesPromise;
+    const generation=++catalogFavoritesLoadGeneration;
+    if(catalogFavoritesLoadedForUser!==userId){catalogFavorites=[];catalogFavoritesByKey.clear();catalogFavoritesLoadedForUser=null}
+    catalogFavoritesLoadingUserId=userId;renderFavoriteButtons();
+    const task=(async()=>{
+      const {data,error}=await supabase.from("catalog_favorites").select("user_id,item_key,item_title,item_type,cover_url,item_data,created_at").eq("user_id",userId).order("created_at",{ascending:false});
+      if(generation!==catalogFavoritesLoadGeneration||currentUser?.id!==userId)return [];
+      if(error){
+        console.warn("JOA favorites:",error);const host=$("#community-favorites-list");if(host)host.textContent="No se pudieron cargar tus favoritos: "+communityError(error);
+        return [];
+      }
+      catalogFavorites=data||[];catalogFavoritesByKey=new Map(catalogFavorites.map(row=>[row.item_key,row]));catalogFavoritesLoadedForUser=userId;
+      if($("#community-favorites-panel")&&!$("#community-favorites-panel").hidden){renderCommunityFavorites();loadCommunityFavoriteFriends()}
+      return catalogFavorites;
+    })().finally(()=>{
+      if(generation===catalogFavoritesLoadGeneration){
+        catalogFavoritesLoadingUserId=null;catalogFavoritesPromise=null;catalogFavoritesPromiseUserId=null;renderFavoriteButtons();
+      }
+    });
+    catalogFavoritesPromise=task;catalogFavoritesPromiseUserId=userId;
+    return task;
   }
   async function toggleCatalogFavorite(item,button){
     if(!currentUser||!supabase){openAuth();toast("Inicia sesión para guardar tus favoritos.");return}
+    if(catalogFavoritesLoadingUserId===currentUser.id){toast("Estamos cargando tus favoritos. Espera un momento y vuelve a intentarlo.");return}
     if(catalogIdentityIsAmbiguous(item)){toast("Este título aparece duplicado y no tiene un ID externo único. No lo guardé para evitar mezclar favoritos.");return}
     const key=reviewItemKey(item),existing=catalogFavoritesByKey.get(key);if(button)button.disabled=true;
     try{
@@ -1109,7 +1132,7 @@ function renderPagination(totalPages){
  });
  $$("[data-community-tab]").forEach(button=>button.addEventListener("click",()=>activateCommunityTab(button.dataset.communityTab)));
  $("#favorites-share-whatsapp").addEventListener("click",shareFavoritesWhatsApp);
- $("#favorites-refresh").addEventListener("click",async()=>{await loadCatalogFavorites();await loadCommunityFavoriteFriends()});
+ $("#favorites-refresh").addEventListener("click",async()=>{await loadCatalogFavorites(true);await loadCommunityFavoriteFriends()});
  function openPublicProfile(profile){
    const dialog=$("#community-public-profile-dialog"),host=$("#community-public-profile-content");
    if(!dialog||!host||!profile)return;
@@ -1835,7 +1858,7 @@ function renderPagination(totalPages){
      communityProfilePromise=null;communityProfilePromiseUserId=null;stopNotificationRealtime();
    }
    renderAuthMode();
-   if(!user){catalogFavorites=[];catalogFavoritesByKey.clear();renderFavoriteButtons();return}
+   if(!user){catalogFavoritesLoadGeneration++;catalogFavoritesPromise=null;catalogFavoritesPromiseUserId=null;catalogFavoritesLoadedForUser=null;catalogFavoritesLoadingUserId=null;catalogFavorites=[];catalogFavoritesByKey.clear();renderFavoriteButtons();return}
    loadCatalogFavorites();
    if(communityProfile?.id===user.id){
      startNotificationRealtime();loadNotifications();
