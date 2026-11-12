@@ -1,0 +1,22 @@
+name: JOA regression tests
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  regression:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Check application JavaScript syntax
+        run: node --check app.js
+      - name: Run catalog review regression tests
+        run: node --test tests/catalog-reviews.test.mjs
