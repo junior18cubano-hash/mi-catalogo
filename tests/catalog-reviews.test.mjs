@@ -12,7 +12,7 @@ const helpers = vm.runInNewContext(`${helperSource}; ({ addReviewRowsToAggregate
 const { addReviewRowsToAggregates, isReviewAggregateCacheFresh } = helpers;
 
 test("aggregates every rating row by catalog item, not only the visible review page", () => {
-  const sums = addRows([
+  const sums = addReviewRowsToAggregates([
     { external_item_id: "game:1", rating: 5 },
     { external_item_id: "game:1", rating: 3 },
     { external_item_id: "movie:2", rating: 4 },
