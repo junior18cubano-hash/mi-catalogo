@@ -295,7 +295,7 @@
   }
   async function loadCatalogReviewSummaries(items){
     if(!supabase||!items?.length)return;
-    const keys=[...new Set(items.map(reviewItemKey))];
+    const keys=[...new Set(items.filter(item=>!catalogIdentityIsAmbiguous(item)).map(reviewItemKey))];
     let sums;
     try{sums=await loadCatalogReviewAggregates(keys)}
     catch(error){console.warn("JOA catalog reviews:",error);return}
@@ -1427,9 +1427,9 @@ function renderPagination(totalPages){
  function reviewItemKey(item){if(item?._joaReviewKey)return String(item._joaReviewKey);const raw=item.id??item.external_id??item.igdb_id??item.tmdb_id??item.slug??itemTitle(item);return itemType(item)+":"+String(raw).trim().toLocaleLowerCase("es")}
  function hasStableCatalogIdentifier(item){return ["id","external_id","igdb_id","tmdb_id","slug"].some(field=>item?.[field]!==undefined&&item?.[field]!==null&&String(item[field]).trim()!=="")}
  function catalogIdentityIsAmbiguous(item){
-   if(!item||hasStableCatalogIdentifier(item))return false;
-   const key=reviewItemKey(item);
-   return catalogItems.filter(candidate=>!hasStableCatalogIdentifier(candidate)&&reviewItemKey(candidate)===key).length>1;
+   if(!item)return false;
+   const key=reviewItemKey(item),matches=catalogItems.filter(candidate=>reviewItemKey(candidate)===key);
+   return matches.length>1&&(!hasStableCatalogIdentifier(item)||matches.some(candidate=>!hasStableCatalogIdentifier(candidate)));
  }
  function showReviewMatches(query){
    const host=$("#community-review-matches");host.innerHTML="";if(!query)return;
