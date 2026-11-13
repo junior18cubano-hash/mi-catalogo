@@ -3,6 +3,30 @@
  const $ = (s,root=document) => root.querySelector(s);
  const $$ = (s,root=document) => [...root.querySelectorAll(s)];
  const dialog=$("#auth-dialog"), toastEl=$("#toast");
+ const serviceDetailDialog=$("#service-detail-dialog");
+ document.addEventListener("click",event=>{
+   const trigger=event.target?.closest?.("[data-service-open]");
+   if(!trigger)return;
+   const card=trigger.closest(".service-card");
+   if(!card||!serviceDetailDialog)return;
+   const title=card.querySelector("h3")?.textContent?.trim()||"Servicio JOA";
+   const summary=card.querySelector("p")?.textContent?.trim()||"Conoce este servicio de JOA.";
+   const image=card.querySelector(".service-image"),host=$("#service-detail-content");
+   if(!host)return;
+   host.replaceChildren();
+   const eyebrow=document.createElement("div");eyebrow.className="eyebrow";eyebrow.textContent="JOA / SERVICIOS";
+   const heading=document.createElement("h2");heading.id="service-detail-title";heading.textContent=title;
+   const intro=document.createElement("p");intro.className="service-detail-intro";intro.textContent=summary;
+   if(image){const visual=image.cloneNode();visual.className="service-detail-image";visual.loading="eager";host.append(visual)}
+   const descriptionTitle=document.createElement("h3");descriptionTitle.textContent="Descripción del servicio";
+   const description=document.createElement("p");description.textContent="Estamos preparando la descripción completa de este servicio. Próximamente encontrarás aquí todos sus detalles.";
+   const offersTitle=document.createElement("h3");offersTitle.textContent="Ofertas y paquetes";
+   const offers=document.createElement("p");offers.textContent="Las ofertas, precios y opciones disponibles se añadirán cuando nos facilites la información correspondiente.";
+   host.append(eyebrow,heading,intro,descriptionTitle,description,offersTitle,offers);
+   serviceDetailDialog.showModal();
+ });
+ document.addEventListener("click",event=>{if(event.target?.closest?.("#service-detail-close"))serviceDetailDialog?.close()});
+ serviceDetailDialog?.addEventListener("click",event=>{if(event.target===serviceDetailDialog)serviceDetailDialog.close()});
  let authMode="signin", supabase=null, currentUser=null, authReadyPromise=Promise.resolve(false), authInitError=null, oauthInProgress=false;
  let communityProfilePromise=null,communityProfilePromiseUserId=null,authEventVersion=0;
  const COMMUNITY_INTENT_KEY="joa_community_requested";
