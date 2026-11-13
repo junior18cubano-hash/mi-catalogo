@@ -1636,3 +1636,89 @@ dialog::backdrop{background:rgba(2,5,13,.78);backdrop-filter:blur(9px)}
   .community-post-card,.community-group-card,.community-list-row,.community-tabs button,
   .community-chat-entry,.community-logout,#community-chat-form button{transition:none}
 }
+
+
+/* JOA Comunidad PRO · Fase 2: perfiles, jugadores, grupos y conversaciones */
+.community-player-card{
+  position:relative;isolation:isolate;overflow:hidden;gap:13px;padding:18px;
+  border-color:rgba(111,190,235,.2);
+  background:radial-gradient(ellipse at 100% 0,rgba(74,202,245,.11),transparent 48%),linear-gradient(145deg,rgba(18,34,58,.96),rgba(8,15,30,.98));
+  box-shadow:0 12px 28px rgba(0,0,0,.2);
+  transition:transform .2s ease,border-color .2s ease,box-shadow .2s ease;
+}
+.community-player-card:before,.community-group-detail-card:before{
+  content:"";position:absolute;inset:0 0 auto;height:2px;
+  background:linear-gradient(90deg,rgba(72,225,255,.75),rgba(157,119,255,.55),transparent 78%);
+  opacity:.7;pointer-events:none;
+}
+.community-player-card:hover{transform:translateY(-2px);border-color:rgba(78,220,255,.42);box-shadow:0 16px 34px rgba(0,0,0,.28),0 0 22px rgba(72,220,255,.06)}
+.community-player-head{gap:13px}
+.community-player-head .community-avatar{width:48px;height:48px;flex-basis:48px;border:1px solid rgba(155,235,255,.45);box-shadow:0 0 0 4px rgba(72,220,255,.06),0 8px 20px rgba(0,0,0,.22)}
+.community-player-identity{min-width:0}
+.community-player-identity b{font-size:13px;letter-spacing:.01em;overflow-wrap:anywhere}
+.community-player-identity small{font-size:10px;letter-spacing:.04em;color:#83dff4}
+.community-player-bio,.community-player-games{font-size:11px;line-height:1.7;color:#c3d2e8}
+.community-player-games{padding:10px 12px;border:1px solid rgba(76,218,255,.13);border-radius:10px;background:rgba(56,180,220,.055)}
+.community-player-actions{justify-content:flex-start;gap:8px;margin-top:2px}
+.community-player-actions button{min-height:35px;padding:8px 13px;border-radius:9px;background:linear-gradient(110deg,rgba(17,68,89,.92),rgba(48,40,86,.92));transition:transform .18s ease,border-color .18s ease,filter .18s ease}
+.community-player-actions button:hover{transform:translateY(-1px);border-color:rgba(112,234,255,.8);filter:brightness(1.12)}
+.community-public-profile-dialog{border:1px solid rgba(92,218,255,.32);border-radius:20px;background:radial-gradient(ellipse at 50% 0,rgba(65,164,214,.14),transparent 48%),linear-gradient(150deg,#121f38,#080e1d);box-shadow:0 28px 90px rgba(0,0,0,.65),0 0 35px rgba(60,203,255,.08);color:#edf5ff}
+.public-profile-card{position:relative;padding:26px 18px 16px}
+.public-profile-avatar{width:88px;height:88px;border-radius:26px;border-color:rgba(107,232,255,.62);box-shadow:0 0 0 7px rgba(67,203,245,.06),0 14px 35px rgba(0,0,0,.3);font-size:25px}
+.public-profile-card h2{margin-top:4px}
+.public-profile-handle{display:inline-block;margin:9px 0 18px;padding:6px 11px;border:1px solid rgba(86,220,255,.2);border-radius:30px;background:rgba(63,189,224,.07)}
+.public-profile-card h3{padding-bottom:8px;border-bottom:1px solid rgba(137,182,225,.14);letter-spacing:.06em}
+.public-profile-card>p:not(.public-profile-handle){padding:0 2px}
+.community-group-card{position:relative;overflow:hidden}
+.community-group-card:before{content:"";position:absolute;inset:0 0 auto;height:2px;background:linear-gradient(90deg,#48dff5,#8e76ff,transparent 80%);opacity:.55;pointer-events:none}
+.community-group-card h4{font-size:14px;letter-spacing:.01em}
+.community-group-card>p{font-size:12px;line-height:1.7}
+.community-group-meta{gap:8px}
+.community-group-meta span{border:1px solid rgba(135,190,230,.13);background:rgba(255,255,255,.045);color:#c4d6ed}
+.community-group-detail{overflow:hidden}
+.community-group-detail-card{position:relative;overflow:hidden;padding:20px;border:1px solid rgba(108,196,235,.2);border-radius:16px;background:radial-gradient(ellipse at 100% 0,rgba(80,173,226,.1),transparent 44%),linear-gradient(145deg,rgba(16,31,54,.98),rgba(8,14,28,.99))}
+.community-group-detail-head{padding-bottom:13px;border-bottom:1px solid rgba(135,182,225,.15)}
+.community-group-detail-head h3{font:800 clamp(17px,2.5vw,23px) var(--display);overflow-wrap:anywhere}
+.community-group-detail-card>p{font-size:12px;line-height:1.75}
+.community-group-roster{gap:9px}
+.community-group-member{min-width:0;padding:11px;border-color:rgba(130,183,224,.15);border-radius:11px;background:rgba(255,255,255,.025)}
+.community-group-member span{font-size:11px}
+.community-group-inviter{border-color:rgba(100,190,235,.18);border-radius:13px;background:rgba(255,255,255,.025)}
+.community-chat-layout{align-items:stretch}
+.community-chat-layout>#community-chat-list{min-width:0}
+.community-chat-entry{position:relative;overflow:hidden;min-height:78px;padding:14px}
+.community-chat-entry strong{font-size:12px;letter-spacing:.01em}
+.community-chat-preview{line-height:1.5}
+.community-chat-time{font-variant-numeric:tabular-nums}
+.community-chat-general{border-color:rgba(88,218,255,.3);background:radial-gradient(ellipse at 100% 0,rgba(76,204,245,.13),transparent 60%),linear-gradient(110deg,#12334a,#1c2144)}
+.community-chat-window{min-height:390px;padding:14px}
+#community-chat-title{font-size:14px;font-weight:800;letter-spacing:.01em}
+#community-chat-messages{padding:16px 12px;gap:11px}
+.community-message{max-width:min(82%,620px);padding:12px 14px;border-radius:14px 14px 14px 5px}
+.community-message.mine{border-radius:14px 14px 5px 14px}
+.community-message p{font-size:12px;line-height:1.65}
+.community-message small{font-size:9px}
+.community-general-message{padding:14px 16px;border-radius:13px}
+.community-general-head strong{font-size:12px}
+.community-general-message p{font-size:12px;line-height:1.7}
+.community-group-chat-card{border:1px solid rgba(105,193,235,.2);border-radius:15px;background:linear-gradient(145deg,rgba(17,32,55,.96),rgba(8,14,28,.98));box-shadow:0 12px 30px rgba(0,0,0,.2)}
+.community-group-chat-messages{scrollbar-width:thin;scrollbar-color:rgba(83,207,240,.35) transparent}
+.community-group-message{border:1px solid rgba(140,185,225,.13);border-radius:12px;background:rgba(255,255,255,.035)}
+@media(max-width:760px){
+  .community-player-card{padding:15px}
+  .community-group-detail-card{padding:15px}
+  .community-chat-window{min-height:340px;padding:10px}
+  .community-message{max-width:92%}
+}
+@media(max-width:520px){
+  .community-player-head .community-avatar{width:44px;height:44px;flex-basis:44px}
+  .community-player-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
+  .community-player-actions button{width:100%;min-width:0}
+  .community-group-detail-head{align-items:flex-start}
+  .community-group-detail-head h3{font-size:17px}
+  #community-chat-messages{padding:12px 6px}
+  .community-message{max-width:95%;padding:10px 12px}
+}
+@media(prefers-reduced-motion:reduce){
+  .community-player-card,.community-player-actions button{transition:none}
+}
