@@ -28,7 +28,7 @@ test("Community PRO preserves mobile layout and reduced motion preferences", () 
 });
 
 test("Community PRO is a CSS-only visual update with cache bust", () => {
-  assert.match(html, /styles\.css\?v=20261113-community-pro1/);
+  assert.match(html, /styles\.css\?v=20261113-community-pro2/);
   assert.match(app, /function openCommunity\(\)/);
   assert.match(app, /function loadCommunityFriends\(\)/);
   assert.match(app, /function loadCommunityGroups\(\)/);
