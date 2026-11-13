@@ -2316,3 +2316,147 @@ body{
   .community-tabs button,.community-list-row,.community-player-card,
   .community-group-card,.community-post-card,.notification-item{transition:none!important}
 }
+
+
+/* JOA Rewards / Control Center — acabado visual de campañas y administración */
+#community-rewards-panel,
+#community-admin-panel{display:grid;gap:16px;min-width:0}
+#community-rewards-panel[hidden],
+#community-admin-panel[hidden]{display:none}
+#community-rewards-panel>.community-feature-card,
+#community-admin-panel>.community-feature-card{
+  min-width:0;overflow:hidden;
+  border:1px solid rgba(112,190,235,.18);
+  border-radius:17px;
+  background:radial-gradient(ellipse at 95% 0,rgba(65,174,226,.075),transparent 42%),linear-gradient(150deg,rgba(18,30,52,.96),rgba(9,15,29,.98));
+  box-shadow:0 16px 38px rgba(0,0,0,.2),inset 0 1px 0 rgba(255,255,255,.025);
+}
+#community-rewards-panel>.community-feature-card:first-child{
+  border-color:rgba(72,220,255,.25);
+}
+#community-rewards-panel>.community-feature-card>h3,
+#community-admin-panel>.community-feature-card>h3{
+  color:#f2f7ff;letter-spacing:-.02em;
+}
+#community-rewards-panel>.community-feature-card>p,
+#community-admin-panel>.community-feature-card>p{
+  max-width:760px;color:#aebed5;line-height:1.7;
+}
+#community-admin-panel .reward-admin-banner{
+  position:relative;isolation:isolate;overflow:hidden;
+  border-color:rgba(166,139,250,.38);
+  background:radial-gradient(ellipse at 88% 0,rgba(142,112,255,.2),transparent 48%),linear-gradient(125deg,#18213e,#0b1224 72%);
+}
+#community-admin-panel .reward-admin-banner:after{
+  content:"";position:absolute;z-index:-1;right:-42px;bottom:-86px;
+  width:220px;height:220px;border:1px solid rgba(171,151,255,.18);
+  border-radius:50%;box-shadow:0 0 0 22px rgba(171,151,255,.035),0 0 0 46px rgba(171,151,255,.025);
+}
+#community-admin-panel .reward-admin-banner .eyebrow{color:#c4b5fd}
+#community-admin-panel .reward-admin-banner h3{max-width:650px}
+#community-admin-panel .reward-admin-banner .button{position:relative;z-index:1}
+#reward-form{gap:16px}
+#reward-form>label{padding:2px 0}
+#reward-form label>input,
+#reward-form label>select,
+#reward-form label>textarea{
+  min-height:43px;border-color:rgba(133,181,225,.2);
+  background:linear-gradient(145deg,#0a1223,#0d172a);
+  transition:border-color .18s ease,box-shadow .18s ease,background .18s ease;
+}
+#reward-form label>textarea{min-height:86px;resize:vertical}
+#reward-form label>input:hover,
+#reward-form label>select:hover,
+#reward-form label>textarea:hover{border-color:rgba(72,220,255,.38)}
+#reward-form label>input:focus,
+#reward-form label>select:focus,
+#reward-form label>textarea:focus{
+  outline:0;border-color:rgba(72,225,255,.75);
+  background:#0d1a30;box-shadow:0 0 0 3px rgba(72,225,255,.09);
+}
+#reward-form .reward-form-grid{
+  gap:13px;padding:15px;border:1px solid rgba(126,177,222,.14);
+  border-radius:13px;background:rgba(5,12,25,.34);
+}
+#reward-form .reward-requirements{
+  border-color:rgba(72,220,255,.23);
+  background:linear-gradient(145deg,rgba(12,31,50,.9),rgba(8,17,32,.95));
+}
+#reward-form .reward-requirements>b{display:block;margin-bottom:7px;color:#7cecff}
+#reward-form .reward-requirements .reward-form-grid{
+  margin-top:12px;background:rgba(4,11,23,.32);
+}
+#reward-form .reward-card-actions{
+  position:sticky;bottom:8px;z-index:3;align-items:center;
+  padding:12px;border:1px solid rgba(105,203,239,.2);
+  border-radius:13px;background:rgba(8,15,29,.94);
+  box-shadow:0 12px 28px rgba(0,0,0,.35);backdrop-filter:blur(14px);
+}
+#reward-save{min-height:42px;padding-inline:18px}
+#reward-admin-claims,#reward-audit-list{display:grid;gap:0;min-width:0}
+.reward-admin-claim{
+  align-items:flex-start;justify-content:flex-start;
+  padding:14px 12px;border:1px solid rgba(132,179,222,.12);
+  border-radius:12px;background:rgba(7,14,28,.48);
+}
+.reward-admin-claim+.reward-admin-claim{margin-top:8px}
+.reward-admin-claim b{color:#eef6ff;font-size:12px}
+.reward-admin-claim small{line-height:1.6;overflow-wrap:anywhere}
+.reward-admin-claim button,.reward-audit-row button{min-height:34px;border-radius:9px}
+.reward-audit-row{
+  display:grid;grid-template-columns:minmax(0,1fr) auto;
+  align-items:start;gap:6px 14px;padding:13px 12px;
+  border:1px solid rgba(132,179,222,.1);border-radius:11px;
+  background:rgba(7,14,28,.38);line-height:1.55;
+}
+.reward-audit-row+.reward-audit-row{margin-top:7px}
+.reward-campaign-list{align-items:stretch}
+.reward-campaign-card{
+  min-width:0;grid-template-columns:minmax(105px,34%) minmax(0,1fr);
+  border-color:rgba(105,204,239,.22);
+  background:radial-gradient(ellipse at 0 0,rgba(67,175,221,.1),transparent 55%),linear-gradient(145deg,#121f36,#090f1e);
+}
+.reward-campaign-card:hover{border-color:rgba(72,225,255,.55);box-shadow:0 15px 38px rgba(0,0,0,.32),0 0 22px rgba(72,225,255,.08)}
+.reward-campaign-body{gap:9px;padding:16px}
+.reward-campaign-body h4{font-size:clamp(12px,1.2vw,15px);line-height:1.4;overflow-wrap:anywhere}
+.reward-campaign-body p{color:#c0cee2}
+.reward-campaign-body>small{line-height:1.6}
+.reward-campaign-body .reward-card-actions{margin-top:auto;padding-top:5px}
+.reward-state{background:rgba(36,193,132,.08)}
+.reward-cover-gallery{min-height:100%;align-content:stretch}
+.reward-cover-frame{min-height:100%;background:radial-gradient(ellipse at 50% 42%,#263e5f,#0b1425 76%)}
+.reward-cover-frame img{object-fit:contain}
+.reward-product-picker{
+  border-color:rgba(72,220,255,.28);
+  background:radial-gradient(ellipse at 100% 0,rgba(72,220,255,.09),transparent 55%),linear-gradient(135deg,#101f37,#101326);
+}
+.reward-product-preview-item{border-color:rgba(116,184,225,.2)}
+.reward-catalog-dialog{
+  border-color:rgba(72,220,255,.42);
+  background:radial-gradient(ellipse at 100% 0,rgba(72,160,220,.1),transparent 45%),#0b1223;
+}
+.reward-catalog-result{transition:border-color .18s ease,background .18s ease,transform .18s ease}
+.reward-catalog-result:hover{transform:translateY(-1px)}
+#reward-public-campaign-list .community-loading,
+#reward-campaign-list .community-loading{padding:16px;border:1px dashed rgba(116,184,225,.24);border-radius:12px;color:#a9bad2}
+@media(max-width:760px){
+  #community-admin-panel,#community-rewards-panel{gap:12px}
+  #reward-form .reward-form-grid{padding:12px}
+  .reward-admin-claim{align-items:stretch}
+}
+@media(max-width:520px){
+  #community-admin-panel>.community-feature-card,
+  #community-rewards-panel>.community-feature-card{padding:14px}
+  #reward-form .reward-card-actions{position:static;display:grid;grid-template-columns:1fr 1fr}
+  #reward-save{width:100%;justify-content:center}
+  .reward-admin-claim{padding:12px}
+  .reward-audit-row{grid-template-columns:minmax(0,1fr);padding:11px}
+  .reward-campaign-body{gap:8px}
+  .reward-campaign-body h4{font-size:14px}
+}
+@media(prefers-reduced-motion:reduce){
+  .reward-campaign-card,.reward-campaign-card>img,.reward-catalog-result,
+  #reward-form label>input,#reward-form label>select,#reward-form label>textarea{
+    animation:none!important;transition:none!important;transform:none!important
+  }
+}
