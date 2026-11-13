@@ -35,3 +35,14 @@ test("favorite loading has a bounded wait and always reaches the existing cleanu
   assert.match(block, /catalogFavoritesLoadingUserId=null;catalogFavoritesPromise=null/);
   assert.match(block, /La carga de favoritos tardó demasiado/);
 });
+
+
+test("favorite heart rendering iterates over every button with the all-elements selector", () => {
+  assert.match(source, /function renderFavoriteButtons\(\)\{\$\$\("\.favorite-toggle"\)\.forEach/);
+  assert.doesNotMatch(source, /function renderFavoriteButtons\(\)\{\$\("\.favorite-toggle"\)\.forEach/);
+});
+
+test("compact review summaries pass a collection of elements to the updater", () => {
+  assert.match(source, /updateCatalogReviewSummaryElements\(\$\$\("\.catalog-review-compact"\),sums\)/);
+  assert.doesNotMatch(source, /updateCatalogReviewSummaryElements\(\$\("\.catalog-review-compact"\),sums\)/);
+});
