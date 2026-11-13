@@ -31,5 +31,5 @@ test("catalog detail and favorites remain responsive on narrow screens", () => {
 });
 
 test("the page loads the second catalog visual revision", () => {
-  assert.match(html, /styles\.css\?v=20261112-hybrid-pro2/);
+  assert.match(html, /styles\.css\?v=20261113-community-pro1/);
 });
