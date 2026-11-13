@@ -31,5 +31,14 @@ test("catalog detail and favorites remain responsive on narrow screens", () => {
 });
 
 test("the page loads the second catalog visual revision", () => {
-  assert.match(html, /styles\.css\?v=20261113-visual-refresh1/);
+  assert.match(html, /styles\.css\?v=20261113-catalog-polish1/);
+});
+
+
+test("catalog visual polish keeps artwork, metadata and reviews readable", () => {
+  assert.match(css, /#catalog-results \.catalog-live-card:hover,[\s\S]*?translateY\(-5px\)/);
+  assert.match(css, /#catalog-results \.catalog-live-card \.poster>img[\s\S]*?object-position:center 28%/);
+  assert.match(css, /#catalog-results \.catalog-live-card>div:last-child[\s\S]*?min-height:83px/);
+  assert.match(css, /#catalog-detail-content \.detail-info h2[\s\S]*?overflow-wrap:anywhere/);
+  assert.match(css, /#catalog-detail-content \.catalog-item-reviews/);
 });
