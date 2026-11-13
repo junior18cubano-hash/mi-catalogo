@@ -70,7 +70,7 @@ test("Rewards admin visual polish styles the existing campaign form, claims and 
   assert.match(html, /id="reward-audit-list"/);
 });
 test("Rewards admin visual polish preserves hidden panels, mobile layout and reduced motion", () => {
-  assert.match(css, /#community-rewards-panel\\[hidden\\],\\s*#community-admin-panel\\[hidden\\]\\{display:none\\}/);
+  assert.match(css, /#community-rewards-panel\[hidden\],\s*#community-admin-panel\[hidden\]\{display:none\}/);
   assert.match(css, /@media\(max-width:520px\)[\s\S]*?#reward-form \.reward-card-actions/);
   assert.match(css, /@media\(prefers-reduced-motion:reduce\)[\s\S]*?\.reward-campaign-card/);
 });
