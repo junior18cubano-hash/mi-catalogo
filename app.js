@@ -310,7 +310,7 @@
     let sums;
     try{sums=await loadCatalogReviewAggregates(keys)}
     catch(error){console.warn("JOA catalog reviews:",error);return}
-    updateCatalogReviewSummaryElements($(".catalog-review-compact"),sums);
+    updateCatalogReviewSummaryElements($$(".catalog-review-compact"),sums);
   }
   async function loadCatalogItemReviews(item,host){
     if(!supabase){host.querySelector(".catalog-review-summary").textContent="Las reseñas estarán disponibles cuando se conecte el servicio.";return}
@@ -413,7 +413,7 @@ function renderPagination(totalPages){
  }
 
   function favoriteSnapshot(item){return {id:item.id??item.external_id??item.igdb_id??item.tmdb_id??null,slug:item.slug||null,year:item.year||item.ano||item.año||item.release_year||null,platform:item.platform||item.platforms||item.consola||null,genre:item.genre||item.genres||item.generos||item.genero||null,description:itemDescription(item)}}
-  function renderFavoriteButtons(){$(".favorite-toggle").forEach(button=>{const active=catalogFavoritesByKey.has(button.dataset.favoriteKey),ambiguous=button.dataset.ambiguous==="true";const loading=!!currentUser&&catalogFavoritesLoadingUserId===currentUser.id;button.disabled=ambiguous||loading;button.classList.toggle("is-favorite",active);button.setAttribute("aria-pressed",String(active));button.textContent=active?"♥":"♡";button.setAttribute("aria-label",active?"Quitar de favoritos":"Añadir a favoritos");if(loading)button.title="Cargando tus favoritos…";else if(!ambiguous)button.title=""})}
+  function renderFavoriteButtons(){$$(".favorite-toggle").forEach(button=>{const active=catalogFavoritesByKey.has(button.dataset.favoriteKey),ambiguous=button.dataset.ambiguous==="true";const loading=!!currentUser&&catalogFavoritesLoadingUserId===currentUser.id;button.disabled=ambiguous||loading;button.classList.toggle("is-favorite",active);button.setAttribute("aria-pressed",String(active));button.textContent=active?"♥":"♡";button.setAttribute("aria-label",active?"Quitar de favoritos":"Añadir a favoritos");if(loading)button.title="Cargando tus favoritos…";else if(!ambiguous)button.title=""})}
   function withCatalogFavoriteTimeout(promise,timeoutMs=12000){
     return new Promise((resolve,reject)=>{
       const timer=setTimeout(()=>reject(new Error("JOA_FAVORITES_TIMEOUT")),timeoutMs);

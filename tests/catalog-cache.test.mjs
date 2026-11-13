@@ -31,5 +31,5 @@ test("catalog loader checks its generation after asynchronous boundaries", () =>
 
 test("main page busts the JavaScript cache after catalog loader changes", async () => {
   const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
-  assert.match(html, /app\.js\?v=20261112-community-profile-retry1/);
+  assert.match(html, /app\.js\?v=20261113-favorites-render-fix1/);
 });

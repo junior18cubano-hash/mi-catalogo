@@ -31,5 +31,5 @@ test("profile responses cannot replace state for another account or newer attemp
 
 test("main page requests the retry-enabled JavaScript bundle", async () => {
   const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
-  assert.match(html, /app\.js\?v=20261112-community-profile-retry1/);
+  assert.match(html, /app\.js\?v=20261113-favorites-render-fix1/);
 });
