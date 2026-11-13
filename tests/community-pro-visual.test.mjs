@@ -28,7 +28,7 @@ test("Community PRO preserves mobile layout and reduced motion preferences", () 
 });
 
 test("Community PRO is a CSS-only visual update with cache bust", () => {
-  assert.match(html, /styles\.css\?v=20261113-community-polish1/);
+  assert.match(html, /styles\.css\?v=20261113-rewards-admin1/);
   assert.match(app, /function openCommunity\(\)/);
   assert.match(app, /function loadCommunityFriends\(\)/);
   assert.match(app, /function loadCommunityGroups\(\)/);
@@ -48,7 +48,7 @@ test("Community PRO phase 2 keeps compact layouts responsive and honors reduced 
   assert.match(css, /@media\(prefers-reduced-motion:reduce\)[\s\S]*?\.community-player-card/);
 });
 test("Community PRO phase 2 refreshes the stylesheet cache key", () => {
-  assert.match(html, /styles\.css\?v=20261113-community-polish1/);
+  assert.match(html, /styles\.css\?v=20261113-rewards-admin1/);
 });
 
 test("Community visual polish strengthens the workspace, navigation, chat and notifications", () => {
@@ -57,4 +57,20 @@ test("Community visual polish strengthens the workspace, navigation, chat and no
   assert.match(css, /\.community-chat-layout\{[\s\S]*?minmax\(220px/);
   assert.match(css, /\.notification-copy\{[\s\S]*?overflow-wrap:anywhere/);
   assert.match(css, /#community-profile-form\{[\s\S]*?repeat\(2,minmax\(0,1fr\)\)/);
+});
+
+test("Rewards admin visual polish styles the existing campaign form, claims and audit panels", () => {
+  assert.match(css, /#community-admin-panel \.reward-admin-banner:after/);
+  assert.match(css, /#reward-form label>input:focus/);
+  assert.match(css, /#reward-form \.reward-requirements/);
+  assert.match(css, /#reward-admin-claims/);
+  assert.match(css, /\.reward-audit-row\{[\s\S]*?grid-template-columns/);
+  assert.match(css, /\.reward-campaign-card:hover/);
+  assert.match(html, /id="reward-admin-claims"/);
+  assert.match(html, /id="reward-audit-list"/);
+});
+test("Rewards admin visual polish preserves hidden panels, mobile layout and reduced motion", () => {
+  assert.match(css, /#community-admin-panel\[hidden\],\s*#community-rewards-panel\[hidden\]\{display:none\}/);
+  assert.match(css, /@media\(max-width:520px\)[\s\S]*?#reward-form \.reward-card-actions/);
+  assert.match(css, /@media\(prefers-reduced-motion:reduce\)[\s\S]*?\.reward-campaign-card/);
 });
