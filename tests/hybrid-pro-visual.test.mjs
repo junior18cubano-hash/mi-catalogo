@@ -24,5 +24,5 @@ test("visual effects respect reduced-motion preferences and keyboard focus", () 
 });
 
 test("the page loads the Hybrid PRO stylesheet revision", () => {
-  assert.match(html, /styles\.css\?v=20261112-hybrid-pro2/);
+  assert.match(html, /styles\.css\?v=20261113-community-pro1/);
 });
