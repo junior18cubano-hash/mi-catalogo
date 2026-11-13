@@ -38,11 +38,11 @@ test("favorite loading has a bounded wait and always reaches the existing cleanu
 
 
 test("favorite heart rendering iterates over every button with the all-elements selector", () => {
-  assert.match(source, /function renderFavoriteButtons\(\)\{\$\$\("\.favorite-toggle"\)\.forEach/);
-  assert.doesNotMatch(source, /function renderFavoriteButtons\(\)\{\$\("\.favorite-toggle"\)\.forEach/);
+  assert.ok(source.includes('function renderFavoriteButtons(){$(".favorite-toggle").forEach'));
+  assert.ok(!source.includes('function renderFavoriteButtons(){$(".favorite-toggle").forEach'));
 });
 
 test("compact review summaries pass a collection of elements to the updater", () => {
-  assert.match(source, /updateCatalogReviewSummaryElements\(\$\$\("\.catalog-review-compact"\),sums\)/);
-  assert.doesNotMatch(source, /updateCatalogReviewSummaryElements\(\$\("\.catalog-review-compact"\),sums\)/);
+  assert.ok(source.includes('updateCatalogReviewSummaryElements($(".catalog-review-compact"),sums)'));
+  assert.ok(!source.includes('updateCatalogReviewSummaryElements($(".catalog-review-compact"),sums)'));
 });
