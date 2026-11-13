@@ -24,6 +24,6 @@ test("chat and review controls can shrink without horizontal overflow", () => {
 });
 
 test("responsive stylesheet cache version is refreshed", () => {
-  assert.match(html, /styles\.css\?v=20261112-hybrid-pro1/);
+  assert.match(html, /styles\.css\?v=20261112-hybrid-pro2/);
   assert.match(html, /name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/);
 });
