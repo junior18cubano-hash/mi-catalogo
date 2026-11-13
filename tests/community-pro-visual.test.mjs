@@ -35,3 +35,18 @@ test("Community PRO is a CSS-only visual update with cache bust", () => {
   assert.match(app, /function openCommunityChat\(/);
   assert.match(app, /function loadNotifications\(\)/);
 });
+
+test("Community PRO phase 2 styles public player profiles, group details and conversations", () => {
+  assert.match(css, /\.community-player-card:hover\{/);
+  assert.match(css, /\.community-public-profile-dialog\{/);
+  assert.match(css, /\.community-group-detail-card\{/);
+  assert.match(css, /\.community-chat-general\{/);
+  assert.match(css, /\.community-group-chat-card\{/);
+});
+test("Community PRO phase 2 keeps compact layouts responsive and honors reduced motion", () => {
+  assert.match(css, /@media\(max-width:520px\)[\s\S]*?\.community-player-actions\{display:grid/);
+  assert.match(css, /@media\(prefers-reduced-motion:reduce\)[\s\S]*?\.community-player-card/);
+});
+test("Community PRO phase 2 refreshes the stylesheet cache key", () => {
+  assert.match(html, /styles\.css\?v=20261113-community-pro2/);
+});
