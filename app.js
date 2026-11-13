@@ -588,6 +588,7 @@ function renderPagination(totalPages){
  });
 
  let currentSession=null,communityProfile=null,communityTab="feed",communityRequested=readCommunityIntent(),activeConversationId=null,activeConversationIds=[],activeChatChannel=null,communityChatListChannel=null,activeGroupChatChannel=null,activeGroupChatId=null,selectedReviewItem=null,activeCommunityGroupId=null,communityGroupsCache=[];
+ let communityChatLoadGeneration=0,communityChatOpenGeneration=0;
 
  let notificationsChannel=null,notificationsUserId=null,notificationRows=[],notificationsLoadGeneration=0;
  function notificationTime(value){
@@ -1348,7 +1349,7 @@ function renderPagination(totalPages){
      .subscribe();
  }
  function showCommunityGeneral(){
-   activeConversationId=null;activeConversationIds=[];
+   communityChatOpenGeneration++;activeConversationId=null;activeConversationIds=[];
    $("#community-chat-title").textContent="General · Último mensaje de cada chat";
    $("#community-chat-form").hidden=true;
    $$(".community-chat-entry").forEach(row=>row.classList.toggle("active",row.dataset.general==="true"));
@@ -1380,31 +1381,34 @@ function renderPagination(totalPages){
    host.scrollTop=host.scrollHeight;
  }
  async function loadCommunityChats(){
-   const host=$("#community-chat-list");if(!host||!currentUser||!supabase)return;
-   const memberships=await supabase.from("conversation_members").select("conversation_id").eq("user_id",currentUser.id);
+   const host=$("#community-chat-list"),userId=currentUser?.id,generation=++communityChatLoadGeneration;
+   if(!host||!userId||!supabase)return;
+   const isCurrent=()=>generation===communityChatLoadGeneration&&currentUser?.id===userId;
+   host.innerHTML='<p class="community-loading">Cargando conversaciones…</p>';
+   const memberships=await supabase.from("conversation_members").select("conversation_id").eq("user_id",userId);
+   if(!isCurrent())return;
    if(memberships.error){host.textContent=communityError(memberships.error);return}
    const membershipIds=(memberships.data||[]).map(x=>x.conversation_id);
    if(!membershipIds.length){host.textContent="Todavía no tienes chats privados. Añade a un amigo para comenzar.";return}
    const conv=await supabase.from("conversations").select("id,title,created_by,direct_user_id,group_id,created_at").in("id",membershipIds).order("created_at",{ascending:false});
+   if(!isCurrent())return;
    if(conv.error){host.textContent=communityError(conv.error);return}
-   const conversations=(conv.data||[]).filter(item=>!item.group_id);
-   const ids=conversations.map(item=>item.id);
+   const conversations=(conv.data||[]).filter(item=>!item.group_id),ids=conversations.map(item=>item.id);
    if(!ids.length){host.innerHTML='<p class="community-empty">Tus chats grupales están dentro de cada grupo. Añade amigos para iniciar conversaciones privadas.</p>';return}
-   const peerIds=[...new Set(conversations.map(x=>x.created_by===currentUser.id?x.direct_user_id:x.created_by).filter(Boolean))];
+   const peerIds=[...new Set(conversations.map(x=>x.created_by===userId?x.direct_user_id:x.created_by).filter(Boolean))];
    const [profiles,messageResults]=await Promise.all([
      peerIds.length?supabase.from("profiles").select("id,display_name,username").in("id",peerIds):Promise.resolve({data:[]}),
      Promise.all(conversations.map(item=>supabase.from("messages").select("id,conversation_id,sender_id,body,created_at").eq("conversation_id",item.id).order("created_at",{ascending:false}).limit(1)))
    ]);
+   if(!isCurrent())return;
    if(profiles.error){host.textContent=communityError(profiles.error);return}
    const messageError=messageResults.find(result=>result.error)?.error;
    if(messageError){host.textContent=communityError(messageError);return}
-   const latestMessages=messageResults.flatMap(result=>result.data||[]);
-   const profileMap=new Map((profiles.data||[]).map(p=>[p.id,p]));
+   const latestMessages=messageResults.flatMap(result=>result.data||[]),profileMap=new Map((profiles.data||[]).map(p=>[p.id,p]));
    const lastByConversation=new Map(latestMessages.map(message=>[message.conversation_id,message]));
-   // Si quedaron chats duplicados de las primeras pruebas, se agrupan por amigo y se conserva como principal el más reciente.
    const groups=new Map();
    conversations.forEach(item=>{
-     const peerId=item.created_by===currentUser.id?item.direct_user_id:item.created_by;
+     const peerId=item.created_by===userId?item.direct_user_id:item.created_by;
      if(!peerId)return;
      if(!groups.has(peerId))groups.set(peerId,[]);
      groups.get(peerId).push(item);
@@ -1415,6 +1419,7 @@ function renderPagination(totalPages){
      const latest=allIds.map(id=>lastByConversation.get(id)).filter(Boolean).sort((a,b)=>new Date(b.created_at)-new Date(a.created_at))[0];
      return {peerId,primary,peer,allIds,latest};
    }).sort((a,b)=>new Date(b.latest?.created_at||b.primary.created_at)-new Date(a.latest?.created_at||a.primary.created_at));
+   if(!isCurrent())return;
    host.innerHTML="";
    const general=document.createElement("button");general.type="button";general.className="community-chat-entry community-chat-general";general.dataset.general="true";
    const generalTitle=document.createElement("strong");generalTitle.textContent="▤ General";
@@ -1424,11 +1429,9 @@ function renderPagination(totalPages){
      const name=item.peer.display_name||item.peer.username||"Jugador JOA";
      const row=document.createElement("button");row.type="button";row.className="community-chat-entry";row.dataset.general="false";row.classList.toggle("active",item.primary.id===activeConversationId);
      const title=document.createElement("strong");title.textContent=name;
-     const preview=document.createElement("span");preview.className="community-chat-preview";
-     preview.textContent=item.latest?(item.latest.sender_id===currentUser.id?"Tú: ":"")+item.latest.body:"Empieza la conversación";
+     const preview=document.createElement("span");preview.className="community-chat-preview";preview.textContent=item.latest?(item.latest.sender_id===userId?"Tú: ":"")+item.latest.body:"Empieza la conversación";
      const time=document.createElement("small");time.className="community-chat-time";time.textContent=item.latest?new Date(item.latest.created_at).toLocaleString("es",{hour:"2-digit",minute:"2-digit",day:"2-digit",month:"short"}):"Nuevo chat";
-     row.append(title,preview,time);
-     row.addEventListener("click",()=>openCommunityChat(item.primary.id,name,item.allIds));host.append(row);
+     row.append(title,preview,time);row.addEventListener("click",()=>openCommunityChat(item.primary.id,name,item.allIds));host.append(row);
    });
    if(!activeConversationId)await renderCommunityGeneral(ids,conversations,profileMap,latestMessages);
  }
@@ -1441,11 +1444,15 @@ function renderPagination(totalPages){
    bubble.append(body,time);host.append(bubble);host.scrollTop=host.scrollHeight;
  }
  async function openCommunityChat(conversationId,title,relatedIds){
+   const userId=currentUser?.id,generation=++communityChatOpenGeneration;
+   if(!userId||!supabase)return;
    activeConversationId=conversationId;activeConversationIds=relatedIds?.length?relatedIds:[conversationId];
+   const conversationIds=[...activeConversationIds],host=$("#community-chat-messages");
    $("#community-chat-form").hidden=false;
    $("#community-chat-title").textContent=title||"Chat JOA";
-   const host=$("#community-chat-messages");host.innerHTML='<p class="community-loading">Cargando mensajes…</p>';
-   const {data,error}=await supabase.from("messages").select("id,conversation_id,sender_id,body,created_at").in("conversation_id",activeConversationIds).order("created_at",{ascending:false}).limit(300);
+   host.innerHTML='<p class="community-loading">Cargando mensajes…</p>';
+   const {data,error}=await supabase.from("messages").select("id,conversation_id,sender_id,body,created_at").in("conversation_id",conversationIds).order("created_at",{ascending:false}).limit(300);
+   if(generation!==communityChatOpenGeneration||currentUser?.id!==userId||activeConversationId!==conversationId)return;
    if(error){host.textContent=communityError(error);return}
    host.innerHTML="";
    if(!data?.length)host.innerHTML='<p class="community-empty">Saluda y empieza la conversación.</p>';
@@ -1453,9 +1460,10 @@ function renderPagination(totalPages){
    host.scrollTop=host.scrollHeight;
    if(activeChatChannel)supabase.removeChannel(activeChatChannel);
    let channel=supabase.channel("joa-chat-"+conversationId);
-   activeConversationIds.forEach(id=>{
+   conversationIds.forEach(id=>{
      channel=channel.on("postgres_changes",{event:"INSERT",schema:"public",table:"messages",filter:"conversation_id=eq."+id},payload=>{
-       if(activeConversationIds.includes(payload.new.conversation_id))appendCommunityMessage(payload.new);
+       if(generation!==communityChatOpenGeneration||currentUser?.id!==userId||activeConversationId!==conversationId)return;
+       if(conversationIds.includes(payload.new.conversation_id))appendCommunityMessage(payload.new);
        loadCommunityChats();
      });
    });
@@ -1839,7 +1847,14 @@ function renderPagination(totalPages){
    return msg||"No se pudo completar el acceso. Inténtalo de nuevo.";
  }
  function updateHeader(user,session=null){
-   if(currentUser?.id&&currentUser.id!==user?.id)stopNotificationRealtime();
+   if(currentUser?.id&&currentUser.id!==user?.id){
+     stopNotificationRealtime();communityChatLoadGeneration++;communityChatOpenGeneration++;
+     if(activeChatChannel)supabase?.removeChannel(activeChatChannel);
+     if(communityChatListChannel)supabase?.removeChannel(communityChatListChannel);
+     if(activeGroupChatChannel)supabase?.removeChannel(activeGroupChatChannel);
+     activeChatChannel=null;communityChatListChannel=null;activeGroupChatChannel=null;activeGroupChatId=null;
+     activeConversationId=null;activeConversationIds=[];communityGroupsCache=[];activeCommunityGroupId=null;
+   }
    currentUser=user||null;currentSession=session||null;
    renderHeroPersonalization(user);
    const btn=$("#login-open");
