@@ -28,3 +28,10 @@ test("favorite controls stay disabled until the current user's first load comple
 test("switching accounts clears the previous account's favorites before loading", () => {
   assert.match(block, /catalogFavoritesLoadedForUser!==userId\)\{catalogFavorites=\[\];catalogFavoritesByKey\.clear\(\)/);
 });
+
+test("favorite loading has a bounded wait and always reaches the existing cleanup path", () => {
+  assert.match(block, /withCatalogFavoriteTimeout\(query,12000\)/);
+  assert.match(block, /JOA_FAVORITES_TIMEOUT/);
+  assert.match(block, /catalogFavoritesLoadingUserId=null;catalogFavoritesPromise=null/);
+  assert.match(block, /La carga de favoritos tardó demasiado/);
+});

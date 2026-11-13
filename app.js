@@ -414,6 +414,12 @@ function renderPagination(totalPages){
 
   function favoriteSnapshot(item){return {id:item.id??item.external_id??item.igdb_id??item.tmdb_id??null,slug:item.slug||null,year:item.year||item.ano||item.año||item.release_year||null,platform:item.platform||item.platforms||item.consola||null,genre:item.genre||item.genres||item.generos||item.genero||null,description:itemDescription(item)}}
   function renderFavoriteButtons(){$(".favorite-toggle").forEach(button=>{const active=catalogFavoritesByKey.has(button.dataset.favoriteKey),ambiguous=button.dataset.ambiguous==="true";const loading=!!currentUser&&catalogFavoritesLoadingUserId===currentUser.id;button.disabled=ambiguous||loading;button.classList.toggle("is-favorite",active);button.setAttribute("aria-pressed",String(active));button.textContent=active?"♥":"♡";button.setAttribute("aria-label",active?"Quitar de favoritos":"Añadir a favoritos");if(loading)button.title="Cargando tus favoritos…";else if(!ambiguous)button.title=""})}
+  function withCatalogFavoriteTimeout(promise,timeoutMs=12000){
+    return new Promise((resolve,reject)=>{
+      const timer=setTimeout(()=>reject(new Error("JOA_FAVORITES_TIMEOUT")),timeoutMs);
+      Promise.resolve(promise).then(value=>{clearTimeout(timer);resolve(value)},error=>{clearTimeout(timer);reject(error)});
+    });
+  }
   async function loadCatalogFavorites(force=false){
     if(!currentUser||!supabase){
       catalogFavoritesLoadGeneration++;catalogFavoritesPromise=null;catalogFavoritesPromiseUserId=null;catalogFavoritesLoadedForUser=null;catalogFavoritesLoadingUserId=null;
@@ -426,7 +432,19 @@ function renderPagination(totalPages){
     if(catalogFavoritesLoadedForUser!==userId){catalogFavorites=[];catalogFavoritesByKey.clear();catalogFavoritesLoadedForUser=null}
     catalogFavoritesLoadingUserId=userId;renderFavoriteButtons();
     const task=(async()=>{
-      const {data,error}=await supabase.from("catalog_favorites").select("user_id,item_key,item_title,item_type,cover_url,item_data,created_at").eq("user_id",userId).order("created_at",{ascending:false});
+      let result;
+      try{
+        const query=supabase.from("catalog_favorites").select("user_id,item_key,item_title,item_type,cover_url,item_data,created_at").eq("user_id",userId).order("created_at",{ascending:false});
+        result=await withCatalogFavoriteTimeout(query,12000);
+      }catch(error){
+        if(generation===catalogFavoritesLoadGeneration&&currentUser?.id===userId){
+          console.warn("JOA favorites load:",error);
+          const host=$("#community-favorites-list");
+          if(host)host.textContent=error?.message==="JOA_FAVORITES_TIMEOUT"?"La carga de favoritos tardó demasiado. Comprueba tu conexión y vuelve a intentarlo.":"No se pudieron cargar tus favoritos: "+communityError(error);
+        }
+        return [];
+      }
+      const {data,error}=result;
       if(generation!==catalogFavoritesLoadGeneration||currentUser?.id!==userId)return [];
       if(error){
         console.warn("JOA favorites:",error);const host=$("#community-favorites-list");if(host)host.textContent="No se pudieron cargar tus favoritos: "+communityError(error);
