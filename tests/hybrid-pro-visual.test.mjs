@@ -24,7 +24,7 @@ test("visual effects respect reduced-motion preferences and keyboard focus", () 
 });
 
 test("the page loads the Hybrid PRO stylesheet revision", () => {
-  assert.match(html, /styles\.css\?v=20261113-rewards-admin1/);
+  assert.match(html, /styles\.css\?v=20261114-reward-single-cover1/);
 });
 
 
