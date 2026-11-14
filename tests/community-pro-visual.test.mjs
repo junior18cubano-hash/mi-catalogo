@@ -28,7 +28,7 @@ test("Community PRO preserves mobile layout and reduced motion preferences", () 
 });
 
 test("Community PRO is a CSS-only visual update with cache bust", () => {
-  assert.match(html, /styles\.css\?v=20261113-rewards-admin1/);
+  assert.match(html, /styles\.css\?v=20261114-reward-single-cover1/);
   assert.match(app, /function openCommunity\(\)/);
   assert.match(app, /function loadCommunityFriends\(\)/);
   assert.match(app, /function loadCommunityGroups\(\)/);
@@ -48,7 +48,7 @@ test("Community PRO phase 2 keeps compact layouts responsive and honors reduced 
   assert.match(css, /@media\(prefers-reduced-motion:reduce\)[\s\S]*?\.community-player-card/);
 });
 test("Community PRO phase 2 refreshes the stylesheet cache key", () => {
-  assert.match(html, /styles\.css\?v=20261113-rewards-admin1/);
+  assert.match(html, /styles\.css\?v=20261114-reward-single-cover1/);
 });
 
 test("Community visual polish strengthens the workspace, navigation, chat and notifications", () => {

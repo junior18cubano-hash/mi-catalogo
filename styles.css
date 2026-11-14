@@ -2460,3 +2460,35 @@ body{
     animation:none!important;transition:none!important;transform:none!important
   }
 }
+
+
+/* JOA Rewards: un solo producto ocupa toda el área de portada */
+.reward-cover-gallery:not(.is-multiple){
+  grid-template-columns:minmax(0,1fr);
+  align-content:stretch;
+  min-height:180px;
+}
+.reward-cover-gallery:not(.is-multiple) .reward-cover-frame{
+  align-self:stretch;
+  min-height:180px;
+  height:100%;
+}
+.reward-cover-gallery:not(.is-multiple) .reward-cover-frame img{
+  display:block;
+  width:100%;
+  height:100%;
+  min-height:180px;
+  padding:0;
+  object-fit:cover;
+}
+@media(max-width:480px){
+  .reward-cover-gallery:not(.is-multiple){
+    grid-template-columns:minmax(0,1fr);
+    min-height:190px;
+  }
+  .reward-cover-gallery:not(.is-multiple) .reward-cover-frame,
+  .reward-cover-gallery:not(.is-multiple) .reward-cover-frame img{
+    min-height:190px;
+    height:100%;
+  }
+}

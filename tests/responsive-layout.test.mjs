@@ -24,6 +24,6 @@ test("chat and review controls can shrink without horizontal overflow", () => {
 });
 
 test("responsive stylesheet cache version is refreshed", () => {
-  assert.match(html, /styles\.css\?v=20261113-rewards-admin1/);
+  assert.match(html, /styles\.css\?v=20261114-reward-single-cover1/);
   assert.match(html, /name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/);
 });

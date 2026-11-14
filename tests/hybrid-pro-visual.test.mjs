@@ -24,5 +24,14 @@ test("visual effects respect reduced-motion preferences and keyboard focus", () 
 });
 
 test("the page loads the Hybrid PRO stylesheet revision", () => {
-  assert.match(html, /styles\.css\?v=20261113-rewards-admin1/);
+  assert.match(html, /styles\.css\?v=20261114-reward-single-cover1/);
+});
+
+
+test("a single reward cover fills the complete reserved image area while multi-item packages keep their two-column gallery", () => {
+  assert.match(css, /\.reward-cover-gallery:not\(\.is-multiple\)\{[\s\S]*?grid-template-columns:minmax\(0,1fr\)/);
+  assert.match(css, /\.reward-cover-gallery:not\(\.is-multiple\) \.reward-cover-frame img\{[\s\S]*?padding:0;[\s\S]*?object-fit:cover/);
+  assert.match(css, /\.reward-cover-gallery\.is-multiple\{grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
+  assert.match(css, /@media\(max-width:480px\)[\s\S]*?\.reward-cover-gallery:not\(\.is-multiple\)/);
+  assert.match(html, /styles\.css\?v=20261114-reward-single-cover1/);
 });
