@@ -769,6 +769,31 @@ function renderPagination(totalPages){
  }
 
 
+ async function loadPublicEvents(){
+   const host=$("#joa-public-events-list");if(!host||!supabase)return;
+   const {data,error}=await supabase.from("joa_events").select("id,title,description,image_url,starts_at,ends_at,status,animation,accent_color,cta_label,cta_url").in("status",["published","scheduled"]).order("starts_at",{ascending:true}).limit(12);
+   if(error){host.textContent="Los eventos estarán disponibles cuando se conecte el servicio.";console.warn("JOA events:",error);return}
+   host.replaceChildren();
+   if(!data?.length){const empty=document.createElement("p");empty.className="community-hint";empty.textContent="Todavía no hay eventos publicados. ¡Pronto habrá novedades!";host.append(empty);return}
+   const allowed=new Set(["none","glow","pulse","shimmer","float","confetti"]);
+   data.forEach(ev=>{
+     const card=document.createElement("article"),effect=allowed.has(ev.animation)?ev.animation:"none";
+     card.className="joa-public-event event-"+effect;
+     const color=/^#[0-9a-f]{6}$/i.test(ev.accent_color||"")?ev.accent_color:"#48e9ff";
+     card.style.setProperty("--event-accent",color);
+     if(ev.image_url){const img=document.createElement("img");img.src=ev.image_url;img.alt="";img.loading="lazy";img.decoding="async";card.append(img)}
+     const body=document.createElement("div");body.className="joa-public-event-body";
+     const tag=document.createElement("span");tag.className="joa-event-tag";tag.textContent=ev.status==="scheduled"?"PRÓXIMAMENTE":"EVENTO JOA";
+     const title=document.createElement("h3");title.textContent=ev.title;
+     const desc=document.createElement("p");desc.textContent=ev.description||"Participa en esta actividad de la comunidad JOA.";
+     const when=document.createElement("small");const start=new Date(ev.starts_at);when.textContent=start.toLocaleString("es",{dateStyle:"medium",timeStyle:"short"})+(ev.ends_at?" · Hasta "+new Date(ev.ends_at).toLocaleString("es",{dateStyle:"short",timeStyle:"short"}):"");
+     body.append(tag,title,desc,when);
+     if(ev.cta_label){const link=document.createElement("a");link.className="button button-primary";link.textContent=ev.cta_label;const target=String(ev.cta_url||"").trim();if(/^https:\/\//i.test(target)){link.href=target;link.target="_blank";link.rel="noopener"}else link.href="#community";body.append(link)}
+     card.append(body);host.append(card);
+   });
+ }
+
+
  // Selector de regalos directamente desde el catálogo JSON ya cargado por JOA.
  let rewardSelectedCatalogItems=[],serviceRewardSelectedItems=[],activeServiceReward=null,rewardServicesCache=[];
  const serviceRewardPicker=$("#service-reward-picker");
@@ -2100,6 +2125,7 @@ function renderPagination(totalPages){
       loadCatalogReviewSummaries(sortedItems().slice((currentPage-1)*pageSize,currentPage*pageSize));
      if(!session?.user&&!callbackCode)$("#auth-message").textContent="Servicio de acceso listo. Puedes iniciar sesión o crear una cuenta.";
      await loadPublicRewardShowcase();
+     await loadPublicEvents();
      return true;
    })().catch(error=>{
      if(/[?&](code|error|error_description)=/.test(window.location.search)){
