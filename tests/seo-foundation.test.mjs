@@ -20,13 +20,16 @@ test("homepage declares canonical and social metadata", () => {
 });
 
 test("homepage includes valid JSON-LD website and business identities", () => {
-  const match = html.match(/<script type="application\\/ld\\+json">([\\s\\S]*?)<\\/script>/);
-  assert.ok(match, "JSON-LD script should exist");
-  const data = JSON.parse(match[1]);
+  const marker = '<script type="application/ld+json">';
+  const start = html.indexOf(marker);
+  assert.notEqual(start, -1, "JSON-LD script should exist");
+  const contentStart = start + marker.length;
+  const end = html.indexOf("</script>", contentStart);
+  assert.notEqual(end, -1, "JSON-LD script should close");
+  const data = JSON.parse(html.slice(contentStart, end));
   assert.ok(data["@graph"].some((entry) => entry["@type"] === "WebSite"));
   assert.ok(data["@graph"].some((entry) => entry["@type"] === "LocalBusiness"));
 });
-
 test("robots.txt allows crawling and points to the sitemap", () => {
   assert.ok(robots.includes("User-agent: *"));
   assert.ok(robots.includes("Allow: /"));
