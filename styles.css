@@ -2492,3 +2492,11 @@ body{
     height:100%;
   }
 }
+
+
+/* JOA public events */
+.joa-events-section{position:relative}.joa-public-events-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr));gap:16px;margin-top:26px}
+.joa-public-event{--event-accent:#48e9ff;position:relative;display:flex;flex-direction:column;min-width:0;overflow:hidden;border:1px solid color-mix(in srgb,var(--event-accent) 35%,transparent);border-radius:18px;background:linear-gradient(145deg,#111a30,#090e1d);box-shadow:0 16px 42px #0003}
+.joa-public-event>img{width:100%;height:170px;object-fit:cover;display:block}.joa-public-event-body{display:flex;flex-direction:column;align-items:flex-start;gap:10px;padding:19px}.joa-event-tag{font-size:9px;font-weight:800;letter-spacing:.16em;color:var(--event-accent)}.joa-public-event h3{font-family:Orbitron,sans-serif;font-size:17px;line-height:1.35;margin:0;color:#f5f7ff}.joa-public-event p{font-size:13px;line-height:1.65;color:#aab7d0;margin:0}.joa-public-event small{font-size:10px;color:#8190ad;margin-top:auto}.joa-public-event .button{margin-top:5px;text-decoration:none}.joa-public-event.event-glow{animation:joaEventGlow 3s ease-in-out infinite alternate}.joa-public-event.event-pulse{animation:joaEventPulse 2.7s ease-in-out infinite}.joa-public-event.event-shimmer{background:linear-gradient(110deg,#111a30 35%,#1c2b49 48%,#111a30 62%);background-size:220% 100%;animation:joaEventShimmer 5s linear infinite}.joa-public-event.event-float{animation:joaEventFloat 4s ease-in-out infinite}.joa-public-event.event-confetti:after{content:"✦  ✧  ✦";position:absolute;right:18px;top:16px;color:var(--event-accent);letter-spacing:8px;pointer-events:none;animation:joaEventFloat 3s ease-in-out infinite}
+@keyframes joaEventGlow{from{box-shadow:0 8px 25px #0002}to{box-shadow:0 8px 34px color-mix(in srgb,var(--event-accent) 22%,transparent)}}@keyframes joaEventPulse{50%{transform:translateY(-3px)}}@keyframes joaEventShimmer{to{background-position:-220% 0}}@keyframes joaEventFloat{50%{transform:translateY(-4px)}}
+@media(prefers-reduced-motion:reduce){.joa-public-event,.joa-public-event:after{animation:none!important;transition:none!important}}
