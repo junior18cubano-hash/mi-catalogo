@@ -912,6 +912,14 @@ function renderPagination(totalPages){
 
 
  function rewardAdmin(){return currentUser?.app_metadata?.role==="admin"}
+ function syncAdminMenu(){
+   const allowed=rewardAdmin();
+   document.querySelectorAll(".admin-entry").forEach(link=>{
+     link.hidden=!allowed;
+     link.style.display=allowed?"":"none";
+     link.setAttribute("aria-hidden",allowed?"false":"true");
+   });
+ }
  async function loadRewardGroups(){const s=$("#reward-group");if(s&&supabase){const r=await supabase.from("community_groups").select("id,name").order("name").limit(300);if(r.error){toast(communityError(r.error));return}s.innerHTML='<option value="">Toda la comunidad</option>';(r.data||[]).forEach(g=>{const o=document.createElement("option");o.value=g.id;o.textContent=g.name;s.append(o)})}}
  async function loadRewardServices(){const s=$("#reward-service");if(!supabase)return;const r=await supabase.from("services").select("id,title").eq("is_active",true).order("sort_order").order("title");if(r.error){toast(communityError(r.error));return}rewardServicesCache=r.data||[];if(s){s.innerHTML='<option value="">Selecciona un servicio activo</option>';rewardServicesCache.forEach(x=>{const o=document.createElement("option");o.value=x.id;o.textContent=x.title;s.append(o)})}}
  function rewardDate(v){return v?new Date(v).toLocaleString("es",{dateStyle:"medium",timeStyle:"short"}):"Sin fecha límite"}
@@ -1923,6 +1931,7 @@ function renderPagination(totalPages){
      activeConversationId=null;activeConversationIds=[];communityGroupsCache=[];activeCommunityGroupId=null;
    }
    currentUser=user||null;currentSession=session||null;
+   syncAdminMenu();
    renderHeroPersonalization(user);
    const btn=$("#login-open");
    if(user){
