@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://junior18cubano-hash.github.io/mi-catalogo/sitemap.xml
