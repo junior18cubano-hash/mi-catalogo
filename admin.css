@@ -16,3 +16,5 @@
 .group-card{transition:transform .22s ease,border-color .22s ease,box-shadow .22s ease}.group-card:hover{transform:translateY(-3px);border-color:#48e9ff66;box-shadow:0 12px 30px #48e9ff10}
 
 .service-admin-form{display:grid;gap:14px}.service-admin-form label{display:grid;gap:7px;color:#c7d5e8;font-size:12px;font-weight:700}.service-admin-form input,.service-admin-form select,.service-admin-form textarea{width:100%;min-width:0;padding:11px 12px;border:1px solid var(--line);border-radius:10px;background:#0b1628;color:#f2f7ff;font:inherit}.service-admin-form textarea{resize:vertical}.service-admin-form .form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.service-admin-card{display:grid;gap:8px}.service-admin-price{color:#74e9ff;font-size:16px}.service-admin-price s{color:#8494a9;font-size:12px}.service-admin-card small{color:#9baec7}@media(max-width:650px){.service-admin-form .form-grid{grid-template-columns:1fr}}
+
+.side-site-link{display:block;text-align:center;margin:0 4px 14px;padding:11px 8px;width:calc(100% - 8px);flex:0 0 auto}
