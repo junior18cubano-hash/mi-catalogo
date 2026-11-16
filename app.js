@@ -724,23 +724,27 @@ function renderPagination(totalPages){
 
  function readRewardBundle(details){
    const raw=String(details||"");
-   const prefix="JOA_REWARD_BUNDLE_V1::";
-   if(!raw.startsWith(prefix))return {text:raw,products:[]};
-   try{const data=JSON.parse(raw.slice(prefix.length));return {text:String(data.text||""),products:Array.isArray(data.products)?data.products.slice(0,12):[]}}catch(error){console.warn("JOA Rewards: paquete no legible",error);return {text:raw,products:[]}}
+   const prefixes=["JOA_REWARD_BUNDLE_V2::","JOA_REWARD_BUNDLE_V1::"];
+   const prefix=prefixes.find(x=>raw.startsWith(x));
+   if(!prefix)return {text:raw,products:[],items:[]};
+   try{const data=JSON.parse(raw.slice(prefix.length));return {text:String(data.text||""),products:Array.isArray(data.products)?data.products.slice(0,12):[],items:Array.isArray(data.items)?data.items.slice(0,40):[]}}catch(error){console.warn("JOA Rewards: paquete no legible",error);return {text:raw,products:[],items:[]}}
  }
- function rewardDetailsForStorage(text,products){
+ function rewardDetailsForStorage(text,products,items){
    const clean=(products||[]).slice(0,12).map(p=>({key:String(p.key||"").slice(0,180),title:String(p.title||"Producto").slice(0,180),image_url:String(p.image_url||"").slice(0,2000),type:String(p.type||"").slice(0,80),year:String(p.year||"").slice(0,30),description:String(p.description||"").slice(0,500),facts:Array.isArray(p.facts)?p.facts.slice(0,10).map(x=>String(x).slice(0,180)):[]}));
-   return clean.length?"JOA_REWARD_BUNDLE_V1::"+JSON.stringify({text:String(text||"").slice(0,1800),products:clean}):String(text||"").trim();
+   const extras=(items||[]).slice(0,40).map(x=>({id:String(x.id||"").slice(0,80),kind:String(x.kind||"custom").slice(0,30),title:String(x.title||"Elemento").slice(0,180),category:String(x.category||"").slice(0,100),quantity:Math.max(1,Math.min(999,Number(x.quantity)||1)),value:String(x.value||"").slice(0,80),discount:String(x.discount||"").slice(0,80),image_url:String(x.image_url||"").slice(0,2000),access:String(x.access||"").slice(0,1000),description:String(x.description||"").slice(0,1500),conditions:String(x.conditions||"").slice(0,1200)}));
+   return clean.length||extras.length?"JOA_REWARD_BUNDLE_V2::"+JSON.stringify({text:String(text||"").slice(0,1800),products:clean,items:extras}):String(text||"").trim();
  }
  function rewardPrizeLabel(c){
    const bundle=readRewardBundle(c.reward_details);
    if(bundle.text)return bundle.text;
-   if(bundle.products.length)return bundle.products.map(p=>p.title).join(" · ");
+   const labels=[...bundle.products.map(p=>p.title),...bundle.items.map(x=>(x.quantity>1?x.quantity+" × ":"")+x.title)];
+   if(labels.length)return labels.join(" · ");
    return c.reward_type||"Regalo JOA";
  }
  function appendRewardCoverGallery(card,c){
    const bundle=readRewardBundle(c.reward_details);
-   const products=bundle.products.length?bundle.products:[{title:c.title,image_url:c.image_url||""}];
+   const products=[...bundle.products,...bundle.items.filter(x=>x.image_url).map(x=>({title:x.title,image_url:x.image_url}))];
+   if(!products.length)products.push({title:c.title,image_url:c.image_url||""});
    const gallery=document.createElement("div");gallery.className="reward-cover-gallery"+(products.length>1?" is-multiple":"");
    products.slice(0,12).forEach(product=>{
      const frame=document.createElement("div");frame.className="reward-cover-frame";
@@ -765,7 +769,7 @@ function renderPagination(totalPages){
    if(error){host.textContent="Las recompensas estarán disponibles cuando el servicio se conecte.";return}
    host.innerHTML="";
    if(!data?.length){host.innerHTML='<p class="community-hint">Próximamente publicaremos los primeros paquetes de regalo.</p>';return}
-   data.forEach(c=>{const card=document.createElement("article");card.className="reward-campaign-card";appendRewardCoverGallery(card,c);const body=document.createElement("div");body.className="reward-campaign-body";const badge=document.createElement("span");badge.className="reward-state";badge.textContent="RECOMPENSA ABIERTA";const title=document.createElement("h4");title.textContent=c.title;const desc=document.createElement("p");desc.textContent=c.description||"Únete a la comunidad y participa.";const prize=document.createElement("b");prize.textContent="🎁 "+rewardPrizeLabel(c);const req=document.createElement("small");req.textContent=isServiceReward(c)?"Servicio requerido: "+(c.services?.title||"servicio informático")+" · Paquete de "+c.reward_product_count+" productos":"Requisitos: "+rewardRequirements(c);const btn=document.createElement("button");btn.className="button button-primary";btn.textContent=isServiceReward(c)?"Elegir "+c.reward_product_count+" productos":"Entrar y participar";btn.addEventListener("click",()=>{if(isServiceReward(c)){openServiceRewardPicker(c);return}if(!currentUser){openAuth();return}openCommunity();if(communityProfile?.id===currentUser.id)activateCommunityTab("rewards")});body.append(badge,title,desc,prize,req,btn);card.append(body);host.append(card)})
+   data.forEach(c=>{const card=document.createElement("article");card.className="reward-campaign-card";appendRewardCoverGallery(card,c);const body=document.createElement("div");body.className="reward-campaign-body";const badge=document.createElement("span");badge.className="reward-state";badge.textContent="RECOMPENSA ABIERTA";const title=document.createElement("h4");title.textContent=c.title;const desc=document.createElement("p");desc.textContent=c.description||"Únete a la comunidad y participa.";const prize=document.createElement("b");prize.textContent="🎁 "+rewardPrizeLabel(c);const bundle=readRewardBundle(c.reward_details);if(bundle.items.length){const itemList=document.createElement("ul");itemList.className="reward-public-items";bundle.items.forEach(item=>{const li=document.createElement("li"),strong=document.createElement("b"),detail=document.createElement("small");strong.textContent=(item.quantity>1?item.quantity+" × ":"")+item.title;detail.textContent=[item.category,item.value,item.discount,item.description].filter(Boolean).join(" · ");li.append(strong);if(detail.textContent)li.append(detail);itemList.append(li)});body.append(itemList)}const req=document.createElement("small");req.textContent=isServiceReward(c)?"Servicio requerido: "+(c.services?.title||"servicio informático")+" · Paquete de "+c.reward_product_count+" productos":"Requisitos: "+rewardRequirements(c);const btn=document.createElement("button");btn.className="button button-primary";btn.textContent=isServiceReward(c)?"Elegir "+c.reward_product_count+" productos":"Entrar y participar";btn.addEventListener("click",()=>{if(isServiceReward(c)){openServiceRewardPicker(c);return}if(!currentUser){openAuth();return}openCommunity();if(communityProfile?.id===currentUser.id)activateCommunityTab("rewards")});body.append(badge,title,desc,prize,req,btn);card.append(body);host.append(card)})
  }
 
 
@@ -795,7 +799,21 @@ function renderPagination(totalPages){
 
 
  // Selector de regalos directamente desde el catálogo JSON ya cargado por JOA.
- let rewardSelectedCatalogItems=[],serviceRewardSelectedItems=[],activeServiceReward=null,rewardServicesCache=[];
+ let rewardSelectedCatalogItems=[],rewardCustomItems=[],serviceRewardSelectedItems=[],activeServiceReward=null,rewardServicesCache=[];
+ function renderRewardCustomItems(){
+  const host=$("#reward-items-list");if(!host)return;host.replaceChildren();
+  const count=$("#reward-items-count");if(count)count.textContent=rewardCustomItems.length+" elemento(s)";
+  if(!rewardCustomItems.length){const empty=document.createElement("p");empty.className="community-hint";empty.textContent="Todavía no has añadido elementos personalizados.";host.append(empty);return}
+  rewardCustomItems.forEach((item,index)=>{const row=document.createElement("article");row.className="reward-custom-item";const copy=document.createElement("div"),title=document.createElement("b"),meta=document.createElement("small"),desc=document.createElement("p"),remove=document.createElement("button");title.textContent=(item.quantity>1?item.quantity+" × ":"")+item.title;meta.textContent=[item.kind,item.category,item.value,item.discount].filter(Boolean).join(" · ");desc.textContent=[item.description,item.conditions].filter(Boolean).join(" | ");remove.type="button";remove.className="catalog-refresh";remove.textContent="Quitar";remove.addEventListener("click",()=>{rewardCustomItems.splice(index,1);renderRewardCustomItems()});copy.append(title,meta);if(desc.textContent)copy.append(desc);row.append(copy,remove);host.append(row)})
+ }
+ function addRewardCustomItem(){
+  const value=id=>$("#"+id)?.value?.trim()||"";
+  const title=value("reward-item-title");if(!title){toast("Escribe el nombre del elemento antes de añadirlo.");$("#reward-item-title")?.focus();return}
+  if(rewardCustomItems.length>=40){toast("Este paquete ya tiene 40 elementos. Puedes editar o quitar uno para añadir otro.");return}
+  rewardCustomItems.push({id:"item-"+Date.now()+"-"+Math.random().toString(36).slice(2,7),kind:value("reward-item-kind")||"custom",title,category:value("reward-item-category"),quantity:Math.max(1,Math.min(999,Number(value("reward-item-quantity"))||1)),value:value("reward-item-value"),discount:value("reward-item-discount"),image_url:value("reward-item-image"),access:value("reward-item-access"),description:value("reward-item-description"),conditions:value("reward-item-conditions")});
+  ["reward-item-title","reward-item-category","reward-item-value","reward-item-discount","reward-item-image","reward-item-access","reward-item-description","reward-item-conditions"].forEach(id=>{const el=$("#"+id);if(el)el.value=""});
+  $("#reward-item-quantity").value="1";renderRewardCustomItems();toast("Elemento añadido al paquete.")
+ }
  const serviceRewardPicker=$("#service-reward-picker");
  const rewardCatalogDialog=$("#reward-catalog-dialog");
  function rewardProductFacts(item){
@@ -969,7 +987,7 @@ function renderPagination(totalPages){
  async function loadMyRewardClaims(){const host=$("#reward-my-claims");if(!host||!currentUser||!supabase)return;const r=await supabase.from("reward_claims").select("id,status,merit_points_snapshot,created_at,selected_products,eligibility_snapshot,reward_campaigns(title,campaign_kind,reward_product_count)").eq("user_id",currentUser.id).order("created_at",{ascending:false}).limit(50);if(r.error){host.textContent=communityError(r.error);return}host.innerHTML="";if(!r.data?.length){host.textContent="Todavía no has participado.";return}r.data.forEach(x=>{const row=document.createElement("div");row.className="reward-claim-row";const b=document.createElement("b");b.textContent=x.reward_campaigns?.title||"Recompensa JOA";const s=document.createElement("span");s.textContent=isServiceReward(x.reward_campaigns)?({pending:"Pendiente de contratar",approved:"Servicio verificado",rejected:"Solicitud rechazada",delivered:"Paquete entregado"})[x.status]||x.status:({pending:"Pendiente",approved:"Seleccionado",rejected:"No seleccionado",delivered:"Entregado"})[x.status]||x.status;const m=document.createElement("small");m.textContent=isServiceReward(x.reward_campaigns)?"Servicio: "+(x.eligibility_snapshot?.service_title||"Por contratar")+" · "+(x.selected_products||[]).length+" productos elegidos · "+rewardDate(x.created_at):x.merit_points_snapshot+" puntos · "+rewardDate(x.created_at);row.append(b,s,m);if(x.selected_products?.length){const list=document.createElement("small");list.textContent="Tu paquete: "+x.selected_products.map(p=>p.title).join(" · ");row.append(list)}host.append(row)})}
  async function loadRewardAdminClaims(){const host=$("#reward-admin-claims");if(!host||!rewardAdmin()||!supabase)return;const r=await supabase.from("reward_claims").select("id,status,merit_points_snapshot,created_at,user_id,campaign_id,admin_note,selected_products,username_snapshot,eligibility_snapshot,reward_campaigns(title,campaign_kind,service_id,reward_product_count)").order("created_at",{ascending:false}).limit(200);if(r.error){host.textContent=communityError(r.error);return}const ids=[...new Set((r.data||[]).map(x=>x.user_id))],p=ids.length?await supabase.from("profiles").select("id,display_name,username").in("id",ids):{data:[]},pm=new Map((p.data||[]).map(x=>[x.id,x]));host.innerHTML="";if(!r.data?.length){host.textContent="No hay solicitudes todavía.";return}r.data.forEach(x=>{const row=document.createElement("article");row.className="reward-admin-claim";const who=pm.get(x.user_id)||{};const title=document.createElement("b");title.textContent=(x.username_snapshot?"@"+x.username_snapshot:(who.display_name||who.username||"Jugador"))+" · "+(x.reward_campaigns?.title||"Campaña");const meta=document.createElement("small");meta.textContent=x.status+" · "+(isServiceReward(x.reward_campaigns)?"Servicio: "+(x.eligibility_snapshot?.service_title||"Por verificar")+" · "+(x.selected_products||[]).length+" productos":" "+x.merit_points_snapshot+" puntos")+" · "+rewardDate(x.created_at);const products=document.createElement("small");if(x.selected_products?.length)products.textContent="Paquete elegido: "+x.selected_products.map(p=>p.title).join(" · ");const actions=document.createElement("div");actions.className="reward-card-actions";(isServiceReward(x.reward_campaigns)?[["approved","Confirmar servicio"],["rejected","Rechazar"],["delivered","Marcar entregado"]]:[["approved","Aprobar"],["rejected","Rechazar"],["delivered","Entregado"]]).forEach(([s,label])=>{const b=document.createElement("button");b.className="catalog-refresh";b.textContent=label;b.disabled=x.status===s||x.status==="delivered";b.addEventListener("click",()=>reviewRewardClaim(x,s));actions.append(b)});row.append(title,meta);if(products.textContent)row.append(products);row.append(actions);host.append(row)})}
  async function reviewRewardClaim(x,status){if(!rewardAdmin())return;const note=prompt("Nota administrativa (opcional):",x.admin_note||"");if(note===null)return;const patch={status,admin_note:note,reviewed_by:currentUser.id,reviewed_at:new Date().toISOString()};if(status==="delivered")patch.delivered_at=new Date().toISOString();const r=await supabase.from("reward_claims").update(patch).eq("id",x.id);if(r.error){toast(communityError(r.error));return}toast("Solicitud actualizada.");await loadRewardAdminClaims();await loadMyRewardClaims()}
- function fillRewardForm(c){const bundle=readRewardBundle(c.reward_details);rewardSelectedCatalogItems=bundle.products;renderRewardProductPreview();$("#reward-edit-id").value=c.id;$("#reward-title").value=c.title;$("#reward-description").value=c.description||"";$("#reward-image").value=c.image_url||"";$("#reward-kind").value=c.campaign_kind||"community";$("#reward-type").value=c.reward_type;$("#reward-details").value=bundle.text;$("#reward-group").value=c.group_id||"";$("#reward-service").value=c.service_id||"";$("#reward-product-count").value=c.reward_product_count||3;$("#reward-start").value=c.starts_at?new Date(c.starts_at).toISOString().slice(0,16):"";$("#reward-end").value=c.ends_at?new Date(c.ends_at).toISOString().slice(0,16):"";$("#reward-status").value=c.status;$("#reward-winners").value=c.max_winners;$("#reward-mode").value=c.selection_mode;$("#reward-days").value=c.min_days_member;$("#reward-posts").value=c.min_posts;$("#reward-comments").value=c.min_comments;$("#reward-messages").value=c.min_messages;$("#reward-reactions").value=c.min_reactions;$("#reward-points").value=c.min_merit_points;toggleRewardCampaignKind();$("#reward-save").textContent="Guardar cambios";$("#reward-title").focus()}
+ function fillRewardForm(c){const bundle=readRewardBundle(c.reward_details);rewardSelectedCatalogItems=bundle.products;rewardCustomItems=bundle.items||[];renderRewardProductPreview();renderRewardCustomItems();$("#reward-edit-id").value=c.id;$("#reward-title").value=c.title;$("#reward-description").value=c.description||"";$("#reward-image").value=c.image_url||"";$("#reward-kind").value=c.campaign_kind||"community";$("#reward-type").value=c.reward_type;$("#reward-details").value=bundle.text;$("#reward-group").value=c.group_id||"";$("#reward-service").value=c.service_id||"";$("#reward-product-count").value=c.reward_product_count||3;$("#reward-start").value=c.starts_at?new Date(c.starts_at).toISOString().slice(0,16):"";$("#reward-end").value=c.ends_at?new Date(c.ends_at).toISOString().slice(0,16):"";$("#reward-status").value=c.status;$("#reward-winners").value=c.max_winners;$("#reward-mode").value=c.selection_mode;$("#reward-days").value=c.min_days_member;$("#reward-posts").value=c.min_posts;$("#reward-comments").value=c.min_comments;$("#reward-messages").value=c.min_messages;$("#reward-reactions").value=c.min_reactions;$("#reward-points").value=c.min_merit_points;toggleRewardCampaignKind();$("#reward-save").textContent="Guardar cambios";$("#reward-title").focus()}
  async function saveRewardCampaign(e){
  e.preventDefault();if(!rewardAdmin()||!supabase)return;
  const serviceMode=$("#reward-kind").value==="service_purchase";
@@ -980,7 +998,7 @@ function renderPagination(totalPages){
   title:$("#reward-title").value.trim(),description:$("#reward-description").value.trim(),
   image_url:(rewardSelectedCatalogItems[0]?.image_url||$("#reward-image").value.trim())||null,
   reward_type:serviceMode?"service":$("#reward-type").value,
-  reward_details:rewardDetailsForStorage($("#reward-details").value.trim(),rewardSelectedCatalogItems),
+  reward_details:rewardDetailsForStorage($("#reward-details").value.trim(),rewardSelectedCatalogItems,rewardCustomItems),
   campaign_kind:serviceMode?"service_purchase":"community",
   service_id:serviceMode?$("#reward-service").value:null,
   reward_product_count:serviceMode?+$("#reward-product-count").value:null,
@@ -999,7 +1017,7 @@ function renderPagination(totalPages){
  if(!id)p.created_by=currentUser.id;
  const r=id?await supabase.from("reward_campaigns").update(p).eq("id",id):await supabase.from("reward_campaigns").insert(p);
  btn.disabled=false;if(r.error){toast(communityError(r.error));return}
- $("#reward-form").reset();rewardSelectedCatalogItems=[];renderRewardProductPreview();$("#reward-edit-id").value="";$("#reward-save").textContent="Crear campaña";toggleRewardCampaignKind();
+ $("#reward-form").reset();rewardSelectedCatalogItems=[];rewardCustomItems=[];renderRewardProductPreview();renderRewardCustomItems();$("#reward-edit-id").value="";$("#reward-save").textContent="Crear campaña";toggleRewardCampaignKind();
  toast(id?"Campaña actualizada.":"Campaña creada.");await loadRewardCampaigns()
 }
  async function drawRewardWinners(c){if(!rewardAdmin()||!confirm(c.selection_mode==="raffle"?"¿Realizar el sorteo ahora? Los ganadores aprobados quedarán registrados.":"¿Seleccionar ahora a los participantes con mayor mérito?"))return;const r=await supabase.rpc("draw_reward_winners",{p_campaign_id:c.id});if(r.error){toast(communityError(r.error));return}toast("Selección completada: "+(r.data?.selected_now||0)+" ganador(es).");await loadRewardCampaigns();await loadRewardAdminClaims()}
@@ -1009,13 +1027,14 @@ function renderPagination(totalPages){
  async function loadRewardsWorkspace(){await loadRewardServices();if(rewardAdmin())await loadRewardGroups();await loadRewardCampaigns();await loadMyRewardClaims();if(rewardAdmin()){await loadRewardAdminClaims();await loadRewardAudit()}}
  $("#reward-open-campaigns")?.addEventListener("click",()=>activateCommunityTab("rewards"));
  $("#reward-form")?.addEventListener("submit",saveRewardCampaign);
+ $("#reward-item-add")?.addEventListener("click",addRewardCustomItem);
  $("#reward-kind")?.addEventListener("change",toggleRewardCampaignKind);
  $("#service-reward-search")?.addEventListener("input",renderServiceRewardPicker);
  $("#service-reward-category")?.addEventListener("change",renderServiceRewardPicker);
  $("#service-reward-picker-close")?.addEventListener("click",()=>serviceRewardPicker?.close());
  $("#service-reward-submit")?.addEventListener("click",submitServiceRewardClaim);
  toggleRewardCampaignKind();
- $("#reward-reset")?.addEventListener("click",()=>{ $("#reward-form")?.reset();rewardSelectedCatalogItems=[];renderRewardProductPreview();$("#reward-edit-id").value="";$("#reward-save").textContent="Crear campaña";toggleRewardCampaignKind() });
+ $("#reward-reset")?.addEventListener("click",()=>{ $("#reward-form")?.reset();rewardSelectedCatalogItems=[];rewardCustomItems=[];renderRewardProductPreview();renderRewardCustomItems();$("#reward-edit-id").value="";$("#reward-save").textContent="Crear campaña";toggleRewardCampaignKind() });
 
  function activateCommunityTab(tab){
    communityTab=tab;
