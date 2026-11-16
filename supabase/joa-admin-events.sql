@@ -26,3 +26,33 @@ using (status = 'published');
 drop policy if exists "JOA admins send user notifications" on public.notifications;
 create policy "JOA admins send user notifications" on public.notifications for insert to authenticated
 with check ((auth.jwt() -> 'app_metadata' ->> 'role') = 'admin');
+
+-- Acceso administrativo a las operaciones de moderación y gestión.
+drop policy if exists "JOA admins update profiles" on public.profiles;
+create policy "JOA admins update profiles" on public.profiles for update to authenticated
+using (auth.jwt() -> 'app_metadata' ->> 'role') = 'admin'
+with check (auth.jwt() -> 'app_metadata' ->> 'role') = 'admin';
+drop policy if exists "JOA admins manage groups" on public.community_groups;
+create policy "JOA admins manage groups" on public.community_groups for all to authenticated
+using (auth.jwt() -> 'app_metadata' ->> 'role') = 'admin'
+with check (auth.jwt() -> 'app_metadata' ->> 'role') = 'admin';
+drop policy if exists "JOA admins manage group members" on public.group_members;
+create policy "JOA admins manage group members" on public.group_members for all to authenticated
+using (auth.jwt() -> 'app_metadata' ->> 'role') = 'admin'
+with check (auth.jwt() -> 'app_metadata' ->> 'role') = 'admin';
+drop policy if exists "JOA admins moderate posts" on public.posts;
+create policy "JOA admins moderate posts" on public.posts for delete to authenticated
+using (auth.jwt() -> 'app_metadata' ->> 'role') = 'admin'
+with check (auth.jwt() -> 'app_metadata' ->> 'role') = 'admin';
+drop policy if exists "JOA admins moderate reviews" on public.catalog_reviews;
+create policy "JOA admins moderate reviews" on public.catalog_reviews for delete to authenticated
+using (auth.jwt() -> 'app_metadata' ->> 'role') = 'admin'
+with check (auth.jwt() -> 'app_metadata' ->> 'role') = 'admin';
+drop policy if exists "JOA admins review reward claims" on public.reward_claims;
+create policy "JOA admins review reward claims" on public.reward_claims for update to authenticated
+using (auth.jwt() -> 'app_metadata' ->> 'role') = 'admin'
+with check (auth.jwt() -> 'app_metadata' ->> 'role') = 'admin';
+drop policy if exists "JOA admins manage reward campaigns" on public.reward_campaigns;
+create policy "JOA admins manage reward campaigns" on public.reward_campaigns for all to authenticated
+using (auth.jwt() -> 'app_metadata' ->> 'role') = 'admin'
+with check (auth.jwt() -> 'app_metadata' ->> 'role') = 'admin';
