@@ -60,10 +60,12 @@
    const top=document.createElement("div");top.className="installation-plan-top";
    const icon=document.createElement("span");icon.className="service-rate-icon";icon.setAttribute("aria-hidden","true");icon.textContent=icons[name]||"🧰";
    const type=document.createElement("span");type.className="service-rate-name";type.textContent="Instalación "+name;top.append(icon,type);
+   const description=document.createElement("p");description.className="installation-plan-description";description.textContent=details.join(" ");
+   const priceLine=document.createElement("div");priceLine.className="installation-plan-price";
    const price=document.createElement("strong");price.className="service-rate-amount";price.textContent=amount;
    const unit=document.createElement("span");unit.className="service-rate-currency";unit.textContent=currency;
-   const description=document.createElement("p");description.className="installation-plan-description";description.textContent=details.join(" ");
-   card.append(top,price,unit,description);grid.append(card);
+   priceLine.append(price,unit);
+   card.append(top,description,priceLine);grid.append(card);
   }
   if(grid.children.length)section.append(grid);
   host.append(section);
