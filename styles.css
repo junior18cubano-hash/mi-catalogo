@@ -2785,3 +2785,14 @@ body{
  #catalog-results .catalog-live-card .poster>.favorite-toggle{top:8px;right:8px;width:29px;height:29px;min-width:29px}
  #catalog-results .catalog-live-card .poster>.list-add-toggle{bottom:8px;left:8px;width:36px;height:36px;min-width:36px}
 }
+
+/* Precio en la franja superior, separado del botón de favoritos */
+#catalog-results .catalog-live-card .poster>.catalog-price-badge{
+  top:34px;bottom:auto;left:10px;right:auto;
+  max-width:calc(100% - 58px);
+}
+@media(max-width:650px){
+  #catalog-results .catalog-live-card .poster>.catalog-price-badge{
+    top:31px;left:8px;right:auto;
+  }
+}
