@@ -2632,3 +2632,97 @@ body{
     margin-top:8px;
   }
 }
+
+
+/* JOA FIX 2 · Controles dentro de la imagen y precio en esquina superior */
+#catalog-results .catalog-card-wrap{
+  display:block;
+  height:100%;
+  min-width:0;
+}
+#catalog-results .catalog-card-wrap>.catalog-live-card{
+  display:flex;
+  width:100%;
+  height:100%;
+  min-width:0;
+}
+#catalog-results .catalog-live-card .poster{
+  position:relative;
+  isolation:isolate;
+  overflow:hidden;
+}
+#catalog-results .catalog-card-wrap>.favorite-toggle,
+#catalog-results .catalog-card-wrap>.list-add-toggle{display:none!important}
+#catalog-results .catalog-live-card .poster>.list-add-toggle,
+#catalog-results .catalog-live-card .poster>.favorite-toggle{
+  position:absolute;
+  z-index:5;
+  top:auto;
+  bottom:10px;
+  width:34px;
+  height:34px;
+  min-width:34px;
+  margin:0;
+  display:grid;
+  place-items:center;
+  border:1px solid rgba(190,230,255,.42);
+  border-radius:50%;
+  background:rgba(5,10,24,.84);
+  color:#eafaff;
+  box-shadow:0 5px 18px rgba(0,0,0,.48);
+  backdrop-filter:blur(9px);
+  line-height:1;
+}
+#catalog-results .catalog-live-card .poster>.list-add-toggle{
+  left:10px;
+  right:auto;
+  font-size:22px;
+  color:#9cf3ff;
+  border-color:rgba(72,233,255,.65);
+}
+#catalog-results .catalog-live-card .poster>.favorite-toggle{
+  right:10px;
+  left:auto;
+  font-size:22px;
+  color:#ff9acb;
+}
+#catalog-results .catalog-live-card .poster>.list-add-toggle:hover,
+#catalog-results .catalog-live-card .poster>.favorite-toggle:hover{
+  transform:scale(1.07);
+  background:rgba(12,37,57,.96);
+}
+#catalog-results .catalog-live-card .poster>.favorite-toggle.is-favorite{
+  color:#ff6eae;
+  border-color:#ff6eae99;
+  background:rgba(53,21,45,.94);
+}
+#catalog-results .catalog-live-card .poster>.catalog-price-badge{
+  position:absolute;
+  z-index:4;
+  top:10px;
+  right:10px;
+  max-width:calc(100% - 20px);
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  padding:6px 9px;
+  border:1px solid rgba(108,239,255,.58);
+  border-radius:999px;
+  background:rgba(4,13,29,.88);
+  color:#a9f5ff;
+  font-size:10px;
+  font-weight:850;
+  line-height:1.2;
+  box-shadow:0 5px 16px rgba(0,0,0,.42);
+  backdrop-filter:blur(9px);
+  pointer-events:none;
+}
+@media(max-width:650px){
+  #catalog-results .catalog-live-card .poster>.list-add-toggle,
+  #catalog-results .catalog-live-card .poster>.favorite-toggle{
+    bottom:8px;width:31px;height:31px;min-width:31px;
+  }
+  #catalog-results .catalog-live-card .poster>.catalog-price-badge{
+    top:8px;right:8px;font-size:9px;padding:5px 7px;
+  }
+}
