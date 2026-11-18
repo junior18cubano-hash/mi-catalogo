@@ -3111,3 +3111,16 @@ body>*{position:relative}
  #service-detail-content .service-rate-currency{grid-column:3;grid-row:2;justify-self:end}
  #service-detail-content .service-detail-contact{width:100%;justify-content:center}
 }
+
+
+/* Tarifas de mantenimiento · tarjetas visuales */
+#service-detail-content .service-rates-grid{gap:12px;margin-top:4px}
+#service-detail-content .service-rate-card{position:relative;overflow:hidden;gap:8px;min-height:154px;padding:17px 10px 15px;border:1px solid rgba(0,245,233,.24);border-radius:16px;background:linear-gradient(155deg,rgba(0,245,233,.09),rgba(17,13,34,.96) 48%,rgba(255,46,170,.08));box-shadow:inset 0 1px rgba(255,255,255,.07),0 10px 24px rgba(0,0,0,.22);transition:transform .25s,border-color .25s,box-shadow .25s}
+#service-detail-content .service-rate-card:before{content:"";position:absolute;inset:0 18% auto;height:2px;background:linear-gradient(90deg,transparent,#00f5e9,#ff2eaa,transparent);opacity:.9}
+#service-detail-content .service-rate-card:after{content:"";position:absolute;width:100px;height:100px;right:-55px;top:-58px;border-radius:50%;background:rgba(139,53,255,.18);filter:blur(18px);pointer-events:none}
+#service-detail-content .service-rate-card:hover{transform:translateY(-3px);border-color:rgba(0,245,233,.65);box-shadow:0 14px 30px rgba(0,0,0,.3),0 0 20px rgba(0,245,233,.1)}
+#service-detail-content .service-rate-icon{display:grid;place-items:center;width:43px;height:43px;border-radius:13px;border:1px solid rgba(0,245,233,.25);background:rgba(0,245,233,.1);font-size:23px;box-shadow:0 0 18px rgba(0,245,233,.08)}
+#service-detail-content .service-rate-name{min-height:0;font-size:12px;letter-spacing:.02em}
+#service-detail-content .service-rate-amount{display:inline-flex;align-items:center;justify-content:center;min-width:100px;margin-top:2px;padding:7px 11px;border:1px solid rgba(200,255,0,.3);border-radius:10px;background:rgba(200,255,0,.075);color:#d9ff5b;font-size:clamp(19px,2.7vw,24px);font-variant-numeric:tabular-nums;text-shadow:0 0 15px rgba(200,255,0,.18)}
+#service-detail-content .service-rate-currency{color:#c8ff00;font-size:10px;letter-spacing:.17em}
+@media(max-width:560px){#service-detail-content .service-rate-card{min-height:0;grid-template-columns:42px minmax(0,1fr) auto;grid-template-rows:auto auto;padding:12px 13px;border-radius:13px;column-gap:10px}#service-detail-content .service-rate-icon{grid-column:1;grid-row:1/3;width:40px;height:40px}#service-detail-content .service-rate-name{grid-column:2;grid-row:1/3;font-size:12px}#service-detail-content .service-rate-amount{grid-column:3;grid-row:1;min-width:88px;margin:0;padding:6px 8px;font-size:19px}#service-detail-content .service-rate-currency{grid-column:3;grid-row:2;justify-self:center}}
