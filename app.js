@@ -1095,8 +1095,9 @@ function renderPagination(totalPages){
    const list=joaUserLists.find(row=>row.id===listId);if(!list||!confirm("¿Eliminar la lista «"+list.title+"» y todos sus elementos?"))return;
    try{const result=await supabase.from("user_lists").delete().eq("id",listId).eq("owner_id",currentUser.id);if(result.error)throw result.error;joaUserLists=joaUserLists.filter(row=>row.id!==listId);joaListItemsById.delete(listId);renderJoaUserLists();toast("Lista eliminada.")}catch(error){toast(communityError(error))}
  }
- function openListPicker(item){
+ async function openListPicker(item){
    if(!currentUser||!supabase){openAuth();toast("Inicia sesión para crear y guardar tus listas.");return}
+   await loadJoaUserLists(true);
    joaListPickerItem=item;const select=$("#list-picker-select");select.innerHTML="";
    joaUserLists.forEach(list=>{const option=document.createElement("option");option.value=list.id;option.textContent=list.title;select.append(option)});
    const dialog=$("#list-picker-dialog");if(!joaUserLists.length){toast("Crea primero una lista desde Comunidad → Mis listas.");openCommunity();activateCommunityTab("lists");return}
@@ -1121,7 +1122,8 @@ function renderPagination(totalPages){
  }
  async function shareJoaListWhatsApp(listId){
    const list=joaUserLists.find(row=>row.id===listId);if(!list)return;
-   try{const url=await makeJoaListShareable(list),text="🎮 Te comparto mi lista «"+list.title+"» de JOA Multiverso:\n"+url+"\n\nDescubre más en JOA Multiverso.";window.open("https://wa.me/?text="+encodeURIComponent(text),"_blank","noopener,noreferrer");toast("Enlace preparado para compartir. La lista quedó disponible mediante el enlace.")}catch(error){toast(communityError(error))}
+   const popup=window.open("about:blank","_blank");
+   try{const url=await makeJoaListShareable(list),text="🎮 Te comparto mi lista «"+list.title+"» de JOA Multiverso:\n"+url+"\n\nDescubre más en JOA Multiverso.",target="https://wa.me/?text="+encodeURIComponent(text);if(popup)popup.location.href=target;else window.location.href=target;toast("Enlace preparado para compartir. La lista quedó disponible mediante el enlace.")}catch(error){if(popup)popup.close();toast(communityError(error))}
  }
  async function loadJoaListFriends(){
    if(!currentUser||!supabase)return [];
@@ -1550,7 +1552,7 @@ function renderPagination(totalPages){
      const conversationId=await getOrCreateDirectConversation(friendId,friendName);
      activeConversationId=conversationId;communityTab="messages";
      $$("[data-community-tab]").forEach(b=>b.classList.toggle("active",b.dataset.communityTab==="messages"));
-     ["feed","friends","messages","groups","reviews","favorites","profile","rewards","admin"].forEach(tab=>$("#community-"+tab+"-panel").hidden=tab!=="messages");
+     ["feed","friends","messages","groups","reviews","favorites","lists","profile","rewards","admin"].forEach(tab=>$("#community-"+tab+"-panel").hidden=tab!=="messages");
      await loadCommunityChats();await openCommunityChat(conversationId,friendName);return conversationId;
    }catch(error){toast(communityError(error));return null}
  }
