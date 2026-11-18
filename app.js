@@ -71,7 +71,8 @@
  function showServiceDetails(service,card){
   if(!serviceDetailDialog)return;
   const host=$("#service-detail-content");if(!host)return;host.replaceChildren();
-  const isMaintenance=service.slug==="limpieza-mantenimiento";\n  const isInstallation=service.slug==="instalacion-sistemas";
+  const isMaintenance=service.slug==="limpieza-mantenimiento";
+  const isInstallation=service.slug==="instalacion-sistemas";
   const image=service.image_url||card?.querySelector(".service-image")?.src;
   if(image){const visual=document.createElement("img");visual.className="service-detail-image";visual.src=image;visual.alt=service.title||"Servicio JOA";visual.loading="eager";host.append(visual)}
   const introWrap=document.createElement("header");introWrap.className="service-detail-heading";
