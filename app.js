@@ -41,10 +41,37 @@
   else section.append(grid);
   host.append(section);
  }
+ function addInstallationPlans(host,value){
+  const section=document.createElement("section");section.className="service-detail-section service-rates-section installation-plans-section";
+  const h=document.createElement("h3");h.className="service-detail-section-title";
+  const mark=document.createElement("span");mark.className="service-detail-section-icon";mark.setAttribute("aria-hidden","true");mark.textContent="💿";
+  const label=document.createElement("span");label.textContent="Elige tu instalación";h.append(mark,label);section.append(h);
+  const note=document.createElement("p");note.className="service-rates-note";note.textContent="Tres niveles de servicio para dejar tu computadora lista según lo que necesitas.";section.append(note);
+  const grid=document.createElement("div");grid.className="service-rates-grid installation-plans-grid";
+  const icons={FLASH:"⚡",ESTÁNDAR:"⚙️",FULL:"🚀"};
+  const lines=String(value||"").split(/\r?\n/).map(x=>x.trim()).filter(Boolean);
+  for(let i=0;i<lines.length;){
+   const match=lines[i].match(/^(FLASH|ESTÁNDAR|FULL)\s*[—–-]\s*([\d.,]+(?:\s[\d.,]+)*)\s*(CUP)?$/i);
+   if(!match){i++;continue}
+   const name=match[1].toUpperCase(),amount=match[2].trim(),currency=(match[3]||"CUP").toUpperCase();
+   const details=[];i++;
+   while(i<lines.length&&!/^(FLASH|ESTÁNDAR|FULL)\s*[—–-]/i.test(lines[i])){details.push(lines[i]);i++}
+   const card=document.createElement("article");card.className="service-rate-card installation-plan-card plan-"+name.toLowerCase();
+   const top=document.createElement("div");top.className="installation-plan-top";
+   const icon=document.createElement("span");icon.className="service-rate-icon";icon.setAttribute("aria-hidden","true");icon.textContent=icons[name]||"🧰";
+   const type=document.createElement("span");type.className="service-rate-name";type.textContent="Instalación "+name;top.append(icon,type);
+   const price=document.createElement("strong");price.className="service-rate-amount";price.textContent=amount;
+   const unit=document.createElement("span");unit.className="service-rate-currency";unit.textContent=currency;
+   const description=document.createElement("p");description.className="installation-plan-description";description.textContent=details.join(" ");
+   card.append(top,price,unit,description);grid.append(card);
+  }
+  if(grid.children.length)section.append(grid);
+  host.append(section);
+ }
  function showServiceDetails(service,card){
   if(!serviceDetailDialog)return;
   const host=$("#service-detail-content");if(!host)return;host.replaceChildren();
-  const isMaintenance=service.slug==="limpieza-mantenimiento";
+  const isMaintenance=service.slug==="limpieza-mantenimiento";\n  const isInstallation=service.slug==="instalacion-sistemas";
   const image=service.image_url||card?.querySelector(".service-image")?.src;
   if(image){const visual=document.createElement("img");visual.className="service-detail-image";visual.src=image;visual.alt=service.title||"Servicio JOA";visual.loading="eager";host.append(visual)}
   const introWrap=document.createElement("header");introWrap.className="service-detail-heading";
@@ -56,8 +83,11 @@
    addServiceDetailBlock(host,"¿Qué hacemos?",service.full_details||service.description,false,"🧰");
    addServiceDetailBlock(host,"¿Qué incluye el servicio?",service.includes,true,"✓");
    addMaintenanceRates(host,service.highlights);
-  }else{
-   const price=document.createElement("div");price.className="service-detail-price";
+  }else if(isInstallation){
+   addServiceDetailBlock(host,"¿Qué hacemos?",service.full_details||service.description,false,"🧰");
+   addServiceDetailBlock(host,"Antes de comenzar",service.includes,true,"✓");
+   addInstallationPlans(host,service.highlights);
+  }else{   const price=document.createElement("div");price.className="service-detail-price";
    price.textContent=service.promo_price?("Oferta: "+service.promo_price+" "+(service.currency||"CUP")+" · Antes: "+(service.price||"Consultar")):(service.price?service.price+" "+(service.currency||"CUP"):"Precio: consultar");
    if(service.price_note)price.textContent+=" · "+service.price_note;host.append(price);
    addServiceDetailBlock(host,"Descripción y alcance",service.full_details||service.description,false,"ℹ️");
@@ -70,7 +100,7 @@
   const footer=document.createElement("div");footer.className="service-detail-footer";
   const contact=document.createElement("a");contact.className="button button-primary service-detail-contact";
   contact.href=service.contact_url||"https://wa.me/5352512369";contact.target="_blank";contact.rel="noopener noreferrer";
-  contact.textContent=isMaintenance?"Contratar servicio ↗":"Consultar / solicitar este servicio ↗";
+  contact.textContent=(isMaintenance||isInstallation)?"Contratar servicio ↗":"Consultar / solicitar este servicio ↗";
   footer.append(contact);host.append(footer);serviceDetailDialog.showModal();
  }
  document.addEventListener("click",event=>{const trigger=event.target?.closest?.("[data-service-open]");if(!trigger)return;const card=trigger.closest(".service-card"),id=trigger.dataset.serviceId||card?.dataset.serviceId,service=publicServicesById.get(id);if(service){showServiceDetails(service,card);return}if(card){const fallback={title:card.querySelector("h3")?.textContent||"Servicio JOA",description:card.querySelector("p")?.textContent||"",image_url:card.querySelector(".service-image")?.src};showServiceDetails(fallback,card)}});
