@@ -2753,3 +2753,35 @@ body{
     right:8px;
   }
 }
+
+
+/* JOA polish · Precio discreto y acceso destacado a listas */
+#catalog-results .catalog-live-card .poster>.catalog-price-badge{
+  top:10px;bottom:auto;right:10px;max-width:calc(100% - 58px);
+  padding:3px 6px;border:1px solid rgba(210,230,245,.24);border-radius:6px;
+  background:rgba(5,10,22,.58);color:rgba(239,247,255,.88);
+  font-size:8px;font-weight:650;line-height:1.15;letter-spacing:.01em;
+  box-shadow:none;backdrop-filter:blur(5px);
+}
+#catalog-results .catalog-live-card .poster>.favorite-toggle{
+  top:10px;bottom:auto;right:10px;width:31px;height:31px;min-width:31px;
+}
+#catalog-results .catalog-live-card .poster>.list-add-toggle{
+  bottom:10px;left:10px;width:39px;height:39px;min-width:39px;
+  border:1px solid rgba(87,232,255,.82);
+  background:linear-gradient(145deg,rgba(9,42,64,.96),rgba(9,17,37,.94));
+  color:#baf8ff;font-size:18px;font-weight:900;letter-spacing:-3px;
+  text-shadow:0 0 10px rgba(83,231,255,.7);
+  box-shadow:0 0 0 3px rgba(83,231,255,.10),0 7px 20px rgba(0,0,0,.55),0 0 18px rgba(83,231,255,.18);
+}
+#catalog-results .catalog-live-card .poster>.list-add-toggle:hover{transform:scale(1.09);background:linear-gradient(145deg,#12506b,#14284b)}
+.list-picker-quick-create{display:grid;gap:12px;margin-top:16px;padding:14px;border:1px solid rgba(83,231,255,.2);border-radius:14px;background:rgba(10,24,43,.55)}
+.list-picker-quick-create label{display:grid;gap:7px;color:#c8d8ec;font-size:11px;font-weight:700}
+.list-picker-quick-create input,.list-picker-quick-create textarea{width:100%;min-width:0;padding:11px 12px;border:1px solid rgba(145,190,225,.24);border-radius:10px;background:#080f20;color:#f2f7ff;font:inherit}
+.list-picker-quick-create button{width:100%}
+#list-picker-dialog [hidden]{display:none!important}
+@media(max-width:650px){
+ #catalog-results .catalog-live-card .poster>.catalog-price-badge{top:8px;right:8px;font-size:7px;padding:3px 5px}
+ #catalog-results .catalog-live-card .poster>.favorite-toggle{top:8px;right:8px;width:29px;height:29px;min-width:29px}
+ #catalog-results .catalog-live-card .poster>.list-add-toggle{bottom:8px;left:8px;width:36px;height:36px;min-width:36px}
+}
