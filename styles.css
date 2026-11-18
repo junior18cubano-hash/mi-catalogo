@@ -3072,3 +3072,42 @@ body>*{position:relative}
 @media(prefers-reduced-motion:reduce){
   .brand-mark,.hero-core,.button-primary,.category-card.selected{animation:none!important}
 }
+
+
+/* JOA · ficha de mantenimiento: jerarquía visual y tarifas */
+#service-detail-content{display:flex;flex-direction:column;gap:20px;min-width:0}
+#service-detail-content .service-detail-image{margin:0 0 2px;max-height:245px;border-radius:18px;object-position:center 48%;box-shadow:0 14px 38px rgba(0,0,0,.24)}
+#service-detail-content .service-detail-heading{display:grid;gap:8px;padding:2px 1px 5px}
+#service-detail-content .service-detail-heading .eyebrow{margin:0;color:#00f5e9;font-size:10px;letter-spacing:.18em;font-weight:800}
+#service-detail-content .service-detail-heading h2{margin:0;font-size:clamp(24px,4vw,34px);line-height:1.12;letter-spacing:-.025em}
+#service-detail-content .service-detail-intro{max-width:58ch;margin:0;color:#d8d3e8;font-size:14px;line-height:1.75}
+#service-detail-content .service-detail-section{min-width:0;padding:17px 18px;border:1px solid rgba(160,130,255,.18);border-radius:16px;background:linear-gradient(145deg,rgba(31,22,54,.78),rgba(13,12,28,.82));box-shadow:0 10px 26px rgba(0,0,0,.13)}
+#service-detail-content .service-detail-section-title{display:flex;align-items:center;gap:10px;margin:0 0 11px;color:#f8f7ff;font-size:14px;font-weight:800;line-height:1.35}
+#service-detail-content .service-detail-section-icon{display:grid;place-items:center;flex:0 0 31px;width:31px;height:31px;border:1px solid rgba(0,245,233,.25);border-radius:10px;background:rgba(0,245,233,.09);font-size:15px}
+#service-detail-content .service-detail-section-copy{margin:0;color:#d0c9df;font-size:13px;line-height:1.8}
+#service-detail-content .service-detail-list{display:grid;gap:10px;margin:0;padding:0;list-style:none}
+#service-detail-content .service-detail-list li{position:relative;padding-left:25px;color:#d9d4e7;font-size:13px;line-height:1.6}
+#service-detail-content .service-detail-list li:before{content:"✓";position:absolute;left:0;top:0;display:grid;place-items:center;width:17px;height:17px;border-radius:50%;background:rgba(0,245,233,.12);color:#00f5e9;font-size:11px;font-weight:900}
+#service-detail-content .service-rates-section{border-color:rgba(255,46,170,.25);background:linear-gradient(145deg,rgba(47,21,59,.76),rgba(15,12,31,.9))}
+#service-detail-content .service-rates-section .service-detail-section-icon{border-color:rgba(255,46,170,.3);background:rgba(255,46,170,.1)}
+#service-detail-content .service-rates-note{margin:-3px 0 14px;color:#bdb3d0;font-size:12px;line-height:1.5}
+#service-detail-content .service-rates-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+#service-detail-content .service-rate-card{display:grid;justify-items:center;align-content:start;gap:6px;min-width:0;padding:14px 8px 13px;border:1px solid rgba(255,255,255,.1);border-radius:13px;background:rgba(8,7,20,.62);text-align:center}
+#service-detail-content .service-rate-icon{font-size:23px;line-height:1.2}
+#service-detail-content .service-rate-name{min-height:30px;color:#e7e0f2;font-size:11px;font-weight:750;line-height:1.35}
+#service-detail-content .service-rate-amount{color:#00f5e9;font-size:clamp(19px,3vw,25px);font-weight:900;line-height:1.1;letter-spacing:-.03em}
+#service-detail-content .service-rate-currency{color:#aaa0bd;font-size:10px;font-weight:800;letter-spacing:.12em}
+#service-detail-content .service-detail-footer{display:flex;justify-content:flex-start;padding-top:1px}
+#service-detail-content .service-detail-contact{margin:0;min-height:46px;padding:12px 20px;border-radius:12px;font-size:12px;font-weight:850;box-shadow:0 8px 24px rgba(0,245,233,.12)}
+@media(max-width:560px){
+ #service-detail-content{gap:14px}
+ #service-detail-content .service-detail-image{max-height:185px}
+ #service-detail-content .service-detail-section{padding:14px;border-radius:14px}
+ #service-detail-content .service-rates-grid{grid-template-columns:1fr;gap:8px}
+ #service-detail-content .service-rate-card{grid-template-columns:34px minmax(0,1fr) auto;grid-template-rows:auto auto;justify-items:start;align-items:center;column-gap:9px;padding:11px 12px;text-align:left}
+ #service-detail-content .service-rate-icon{grid-column:1;grid-row:1/3;font-size:22px}
+ #service-detail-content .service-rate-name{grid-column:2;grid-row:1/3;min-height:0;font-size:12px}
+ #service-detail-content .service-rate-amount{grid-column:3;grid-row:1;font-size:20px}
+ #service-detail-content .service-rate-currency{grid-column:3;grid-row:2;justify-self:end}
+ #service-detail-content .service-detail-contact{width:100%;justify-content:center}
+}
