@@ -486,7 +486,7 @@ function renderPagination(totalPages){
        price.textContent=rawPrice+" CUP";price.setAttribute("aria-label","Precio: "+price.textContent);poster.append(price);
      }
      const favorite=document.createElement("button");favorite.type="button";favorite.className="favorite-toggle";favorite.dataset.favoriteKey=reviewItemKey(item);favorite.dataset.ambiguous=String(ambiguous);favorite.disabled=ambiguous;favorite.title=ambiguous?"No se puede guardar hasta identificar este contenido de forma única":"";favorite.setAttribute("aria-label","Añadir a favoritos");favorite.textContent="♡";favorite.addEventListener("click",event=>{event.preventDefault();event.stopPropagation();toggleCatalogFavorite(item,favorite)});
-     const addToList=document.createElement("button");addToList.type="button";addToList.className="list-add-toggle";addToList.textContent="＋";addToList.title="Añadir a una lista";addToList.setAttribute("aria-label","Añadir "+itemTitle(item)+" a una lista");addToList.addEventListener("click",event=>{event.preventDefault();event.stopPropagation();openListPicker(item)});
+     const addToList=document.createElement("button");addToList.type="button";addToList.className="list-add-toggle";addToList.textContent="▤+";addToList.title="Añadir a una lista";addToList.setAttribute("aria-label","Añadir "+itemTitle(item)+" a una lista");addToList.addEventListener("click",event=>{event.preventDefault();event.stopPropagation();openListPicker(item)});
      poster.append(addToList,favorite);wrap.append(article);grid.append(wrap);
    });
    const labels={juego:"Juegos",pelicula:"Películas",serie:"Series TV",anime:"Anime",novela:"Telenovelas",software:"Software",musica:"Música",otros:"Otros"};
@@ -1183,8 +1183,25 @@ async function renameJoaList(listId){
    await loadJoaUserLists(true);
    joaListPickerItem=item;const select=$("#list-picker-select");select.innerHTML="";
    joaUserLists.forEach(list=>{const option=document.createElement("option");option.value=list.id;option.textContent=list.title;select.append(option)});
-   const dialog=$("#list-picker-dialog");if(!joaUserLists.length){toast("Crea primero una lista desde Comunidad → Mis listas.");openCommunity();activateCommunityTab("lists");return}
+   const dialog=$("#list-picker-dialog"),pickerSelect=$("#list-picker-select").closest("label"),quickForm=$("#list-picker-quick-create");
+   const empty=!joaUserLists.length;pickerSelect.hidden=empty;$("#list-picker-dialog > p").textContent=empty?"Todavía no tienes listas. Crea una aquí mismo y guardaremos este contenido automáticamente.":"Selecciona en cuál de tus colecciones quieres guardar este contenido.";
+   $("#list-picker-confirm").hidden=empty;$("#list-picker-create").hidden=empty;quickForm.hidden=!empty;
    dialog.showModal();
+ }
+ async function createQuickListAndAddItem(event){
+   event.preventDefault();if(!currentUser||!supabase||!joaListPickerItem)return;
+   const input=$("#list-picker-quick-title"),button=$("#list-picker-quick-submit"),title=input.value.trim();
+   if(!title){input.focus();return}
+   button.disabled=true;
+   try{
+     if(catalogIdentityIsAmbiguous(joaListPickerItem))throw new Error("Este título no tiene un identificador único en el catálogo; no se añadió para evitar duplicados.");
+     const created=await supabase.from("user_lists").insert({owner_id:currentUser.id,title:title.slice(0,100),description:$("#list-picker-quick-description").value.trim().slice(0,1000),visibility:"private"}).select().single();
+     if(created.error)throw created.error;
+     const list=created.data;
+     const added=await supabase.from("user_list_items").insert({list_id:list.id,item_key:reviewItemKey(joaListPickerItem),item_title:itemTitle(joaListPickerItem).slice(0,300),item_type:itemType(joaListPickerItem),cover_url:resolveCover(itemCover(joaListPickerItem))||null,item_data:listItemSnapshot(joaListPickerItem),sort_order:0}).select().single();
+     if(added.error){await supabase.from("user_lists").delete().eq("id",list.id).eq("owner_id",currentUser.id);if(added.error.code==="23505")throw new Error("Este contenido ya está en esa lista.");throw added.error}
+     joaUserLists.unshift(list);joaListItemsById.set(list.id,[added.data]);renderJoaUserLists();$("#list-picker-dialog").close();$("#list-picker-quick-create").reset();toast("Lista «"+list.title+"» creada y contenido añadido.");
+   }catch(error){toast(communityError(error))}finally{button.disabled=false}
  }
  async function addCatalogItemToJoaList(){
    const item=joaListPickerItem,listId=$("#list-picker-select").value;if(!item||!listId)return;
@@ -1257,6 +1274,7 @@ async function renameJoaList(listId){
  $("#user-lists-refresh")?.addEventListener("click",()=>loadJoaUserLists(true));
  $("#list-picker-close")?.addEventListener("click",()=>$("#list-picker-dialog").close());
  $("#list-picker-confirm")?.addEventListener("click",addCatalogItemToJoaList);
+ $("#list-picker-quick-create")?.addEventListener("submit",createQuickListAndAddItem);
  $("#list-picker-create")?.addEventListener("click",()=>{$("#list-picker-dialog").close();openCommunity();activateCommunityTab("lists")});
  $("#list-friend-close")?.addEventListener("click",()=>$("#list-friend-dialog").close());
  $("#list-friend-confirm")?.addEventListener("click",sendJoaListToFriend);
