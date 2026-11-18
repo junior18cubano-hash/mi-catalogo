@@ -1126,7 +1126,7 @@ function renderPagination(totalPages){
      const count=document.createElement("small");const items=joaListItemsById.get(list.id)||[];count.textContent=items.length+" elemento"+(items.length===1?"":"s");
      const desc=document.createElement("p");desc.textContent=list.description||"Sin descripción";
      const visibility=document.createElement("select");visibility.className="joa-list-visibility";visibility.setAttribute("aria-label","Privacidad de "+list.title);
-     [["private","Privada · Solo yo"],["link","Con enlace"],["public","Pública"]].forEach(([value,label])=>{const opt=document.createElement("option");opt.value=value;opt.textContent=label;visibility.append(opt)});visibility.value=list.visibility||"private";
+     [["private","Privada · Solo yo"],["link","Con enlace"],["public","Pública · Enlace compartible"]].forEach(([value,label])=>{const opt=document.createElement("option");opt.value=value;opt.textContent=label;visibility.append(opt)});visibility.value=list.visibility||"private";
      visibility.addEventListener("change",()=>updateJoaList(list.id,{visibility:visibility.value}));
      head.append(title,count);card.append(head,desc,visibility);
      const actions=document.createElement("div");actions.className="joa-list-actions";
