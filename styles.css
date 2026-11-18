@@ -2508,3 +2508,44 @@ body{
 @media(max-width:560px){.reward-package-builder{padding:12px}.reward-item-entry .reward-form-grid{grid-template-columns:minmax(0,1fr)}.reward-builder-heading{flex-direction:column}.reward-custom-item{gap:8px}.reward-item-entry-actions{align-items:stretch;flex-direction:column}.reward-item-entry-actions .button{width:100%;justify-content:center}}
 
 .service-card-price{display:block;margin:9px 0 2px;color:#7ceaff;font-size:13px;font-weight:800}.service-detail-price{margin:14px 0;padding:13px 15px;border:1px solid rgba(72,220,255,.25);border-radius:12px;background:rgba(35,155,205,.1);color:#8cecff;font-weight:800}.service-detail-list{display:grid;gap:7px;padding-left:20px;color:#c3d3e8;font-size:13px;line-height:1.6}.service-detail-list li::marker{color:#50dfff}.service-detail-contact{display:inline-flex;margin-top:15px}.service-detail-content>h3{margin:18px 0 7px;color:#e9f5ff}.service-detail-content>p{color:#b7c8df;line-height:1.65}
+
+/* JOA custom lists */
+.list-add-toggle{position:absolute;z-index:3;top:10px;left:10px;width:36px;height:36px;border:1px solid rgba(72,233,255,.58);border-radius:50%;background:rgba(5,10,24,.9);backdrop-filter:blur(10px);color:#9cf3ff;font-size:23px;line-height:1;display:grid;place-items:center;cursor:pointer;box-shadow:0 5px 20px #0007}
+.list-add-toggle:hover{background:#12364c;transform:scale(1.07)}
+.joa-list-create-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:16px}
+.joa-list-create-form label,.joa-list-dialog-label{display:grid;gap:7px;color:#b8cbe4;font-size:11px;font-weight:700}
+.joa-list-create-form input,.joa-list-create-form textarea,.joa-list-create-form select,.joa-list-dialog select{width:100%;min-width:0;padding:11px 12px;border:1px solid rgba(145,190,225,.22);border-radius:10px;background:#081326;color:#edf7ff;font:inherit}
+.joa-list-create-form label:nth-child(2){grid-column:1/-1}
+.joa-list-create-form button{justify-self:start}
+.joa-user-lists-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));gap:14px;margin-top:15px}
+.joa-user-list-card{min-width:0;padding:15px;border:1px solid rgba(117,185,225,.2);border-radius:14px;background:linear-gradient(145deg,rgba(17,29,52,.95),rgba(8,15,30,.95))}
+.joa-user-list-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.joa-user-list-head h3{margin:0;color:#eff8ff;font-size:15px;overflow-wrap:anywhere}
+.joa-user-list-head small,.joa-user-list-card>p,.joa-list-items>small{color:#9fb2cf;font-size:10px;line-height:1.55}
+.joa-user-list-card>p{margin:8px 0 12px}
+.joa-list-visibility{width:100%;padding:9px;border:1px solid rgba(145,190,225,.22);border-radius:9px;background:#081326;color:#b9eefa;font-size:10px}
+.joa-list-actions{display:flex;flex-wrap:wrap;gap:7px;margin:12px 0}
+.joa-list-actions button{border:1px solid rgba(91,210,245,.32);border-radius:8px;background:rgba(34,104,139,.18);color:#baf3ff;padding:8px 10px;font-size:10px;font-weight:700;cursor:pointer}
+.joa-list-actions button.danger{border-color:#ff7e9a55;background:#421c31;color:#ffb4c6}
+.joa-list-items{display:grid;gap:7px;margin-top:10px}
+.joa-list-item{display:grid;grid-template-columns:42px minmax(0,1fr) 30px;align-items:center;gap:9px;padding:7px;border:1px solid rgba(145,190,225,.12);border-radius:10px;background:rgba(4,11,23,.42)}
+.joa-list-item img,.joa-shared-list-item img{width:42px;height:50px;object-fit:cover;border-radius:7px;background:#101a2c}
+.joa-list-item span{display:grid;gap:4px;min-width:0}
+.joa-list-item b{font-size:11px;color:#edf6ff;overflow-wrap:anywhere}
+.joa-list-item small{font-size:9px;color:#8fa7c7}
+.joa-list-item button{width:28px;height:28px;padding:0;font-size:18px}
+.joa-list-dialog{max-width:min(520px,calc(100vw - 28px));padding:25px}
+.joa-list-dialog h2,.joa-shared-list-dialog h2{font:700 22px var(--display);color:#f1f7ff;margin:12px 0}
+.joa-list-dialog p,.joa-shared-list-dialog>div>p{color:#a9bad2;font-size:12px;line-height:1.6}
+.joa-list-dialog-label{margin:15px 0}
+.joa-list-dialog-actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:14px}
+.joa-shared-list-dialog{width:min(760px,calc(100vw - 24px));max-height:90vh;padding:24px;overflow:auto}
+.joa-shared-list-items{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:9px;margin:18px 0}
+.joa-shared-list-item{display:flex;align-items:center;gap:10px;padding:9px;border:1px solid rgba(145,190,225,.17);border-radius:10px;background:rgba(4,11,23,.5)}
+.joa-shared-list-item div{display:grid;gap:5px;min-width:0}
+.joa-shared-list-item b{font-size:11px;color:#edf6ff;overflow-wrap:anywhere}
+.joa-shared-list-item small{font-size:9px;color:#94a9c8}
+.joa-shared-list-actions{display:flex;gap:9px;flex-wrap:wrap;justify-content:flex-end}
+#joa-list-print-area{display:none}
+@media(max-width:650px){.joa-list-create-form{grid-template-columns:1fr}.joa-list-create-form label:nth-child(2){grid-column:auto}.joa-list-create-form button{width:100%}.joa-list-actions button{flex:1 1 calc(50% - 8px)}.joa-shared-list-items{grid-template-columns:1fr}}
+@media print{body>*:not(#joa-list-print-area){display:none!important}#joa-list-print-area{display:block!important;padding:22px!important;color:#111!important;background:#fff!important;font-family:Arial,sans-serif!important}#joa-list-print-area h1{font-size:24pt;margin-bottom:6px}#joa-list-print-area p,#joa-list-print-area small{color:#333!important}#joa-list-print-area li{padding:8px 0;border-bottom:1px solid #ddd;break-inside:avoid}#joa-list-print-area li b{font-size:12pt}#joa-list-print-area li p{font-size:10pt;line-height:1.4}}
