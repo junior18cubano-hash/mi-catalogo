@@ -5,8 +5,74 @@
  const dialog=$("#auth-dialog"), toastEl=$("#toast");
  const serviceDetailDialog=$("#service-detail-dialog");
  const publicServicesById=new Map();
- function addServiceDetailBlock(host,title,value,list=false){if(!value)return;const h=document.createElement("h3");h.textContent=title;host.append(h);if(list){const ul=document.createElement("ul");ul.className="service-detail-list";String(value).split(/\\r?\\n|•/).map(x=>x.trim()).filter(Boolean).forEach(x=>{const li=document.createElement("li");li.textContent=x;ul.append(li)});host.append(ul)}else{const p=document.createElement("p");p.textContent=value;host.append(p)}}
- function showServiceDetails(service,card){if(!serviceDetailDialog)return;const host=$("#service-detail-content");if(!host)return;host.replaceChildren();const isMaintenance=service.slug==="limpieza-mantenimiento";const eyebrow=document.createElement("div");eyebrow.className="eyebrow";eyebrow.textContent="JOA / SERVICIOS";const heading=document.createElement("h2");heading.id="service-detail-title";heading.textContent=service.title||"Servicio JOA";const intro=document.createElement("p");intro.className="service-detail-intro";intro.textContent=service.description||"Conoce este servicio de JOA.";const image=service.image_url||card?.querySelector(".service-image")?.src;if(image){const visual=document.createElement("img");visual.className="service-detail-image";visual.src=image;visual.alt=service.title||"Servicio JOA";visual.loading="eager";host.append(visual)}host.append(eyebrow,heading,intro);const price=document.createElement("div");price.className="service-detail-price";price.textContent=isMaintenance?"Tarifas por equipo":(service.promo_price?("Oferta: "+service.promo_price+" "+(service.currency||"CUP")+" · Antes: "+(service.price||"Consultar")):(service.price?service.price+" "+(service.currency||"CUP"):"Precio: consultar"));if(service.price_note&&!isMaintenance)price.textContent+=" · "+service.price_note;host.append(price);addServiceDetailBlock(host,"Descripción y alcance",service.full_details||service.description);addServiceDetailBlock(host,"Qué incluye",service.includes,true);if(isMaintenance)addServiceDetailBlock(host,"Tarifas por equipo",service.highlights,true);else addServiceDetailBlock(host,"Ventajas y características",service.highlights,true);addServiceDetailBlock(host,"Requisitos",service.requirements,true);addServiceDetailBlock(host,"Tiempo estimado",service.delivery_time);addServiceDetailBlock(host,"Garantía y soporte",service.warranty);const contact=document.createElement("a");contact.className="button button-primary service-detail-contact";contact.href=service.contact_url||"https://wa.me/5352512369";contact.target="_blank";contact.rel="noopener noreferrer";contact.textContent=isMaintenance?"Contratar Servicio ↗":"Consultar / solicitar este servicio ↗";host.append(contact);serviceDetailDialog.showModal()}
+ function addServiceDetailBlock(host,title,value,list=false,icon="✦"){
+  if(!value)return;
+  const section=document.createElement("section");section.className="service-detail-section";
+  const h=document.createElement("h3");h.className="service-detail-section-title";
+  const mark=document.createElement("span");mark.className="service-detail-section-icon";mark.setAttribute("aria-hidden","true");mark.textContent=icon;
+  const label=document.createElement("span");label.textContent=title;h.append(mark,label);section.append(h);
+  if(list){
+   const ul=document.createElement("ul");ul.className="service-detail-list";
+   String(value).split(/\r?\n|[•;]/).map(x=>x.trim().replace(/^[-–—]\s*/,"")).filter(Boolean).forEach(x=>{const li=document.createElement("li");li.textContent=x;ul.append(li)});
+   section.append(ul);
+  }else{const p=document.createElement("p");p.className="service-detail-section-copy";p.textContent=String(value).trim();section.append(p)}
+  host.append(section);
+ }
+ function addMaintenanceRates(host,value){
+  const section=document.createElement("section");section.className="service-detail-section service-rates-section";
+  const h=document.createElement("h3");h.className="service-detail-section-title";
+  const mark=document.createElement("span");mark.className="service-detail-section-icon";mark.setAttribute("aria-hidden","true");mark.textContent="💳";
+  const label=document.createElement("span");label.textContent="Tarifas según el equipo";h.append(mark,label);section.append(h);
+  const note=document.createElement("p");note.className="service-rates-note";note.textContent="El precio depende del tipo de computadora.";section.append(note);
+  const grid=document.createElement("div");grid.className="service-rates-grid";
+  const icons={"laptop":"💻","pc desktop":"🖥️","pc gaming":"🎮"};
+  const lines=String(value||"").split(/\r?\n|[•;]/).map(x=>x.trim()).filter(Boolean);
+  lines.forEach(line=>{
+   const match=line.match(/^(.+?)\s*[—–-]\s*([\d.,]+)\s*(CUP)?$/i);if(!match)return;
+   const name=match[1].trim(),amount=match[2].trim(),currency=(match[3]||"CUP").toUpperCase();
+   const card=document.createElement("article");card.className="service-rate-card";
+   const icon=document.createElement("span");icon.className="service-rate-icon";icon.setAttribute("aria-hidden","true");icon.textContent=icons[name.toLowerCase()]||"🧰";
+   const type=document.createElement("span");type.className="service-rate-name";type.textContent=name;
+   const price=document.createElement("strong");price.className="service-rate-amount";price.textContent=amount;
+   const unit=document.createElement("span");unit.className="service-rate-currency";unit.textContent=currency;
+   card.append(icon,type,price,unit);grid.append(card);
+  });
+  if(!grid.children.length){const fallback=document.createElement("p");fallback.className="service-detail-section-copy";fallback.textContent=value||"Consultar tarifas.";section.append(fallback)}
+  else section.append(grid);
+  host.append(section);
+ }
+ function showServiceDetails(service,card){
+  if(!serviceDetailDialog)return;
+  const host=$("#service-detail-content");if(!host)return;host.replaceChildren();
+  const isMaintenance=service.slug==="limpieza-mantenimiento";
+  const image=service.image_url||card?.querySelector(".service-image")?.src;
+  if(image){const visual=document.createElement("img");visual.className="service-detail-image";visual.src=image;visual.alt=service.title||"Servicio JOA";visual.loading="eager";host.append(visual)}
+  const introWrap=document.createElement("header");introWrap.className="service-detail-heading";
+  const eyebrow=document.createElement("div");eyebrow.className="eyebrow";eyebrow.textContent="JOA / SERVICIOS";
+  const heading=document.createElement("h2");heading.id="service-detail-title";heading.textContent=service.title||"Servicio JOA";
+  const intro=document.createElement("p");intro.className="service-detail-intro";intro.textContent=service.description||"Conoce este servicio de JOA.";
+  introWrap.append(eyebrow,heading,intro);host.append(introWrap);
+  if(isMaintenance){
+   addServiceDetailBlock(host,"¿Qué hacemos?",service.full_details||service.description,false,"🧰");
+   addServiceDetailBlock(host,"¿Qué incluye el servicio?",service.includes,true,"✓");
+   addMaintenanceRates(host,service.highlights);
+  }else{
+   const price=document.createElement("div");price.className="service-detail-price";
+   price.textContent=service.promo_price?("Oferta: "+service.promo_price+" "+(service.currency||"CUP")+" · Antes: "+(service.price||"Consultar")):(service.price?service.price+" "+(service.currency||"CUP"):"Precio: consultar");
+   if(service.price_note)price.textContent+=" · "+service.price_note;host.append(price);
+   addServiceDetailBlock(host,"Descripción y alcance",service.full_details||service.description,false,"ℹ️");
+   addServiceDetailBlock(host,"Qué incluye",service.includes,true,"✓");
+   addServiceDetailBlock(host,"Ventajas y características",service.highlights,true,"✦");
+   addServiceDetailBlock(host,"Requisitos",service.requirements,true,"📋");
+   addServiceDetailBlock(host,"Tiempo estimado",service.delivery_time,false,"⏱️");
+   addServiceDetailBlock(host,"Garantía y soporte",service.warranty,false,"🛡️");
+  }
+  const footer=document.createElement("div");footer.className="service-detail-footer";
+  const contact=document.createElement("a");contact.className="button button-primary service-detail-contact";
+  contact.href=service.contact_url||"https://wa.me/5352512369";contact.target="_blank";contact.rel="noopener noreferrer";
+  contact.textContent=isMaintenance?"Contratar servicio ↗":"Consultar / solicitar este servicio ↗";
+  footer.append(contact);host.append(footer);serviceDetailDialog.showModal();
+ }
  document.addEventListener("click",event=>{const trigger=event.target?.closest?.("[data-service-open]");if(!trigger)return;const card=trigger.closest(".service-card"),id=trigger.dataset.serviceId||card?.dataset.serviceId,service=publicServicesById.get(id);if(service){showServiceDetails(service,card);return}if(card){const fallback={title:card.querySelector("h3")?.textContent||"Servicio JOA",description:card.querySelector("p")?.textContent||"",image_url:card.querySelector(".service-image")?.src};showServiceDetails(fallback,card)}});
  async function loadPublicServices(){const host=$("#services-grid");if(!host||!supabase)return;const {data,error}=await supabase.from("services").select("id,title,slug,description,icon,is_active,sort_order,price,promo_price,currency,price_note,full_details,includes,requirements,delivery_time,warranty,image_url,contact_url,highlights").eq("is_active",true).order("sort_order",{ascending:true}).limit(100);if(error||!data?.length)return;const fallback=[...host.querySelectorAll(".service-card")];host.replaceChildren();publicServicesById.clear();data.forEach((service,index)=>{publicServicesById.set(service.id,service);const card=document.createElement("article");card.className="service-card";card.dataset.serviceId=service.id;const number=document.createElement("span");number.textContent=String(index+1).padStart(2,"0");const image=document.createElement("img");image.className="service-image";image.src=service.image_url||fallback[index%Math.max(1,fallback.length)]?.querySelector(".service-image")?.src||"";image.alt=service.title||"Servicio JOA";image.loading="lazy";image.decoding="async";const icon=document.createElement("div");icon.className="service-icon";icon.textContent=service.icon||"⌘";const title=document.createElement("h3");title.textContent=service.title;const desc=document.createElement("p");desc.textContent=service.description||"";const price=document.createElement("strong");price.className="service-card-price";price.textContent=service.promo_price?("Oferta: "+service.promo_price+" "+(service.currency||"CUP")):(service.price?service.price+" "+(service.currency||"CUP"):"Consultar precio");const button=document.createElement("button");button.type="button";button.className="button button-ghost service-more";button.dataset.serviceOpen="";button.dataset.serviceId=service.id;button.textContent="Ver detalles y precio ↗";card.append(number,image,icon,title,desc,price,button);host.append(card)})}
  document.addEventListener("click",event=>{if(event.target?.closest?.("#service-detail-close"))serviceDetailDialog?.close()});
