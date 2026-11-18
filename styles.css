@@ -2726,3 +2726,30 @@ body{
     top:8px;right:8px;font-size:9px;padding:5px 7px;
   }
 }
+
+
+/* JOA FIX 3 · Precio abajo a la derecha y favorito arriba a la derecha */
+#catalog-results .catalog-live-card .poster>.favorite-toggle{
+  top:10px;
+  bottom:auto;
+  right:10px;
+  left:auto;
+}
+#catalog-results .catalog-live-card .poster>.catalog-price-badge{
+  top:auto;
+  bottom:10px;
+  right:10px;
+  left:auto;
+}
+@media(max-width:650px){
+  #catalog-results .catalog-live-card .poster>.favorite-toggle{
+    top:8px;
+    bottom:auto;
+    right:8px;
+  }
+  #catalog-results .catalog-live-card .poster>.catalog-price-badge{
+    top:auto;
+    bottom:8px;
+    right:8px;
+  }
+}
