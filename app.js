@@ -230,6 +230,75 @@
    const strong=document.createElement("b");strong.textContent=label+": ";
    p.append(strong,document.createTextNode(Array.isArray(value)?value.join(", "):String(value)));parent.append(p);
  }
+ function normalizeCatalogMedia(value){
+   if(!value)return [];
+   const source=Array.isArray(value)?value:(typeof value==="string"?[value]:[value]);
+   return source.map(entry=>{
+     if(typeof entry==="string")return {url:entry,title:""};
+     if(!entry||typeof entry!=="object")return null;
+     const url=entry.url||entry.src||entry.image||entry.original||entry.href||entry.embed_url||entry.video_url||entry.screenshot_url||"";
+     return url?{url,title:entry.name||entry.title||entry.caption||""}:null;
+   }).filter(Boolean);
+ }
+ function catalogScreenshotEntries(item){
+   const keys=["screenshots","screen_shots","screenshot_urls","screenshot","capturas","captura","imagenes_secundarias","gallery","images","imagenes","stills"];
+   return keys.flatMap(key=>normalizeCatalogMedia(item?.[key])).filter((entry,index,all)=>all.findIndex(x=>x.url===entry.url)===index).slice(0,18);
+ }
+ function catalogTrailerEntries(item){
+   const keys=["trailers","trailer","trailer_url","video_url","videos","video","youtube_trailer","youtube_url","youtube","youtube_id"];
+   return keys.flatMap(key=>{
+     const value=item?.[key];if(!value)return [];
+     if(typeof value==="string"&&key==="youtube_id")return [{url:"https://www.youtube.com/watch?v="+value,title:"Tráiler oficial"}];
+     return normalizeCatalogMedia(value);
+   }).filter((entry,index,all)=>all.findIndex(x=>x.url===entry.url)===index).slice(0,6);
+ }
+ function catalogVideoEmbed(url){
+   try{
+     const parsed=new URL(url,window.location.href),host=parsed.hostname.replace(/^www\./,"");
+     if(host==="youtu.be")return "https://www.youtube-nocookie.com/embed/"+parsed.pathname.slice(1).split("/")[0];
+     if(host==="youtube.com"||host==="m.youtube.com"||host==="youtube-nocookie.com"){
+       const id=parsed.searchParams.get("v")||parsed.pathname.match(/\/(?:embed|shorts)\/([^/?]+)/)?.[1];
+       return id?"https://www.youtube-nocookie.com/embed/"+id:"";
+     }
+     if(host==="vimeo.com"||host==="player.vimeo.com"){
+       const id=parsed.pathname.split("/").filter(Boolean).pop();return id?"https://player.vimeo.com/video/"+id:"";
+     }
+   }catch(_){}
+   return "";
+ }
+ function appendCatalogMedia(parent,item){
+   const screenshots=catalogScreenshotEntries(item);
+   if(screenshots.length){
+     const section=document.createElement("section");section.className="catalog-media-section";
+     const heading=document.createElement("h3");heading.textContent="Capturas de pantalla";
+     const grid=document.createElement("div");grid.className="catalog-screenshot-grid";
+     screenshots.forEach((entry,index)=>{
+       const url=resolveCover(entry.url);if(!url||!/^https?:/i.test(url))return;
+       const button=document.createElement("button");button.type="button";button.className="catalog-screenshot";
+       const image=document.createElement("img");image.src=url;image.alt=entry.title||("Captura "+(index+1));image.loading="lazy";image.onerror=()=>button.remove();
+       button.append(image);button.addEventListener("click",()=>window.open(url,"_blank","noopener,noreferrer"));grid.append(button);
+     });
+     if(grid.childElementCount){section.append(heading,grid);parent.append(section)}
+   }
+   const trailers=catalogTrailerEntries(item);
+   if(trailers.length){
+     const section=document.createElement("section");section.className="catalog-media-section";
+     const heading=document.createElement("h3");heading.textContent="Tráiler y vídeos";
+     section.append(heading);
+     trailers.forEach((entry,index)=>{
+       const url=resolveCover(entry.url);if(!url||!/^https?:/i.test(url))return;
+       const embed=catalogVideoEmbed(url);
+       if(embed){
+         const frame=document.createElement("iframe");frame.src=embed;frame.title=entry.title||("Tráiler "+(index+1));frame.loading="lazy";frame.allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share";frame.allowFullscreen=true;frame.referrerPolicy="strict-origin-when-cross-origin";section.append(frame);
+       }else if(/\.(mp4|webm|ogg|mov)(?:[?#].*)?$/i.test(url)){
+         const video=document.createElement("video");video.controls=true;video.playsInline=true;video.preload="metadata";video.src=url;section.append(video);
+       }else{
+         const link=document.createElement("a");link.href=url;link.target="_blank";link.rel="noopener noreferrer";link.className="catalog-trailer-link";link.textContent=entry.title||"Ver tráiler ↗";section.append(link);
+       }
+     });
+     if(section.children.length>1)parent.append(section);
+   }
+ }
  function openCatalogDetail(item){
    const dialog=$("#catalog-detail-dialog"),content=$("#catalog-detail-content");if(!dialog||!content)return;
    rememberRecentItem(item);
@@ -254,7 +323,7 @@
    addDetailLine(info,"Duración",item.duration||item.duracion||item.runtime);
    addDetailLine(info,"Director",item.director);
    addDetailLine(info,"Precio",item.price||item.precio);
-   content.append(hero,info);
+   content.append(hero,info);appendCatalogMedia(content,item);
   const reviews=document.createElement("section");reviews.className="catalog-item-reviews";reviews.dataset.itemKey=reviewItemKey(item);
   const heading=document.createElement("div");heading.className="catalog-reviews-heading";
   const headingTitle=document.createElement("h3");headingTitle.textContent="Opiniones de la comunidad";
@@ -1065,7 +1134,7 @@ function renderPagination(totalPages){
      const friend=document.createElement("button");friend.type="button";friend.textContent="Enviar a amigo";friend.addEventListener("click",()=>openJoaListFriendDialog(list.id));
      const print=document.createElement("button");print.type="button";print.textContent="Imprimir";print.addEventListener("click",()=>printJoaList(list));
      const remove=document.createElement("button");remove.type="button";remove.className="danger";remove.textContent="Eliminar";remove.addEventListener("click",()=>deleteJoaList(list.id));
-     actions.append(share,friend,print,remove);card.append(actions);
+     const rename=document.createElement("button");rename.type="button";rename.textContent="Renombrar";rename.addEventListener("click",()=>renameJoaList(list.id));actions.append(share,friend,print,rename,remove);card.append(actions);
      const itemHost=document.createElement("div");itemHost.className="joa-list-items";
      if(!items.length){const empty=document.createElement("small");empty.textContent="Lista vacía · añade contenido desde el catálogo.";itemHost.append(empty)}
      items.forEach(item=>{
@@ -1090,6 +1159,13 @@ function renderPagination(totalPages){
  async function updateJoaList(listId,changes){
    const list=joaUserLists.find(row=>row.id===listId);if(!list||!currentUser)return;
    try{const result=await supabase.from("user_lists").update({...changes,updated_at:new Date().toISOString()}).eq("id",listId).eq("owner_id",currentUser.id).select().single();if(result.error)throw result.error;Object.assign(list,result.data);renderJoaUserLists();toast("Privacidad de la lista actualizada.")}catch(error){toast(communityError(error));renderJoaUserLists()}
+ }
+async function renameJoaList(listId){
+   const list=joaUserLists.find(row=>row.id===listId);if(!list)return;
+   const title=window.prompt("Nuevo nombre para la lista:",list.title);if(title===null)return;
+   const clean=title.trim();if(!clean||clean.length>100){toast("El nombre debe tener entre 1 y 100 caracteres.");return}
+   const description=window.prompt("Descripción de la lista (opcional):",list.description||"");if(description===null)return;
+   try{const result=await supabase.from("user_lists").update({title:clean,description:description.trim().slice(0,1000),updated_at:new Date().toISOString()}).eq("id",listId).eq("owner_id",currentUser.id).select().single();if(result.error)throw result.error;Object.assign(list,result.data);renderJoaUserLists();toast("Lista actualizada.")}catch(error){toast(communityError(error))}
  }
  async function deleteJoaList(listId){
    const list=joaUserLists.find(row=>row.id===listId);if(!list||!confirm("¿Eliminar la lista «"+list.title+"» y todos sus elementos?"))return;
