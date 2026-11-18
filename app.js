@@ -126,6 +126,7 @@
  }
  let catalogItems=[],catalogMeta={},activeCategory="",activeSubcategory="",activePlatform="",searchTerm="",sortMode="name",pageSize=20,currentPage=1;
   let catalogFavorites=[],catalogFavoritesByKey=new Map(),catalogFavoritesPromise=null,catalogFavoritesPromiseUserId=null,catalogFavoritesLoadedForUser=null,catalogFavoritesLoadingUserId=null,catalogFavoritesLoadGeneration=0;
+  let joaUserLists=[],joaListItemsById=new Map(),joaListsLoadGeneration=0,joaListPickerItem=null,joaFriendListTargetId=null,joaListFriends=[];
  const REVIEW_AGGREGATE_CACHE_TTL=90_000;
  const reviewAggregateCache=new Map();
  const categoryAliases={
@@ -410,7 +411,7 @@ function renderPagination(totalPages){
      const badge=document.createElement("span");badge.className="catalog-type-badge type-"+categoryFor(itemCategoryValue(item));badge.textContent=cardTypeLabel(item);poster.append(badge);
      const body=document.createElement("div"),title=document.createElement("b");title.textContent=itemTitle(item);const reviewSummary=document.createElement("small");reviewSummary.className="catalog-review-compact";reviewSummary.dataset.reviewKey=reviewItemKey(item);const ambiguous=catalogIdentityIsAmbiguous(item);if(ambiguous){reviewSummary.classList.add("is-ambiguous");reviewSummary.textContent="⚠ Título duplicado · ID pendiente"}else reviewSummary.textContent="☆ Cargando reseñas…";body.append(title,reviewSummary);article.append(poster,body);article.addEventListener("click",()=>openCatalogDetail(item));
      const favorite=document.createElement("button");favorite.type="button";favorite.className="favorite-toggle";favorite.dataset.favoriteKey=reviewItemKey(item);favorite.dataset.ambiguous=String(ambiguous);favorite.disabled=ambiguous;favorite.title=ambiguous?"No se puede guardar hasta identificar este contenido de forma única":"";favorite.addEventListener("click",event=>{event.preventDefault();event.stopPropagation();toggleCatalogFavorite(item,favorite)});
-     wrap.append(article,favorite);grid.append(wrap);
+     const addToList=document.createElement("button");addToList.type="button";addToList.className="list-add-toggle";addToList.textContent="＋";addToList.title="Añadir a una lista";addToList.setAttribute("aria-label","Añadir "+itemTitle(item)+" a una lista");addToList.addEventListener("click",event=>{event.preventDefault();event.stopPropagation();openListPicker(item)});wrap.append(article,favorite,addToList);grid.append(wrap);
    });
    const labels={juego:"Juegos",pelicula:"Películas",serie:"Series TV",anime:"Anime",novela:"Telenovelas",software:"Software",musica:"Música",otros:"Otros"};
    $("#results-title").textContent=activeCategory?(labels[activeCategory]||"Catálogo"):searchTerm?"Resultados de búsqueda":"Catálogo JOA";
@@ -1022,11 +1023,166 @@ function renderPagination(totalPages){
  toggleRewardCampaignKind();
  $("#reward-reset")?.addEventListener("click",()=>{ $("#reward-form")?.reset();rewardSelectedCatalogItems=[];rewardCustomItems=[];renderRewardProductPreview();renderRewardCustomItems();$("#reward-edit-id").value="";$("#reward-save").textContent="Crear campaña";toggleRewardCampaignKind() });
 
+ 
+ // JOA: listas personales independientes del sistema de Favoritos.
+ function listItemSnapshot(item){
+   const pick=(...keys)=>{for(const key of keys){const value=item?.[key];if(value!==undefined&&value!==null&&value!=="")return value}return null};
+   return {id:pick("id"),external_id:pick("external_id"),igdb_id:pick("igdb_id"),tmdb_id:pick("tmdb_id"),slug:pick("slug"),year:pick("year","release_year","ano","año"),platform:pick("platform","platforms","console","consola"),genre:pick("genre","genres","genero","generos"),description:itemDescription(item),screenshots:pick("screenshots","screen_shots","capturas","imagenes_secundarias","gallery"),trailer:pick("trailer","trailer_url","video","video_url","videos")};
+ }
+ async function loadJoaUserLists(force=false){
+   if(!currentUser||!supabase){joaUserLists=[];joaListItemsById.clear();renderJoaUserLists();return []}
+   const generation=++joaListsLoadGeneration,userId=currentUser.id;
+   const status=$("#user-lists-status"),host=$("#user-lists-grid");
+   if(status)status.textContent="Cargando tus listas…";
+   try{
+     const result=await supabase.from("user_lists").select("id,owner_id,title,description,visibility,share_token,created_at,updated_at").eq("owner_id",userId).order("updated_at",{ascending:false});
+     if(result.error)throw result.error;
+     if(generation!==joaListsLoadGeneration||currentUser?.id!==userId)return [];
+     const lists=result.data||[],ids=lists.map(row=>row.id);
+     let items=[];
+     if(ids.length){const itemResult=await supabase.from("user_list_items").select("id,list_id,item_key,item_title,item_type,cover_url,item_data,sort_order,created_at").in("list_id",ids).order("sort_order").order("created_at");if(itemResult.error)throw itemResult.error;items=itemResult.data||[]}
+     if(generation!==joaListsLoadGeneration||currentUser?.id!==userId)return [];
+     joaUserLists=lists;joaListItemsById=new Map(lists.map(list=>[list.id,items.filter(item=>item.list_id===list.id)]));
+     if(status)status.textContent=lists.length?lists.length+" lista"+(lists.length===1?"":"s")+" · "+items.length+" contenido"+(items.length===1?"":"s"):"Todavía no has creado listas. Crea la primera y añade contenido desde el catálogo con el botón ＋.";
+     renderJoaUserLists();return lists;
+   }catch(error){if(generation===joaListsLoadGeneration){if(status)status.textContent="No se pudieron cargar tus listas: "+communityError(error);if(host)host.innerHTML=""}return []}
+ }
+ function renderJoaUserLists(){
+   const host=$("#user-lists-grid");if(!host)return;host.innerHTML="";
+   if(!joaUserLists.length){const empty=document.createElement("div");empty.className="community-empty";empty.textContent="Tus listas aparecerán aquí. Explora el catálogo y pulsa ＋ para añadir juegos, películas, anime y otros contenidos.";host.append(empty);return}
+   joaUserLists.forEach(list=>{
+     const card=document.createElement("article");card.className="joa-user-list-card";
+     const head=document.createElement("div");head.className="joa-user-list-head";
+     const title=document.createElement("h3");title.textContent=list.title;
+     const count=document.createElement("small");const items=joaListItemsById.get(list.id)||[];count.textContent=items.length+" elemento"+(items.length===1?"":"s");
+     const desc=document.createElement("p");desc.textContent=list.description||"Sin descripción";
+     const visibility=document.createElement("select");visibility.className="joa-list-visibility";visibility.setAttribute("aria-label","Privacidad de "+list.title);
+     [["private","Privada · Solo yo"],["link","Con enlace"],["public","Pública"]].forEach(([value,label])=>{const opt=document.createElement("option");opt.value=value;opt.textContent=label;visibility.append(opt)});visibility.value=list.visibility||"private";
+     visibility.addEventListener("change",()=>updateJoaList(list.id,{visibility:visibility.value}));
+     head.append(title,count);card.append(head,desc,visibility);
+     const actions=document.createElement("div");actions.className="joa-list-actions";
+     const share=document.createElement("button");share.type="button";share.textContent="WhatsApp ↗";share.addEventListener("click",()=>shareJoaListWhatsApp(list.id));
+     const friend=document.createElement("button");friend.type="button";friend.textContent="Enviar a amigo";friend.addEventListener("click",()=>openJoaListFriendDialog(list.id));
+     const print=document.createElement("button");print.type="button";print.textContent="Imprimir";print.addEventListener("click",()=>printJoaList(list));
+     const remove=document.createElement("button");remove.type="button";remove.className="danger";remove.textContent="Eliminar";remove.addEventListener("click",()=>deleteJoaList(list.id));
+     actions.append(share,friend,print,remove);card.append(actions);
+     const itemHost=document.createElement("div");itemHost.className="joa-list-items";
+     if(!items.length){const empty=document.createElement("small");empty.textContent="Lista vacía · añade contenido desde el catálogo.";itemHost.append(empty)}
+     items.forEach(item=>{
+       const row=document.createElement("div");row.className="joa-list-item";
+       const image=document.createElement("img");image.loading="lazy";image.alt="";image.src=item.cover_url||"assets/ioa-multiverso-icon.svg";image.onerror=()=>{image.src="assets/ioa-multiverso-icon.svg"};
+       const copy=document.createElement("span");const name=document.createElement("b");name.textContent=item.item_title;const type=document.createElement("small");type.textContent=String(item.item_type||"otros").replace(/_/g," ").toLocaleUpperCase("es");copy.append(name,type);
+       const del=document.createElement("button");del.type="button";del.className="danger";del.textContent="×";del.title="Quitar de esta lista";del.addEventListener("click",()=>removeJoaListItem(list.id,item.id));
+       row.append(image,copy,del);itemHost.append(row);
+     });
+     card.append(itemHost);host.append(card);
+   });
+ }
+ async function createJoaList(event){
+   event.preventDefault();if(!currentUser||!supabase){openAuth();return}
+   const title=$("#user-list-title").value.trim();if(!title)return;
+   const button=$("#user-list-create");button.disabled=true;
+   try{
+     const result=await supabase.from("user_lists").insert({owner_id:currentUser.id,title,description:$("#user-list-description").value.trim(),visibility:$("#user-list-visibility").value}).select("id").single();
+     if(result.error)throw result.error;$("#user-list-create-form").reset();$("#user-list-visibility").value="private";await loadJoaUserLists(true);toast("Lista creada. Ahora puedes añadirle contenido desde el catálogo.");
+   }catch(error){toast(communityError(error))}finally{button.disabled=false}
+ }
+ async function updateJoaList(listId,changes){
+   const list=joaUserLists.find(row=>row.id===listId);if(!list||!currentUser)return;
+   try{const result=await supabase.from("user_lists").update({...changes,updated_at:new Date().toISOString()}).eq("id",listId).eq("owner_id",currentUser.id).select().single();if(result.error)throw result.error;Object.assign(list,result.data);renderJoaUserLists();toast("Privacidad de la lista actualizada.")}catch(error){toast(communityError(error));renderJoaUserLists()}
+ }
+ async function deleteJoaList(listId){
+   const list=joaUserLists.find(row=>row.id===listId);if(!list||!confirm("¿Eliminar la lista «"+list.title+"» y todos sus elementos?"))return;
+   try{const result=await supabase.from("user_lists").delete().eq("id",listId).eq("owner_id",currentUser.id);if(result.error)throw result.error;joaUserLists=joaUserLists.filter(row=>row.id!==listId);joaListItemsById.delete(listId);renderJoaUserLists();toast("Lista eliminada.")}catch(error){toast(communityError(error))}
+ }
+ function openListPicker(item){
+   if(!currentUser||!supabase){openAuth();toast("Inicia sesión para crear y guardar tus listas.");return}
+   joaListPickerItem=item;const select=$("#list-picker-select");select.innerHTML="";
+   joaUserLists.forEach(list=>{const option=document.createElement("option");option.value=list.id;option.textContent=list.title;select.append(option)});
+   const dialog=$("#list-picker-dialog");if(!joaUserLists.length){toast("Crea primero una lista desde Comunidad → Mis listas.");openCommunity();activateCommunityTab("lists");return}
+   dialog.showModal();
+ }
+ async function addCatalogItemToJoaList(){
+   const item=joaListPickerItem,listId=$("#list-picker-select").value;if(!item||!listId)return;
+   const button=$("#list-picker-confirm");button.disabled=true;
+   try{
+     if(catalogIdentityIsAmbiguous(item))throw new Error("Este título no tiene un identificador único en el catálogo; no se añadió para evitar duplicados.");
+     const result=await supabase.from("user_list_items").insert({list_id:listId,item_key:reviewItemKey(item),item_title:itemTitle(item).slice(0,300),item_type:itemType(item),cover_url:resolveCover(itemCover(item))||null,item_data:listItemSnapshot(item),sort_order:(joaListItemsById.get(listId)||[]).length}).select().single();
+     if(result.error){if(result.error.code==="23505")throw new Error("Este contenido ya está en esa lista.");throw result.error}
+     const items=joaListItemsById.get(listId)||[];items.push(result.data);joaListItemsById.set(listId,items);const list=joaUserLists.find(row=>row.id===listId);if(list)list.updated_at=new Date().toISOString();renderJoaUserLists();$("#list-picker-dialog").close();toast("Añadido a «"+(list?.title||"tu lista")+"».");
+   }catch(error){toast(communityError(error))}finally{button.disabled=false}
+ }
+ async function removeJoaListItem(listId,itemId){
+   try{const result=await supabase.from("user_list_items").delete().eq("id",itemId).eq("list_id",listId);if(result.error)throw result.error;joaListItemsById.set(listId,(joaListItemsById.get(listId)||[]).filter(row=>row.id!==itemId));renderJoaUserLists();toast("Contenido quitado de la lista.")}catch(error){toast(communityError(error))}
+ }
+ async function makeJoaListShareable(list){
+   if(list.visibility==="private"){const result=await supabase.from("user_lists").update({visibility:"link",updated_at:new Date().toISOString()}).eq("id",list.id).eq("owner_id",currentUser.id).select().single();if(result.error)throw result.error;Object.assign(list,result.data);renderJoaUserLists()}
+   return new URL("?lista="+encodeURIComponent(list.share_token),window.location.origin+window.location.pathname).href;
+ }
+ async function shareJoaListWhatsApp(listId){
+   const list=joaUserLists.find(row=>row.id===listId);if(!list)return;
+   try{const url=await makeJoaListShareable(list),text="🎮 Te comparto mi lista «"+list.title+"» de JOA Multiverso:\n"+url+"\n\nDescubre más en JOA Multiverso.";window.open("https://wa.me/?text="+encodeURIComponent(text),"_blank","noopener,noreferrer");toast("Enlace preparado para compartir. La lista quedó disponible mediante el enlace.")}catch(error){toast(communityError(error))}
+ }
+ async function loadJoaListFriends(){
+   if(!currentUser||!supabase)return [];
+   const relations=await supabase.from("friendships").select("requester_id,addressee_id,status").or("requester_id.eq."+currentUser.id+",addressee_id.eq."+currentUser.id).eq("status","accepted");
+   if(relations.error)throw relations.error;
+   const ids=[...new Set((relations.data||[]).map(row=>row.requester_id===currentUser.id?row.addressee_id:row.requester_id))];
+   if(!ids.length)return [];
+   const profiles=await supabase.from("profiles").select("id,username,display_name").in("id",ids);if(profiles.error)throw profiles.error;
+   return profiles.data||[];
+ }
+ async function openJoaListFriendDialog(listId){
+   joaFriendListTargetId=listId;const select=$("#list-friend-select");select.innerHTML="";
+   try{joaListFriends=await loadJoaListFriends();joaListFriends.forEach(friend=>{const option=document.createElement("option");option.value=friend.id;option.textContent=friend.display_name||friend.username||"Amigo";select.append(option)});
+     if(!joaListFriends.length){toast("Todavía no tienes amigos añadidos en JOA.");return}
+     $("#list-friend-dialog").showModal();
+   }catch(error){toast(communityError(error))}
+ }
+ async function sendJoaListToFriend(){
+   const list=joaUserLists.find(row=>row.id===joaFriendListTargetId),friend=joaListFriends.find(row=>row.id===$("#list-friend-select").value);if(!list||!friend)return;
+   const button=$("#list-friend-confirm");button.disabled=true;
+   try{const url=await makeJoaListShareable(list),friendName=friend.display_name||friend.username||"Amigo",conversationId=await getOrCreateDirectConversation(friend.id,friendName),body="🎮 Te comparto mi lista «"+list.title+"» de JOA Multiverso. Puedes verla aquí:\n"+url;
+     const sent=await supabase.from("messages").insert({conversation_id:conversationId,sender_id:currentUser.id,body}).select("id").single();if(sent.error)throw sent.error;
+     $("#list-friend-dialog").close();communityTab="messages";document.querySelectorAll("[data-community-tab]").forEach(b=>b.classList.toggle("active",b.dataset.communityTab==="messages"));["feed","friends","messages","groups","reviews","favorites","lists","profile","rewards","admin"].forEach(tab=>{const panel=$("#community-"+tab+"-panel");if(panel)panel.hidden=tab!=="messages"});await loadCommunityChats();await openCommunityChat(conversationId,friendName);toast("Lista enviada a "+friendName+".");
+   }catch(error){toast(communityError(error))}finally{button.disabled=false}
+ }
+ function printJoaList(list,itemsOverride){
+   const items=itemsOverride||joaListItemsById.get(list.id)||[],area=$("#joa-list-print-area");if(!area)return;
+   area.innerHTML="";const title=document.createElement("h1");title.textContent=list.title;const desc=document.createElement("p");desc.textContent=list.description||"Colección de JOA Multiverso";const meta=document.createElement("small");meta.textContent=items.length+" elementos · "+new Date().toLocaleDateString("es");area.append(title,desc,meta);
+   const listEl=document.createElement("ol");items.forEach(item=>{const li=document.createElement("li");const name=document.createElement("b");name.textContent=item.item_title||"Contenido";const type=document.createElement("small");type.textContent=" · "+String(item.item_type||"otros").replace(/_/g," ");li.append(name,type);const description=item.item_data?.description;if(description){const p=document.createElement("p");p.textContent=description;li.append(p)}listEl.append(li)});area.append(listEl);window.print();
+ }
+ async function openSharedJoaListFromUrl(){
+   const token=new URL(window.location.href).searchParams.get("lista");if(!token)return;
+   if(!supabase){toast("No se pudo abrir la lista compartida porque el servicio de JOA no está disponible.");return}
+   try{
+     const result=await supabase.rpc("get_shared_joa_list",{p_share_token:token});if(result.error)throw result.error;
+     if(!result.data?.list){toast("Esta lista no existe o su enlace ya no está disponible.");return}
+     const payload=result.data,list=payload.list,items=payload.items||[],host=$("#shared-list-content");host.innerHTML="";
+     const tag=document.createElement("div");tag.className="eyebrow";tag.textContent="JOA MULTIVERSO / LISTA COMPARTIDA";
+     const title=document.createElement("h2");title.textContent=list.title||"Lista JOA";
+     const desc=document.createElement("p");desc.textContent=list.description||"Una colección compartida por la comunidad JOA.";
+     const count=document.createElement("p");count.className="joa-shared-list-count";count.textContent=items.length+" contenidos";
+     const rows=document.createElement("div");rows.className="joa-shared-list-items";
+     items.forEach(item=>{const row=document.createElement("article");row.className="joa-shared-list-item";const image=document.createElement("img");image.loading="lazy";image.alt="";image.src=item.cover_url||"assets/ioa-multiverso-icon.svg";image.onerror=()=>{image.src="assets/ioa-multiverso-icon.svg"};const copy=document.createElement("div"),name=document.createElement("b"),type=document.createElement("small");name.textContent=item.item_title;type.textContent=String(item.item_type||"otros").replace(/_/g," ").toLocaleUpperCase("es");copy.append(name,type);row.append(image,copy);rows.append(row)});
+     host.append(tag,title,desc,count,rows);$("#shared-list-print").onclick=()=>printJoaList(list,items);$("#shared-list-dialog").showModal();
+   }catch(error){console.warn("JOA shared list:",error);toast("No se pudo cargar la lista compartida: "+communityError(error))}
+ }
+ $("#user-list-create-form")?.addEventListener("submit",createJoaList);
+ $("#user-lists-refresh")?.addEventListener("click",()=>loadJoaUserLists(true));
+ $("#list-picker-close")?.addEventListener("click",()=>$("#list-picker-dialog").close());
+ $("#list-picker-confirm")?.addEventListener("click",addCatalogItemToJoaList);
+ $("#list-picker-create")?.addEventListener("click",()=>{$("#list-picker-dialog").close();openCommunity();activateCommunityTab("lists")});
+ $("#list-friend-close")?.addEventListener("click",()=>$("#list-friend-dialog").close());
+ $("#list-friend-confirm")?.addEventListener("click",sendJoaListToFriend);
+ $("#shared-list-close")?.addEventListener("click",()=>$("#shared-list-dialog").close());
+ $("#shared-list-close-action")?.addEventListener("click",()=>$("#shared-list-dialog").close());
+ 
  function activateCommunityTab(tab){
    communityTab=tab;
    if(tab==="admin"&&!rewardAdmin()){toast("No tienes permisos para abrir este panel.");return}
    document.querySelectorAll("[data-community-tab]").forEach(button=>button.classList.toggle("active",button.dataset.communityTab===tab));
-   ["feed","friends","messages","groups","reviews","favorites","profile","rewards","admin"].forEach(name=>{
+   ["feed","friends","messages","groups","reviews","favorites","lists","profile","rewards","admin"].forEach(name=>{
      const panel=$("#community-"+name+"-panel");if(panel)panel.hidden=name!==tab;
    });
    if(tab==="messages")loadCommunityChats();
@@ -1034,6 +1190,7 @@ function renderPagination(totalPages){
    if(tab==="groups")loadCommunityGroups();
    if(tab==="reviews")loadCommunityReviews();
    if(tab==="favorites"){renderCommunityFavorites();loadCommunityFavoriteFriends();}
+   if(tab==="lists")loadJoaUserLists(true);
    if(tab==="rewards"||tab==="admin")loadRewardsWorkspace();
  }
  async function openNotification(item){
@@ -2150,5 +2307,5 @@ function renderPagination(totalPages){
    return authReadyPromise;
  }
  renderHeroPersonalization(null);renderContinueExploring();
- loadCatalog();initSupabase();
+ loadCatalog();initSupabase().then(()=>openSharedJoaListFromUrl());
 })();
