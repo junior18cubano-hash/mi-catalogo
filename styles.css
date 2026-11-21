@@ -3336,3 +3336,9 @@ body>*{position:relative}
 }
 @media(prefers-reduced-motion:reduce){.joa-whatsapp-dock>summary{transition:none}}
 
+
+
+/* Acceso unificado: el enlace de cuenta conserva el aspecto del botón */
+.account-entry{display:inline-flex;align-items:center;justify-content:center;text-decoration:none;cursor:pointer}
+.account-entry:focus-visible{outline:2px solid #00f5e9;outline-offset:4px}
+.login-btn.is-logged-in{text-decoration:none}
