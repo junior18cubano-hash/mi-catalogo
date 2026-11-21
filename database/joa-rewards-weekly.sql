@@ -247,7 +247,7 @@ end;
 $function$;
 
 create or replace function public.draw_reward_winners(p_campaign_id uuid)
-returns jsonb language plpgsql security definer set search_path=''
+returns jsonb language plpgsql security invoker set search_path=''
 as $function$
 begin
   if exists(select 1 from public.reward_campaigns c where c.id=p_campaign_id and c.weekly_enabled) then
@@ -256,7 +256,10 @@ begin
   return private.draw_reward_winners(p_campaign_id);
 end;
 $function$;
-revoke all on function private.draw_weekly_reward_winners(uuid) from public,anon,authenticated;
+revoke all on function private.draw_weekly_reward_winners(uuid) from public,anon;
+grant execute on function private.draw_weekly_reward_winners(uuid) to authenticated;
+revoke all on function private.draw_reward_winners(uuid) from public,anon;
+grant execute on function private.draw_reward_winners(uuid) to authenticated;
 revoke all on function private.award_weekly_reward_activity() from public,anon,authenticated;
 revoke all on function public.draw_reward_winners(uuid) from public,anon;
 grant execute on function public.draw_reward_winners(uuid) to authenticated;
