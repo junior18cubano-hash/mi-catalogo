@@ -943,16 +943,29 @@ function readRewardBundle(details){
  }
 
  async function loadPublicRewardShowcase(){
-   const host=$("#reward-public-campaign-list");if(!host||!supabase)return;
-   const {data,error}=await supabase.from("reward_campaigns").select("id,title,description,image_url,reward_type,reward_details,campaign_kind,service_id,reward_product_count,services(title),group_id,starts_at,ends_at,min_days_member,min_posts,min_comments,min_messages,min_reactions,min_merit_points").eq("status","published").order("created_at",{ascending:false}).limit(6);
-   if(error){host.textContent="Las recompensas estarán disponibles cuando el servicio se conecte.";return}
-   host.innerHTML="";
-   if(!data?.length){host.innerHTML='<p class="community-hint">Próximamente publicaremos los primeros paquetes de regalo.</p>';return}
-   data.forEach(c=>{const card=document.createElement("article");card.className="reward-campaign-card";appendRewardCoverGallery(card,c);const body=document.createElement("div");body.className="reward-campaign-body";const badge=document.createElement("span");badge.className="reward-state";badge.textContent="RECOMPENSA ABIERTA";const title=document.createElement("h4");title.textContent=c.title;const desc=document.createElement("p");desc.textContent=c.description||"Únete a la comunidad y participa.";const prize=document.createElement("b");prize.textContent="🎁 "+rewardPrizeLabel(c);const bundle=readRewardBundle(c.reward_details);if(bundle.items.length){const itemList=document.createElement("ul");itemList.className="reward-public-items";bundle.items.forEach(item=>{const li=document.createElement("li"),strong=document.createElement("b"),detail=document.createElement("small");strong.textContent=(item.quantity>1?item.quantity+" × ":"")+item.title;detail.textContent=[item.category,item.value,item.discount,item.description].filter(Boolean).join(" · ");li.append(strong);if(detail.textContent)li.append(detail);itemList.append(li)});body.append(itemList)}const req=document.createElement("small");req.textContent=isServiceReward(c)?"Servicio requerido: "+(c.services?.title||"servicio informático")+" · Paquete de "+c.reward_product_count+" productos":"Requisitos: "+rewardRequirements(c);const btn=document.createElement("button");btn.className="button button-primary";btn.textContent=isServiceReward(c)?"Elegir "+c.reward_product_count+" productos":"Entrar y participar";btn.addEventListener("click",()=>{if(isServiceReward(c)){openServiceRewardPicker(c);return}if(!currentUser){openAuth();return}openCommunity();if(communityProfile?.id===currentUser.id)activateCommunityTab("rewards")});body.append(badge,title,desc,prize,req,btn);card.append(body);host.append(card)})
- }
-
-
- async function loadPublicEvents(){
+ const host=$("#reward-public-campaign-list");if(!host||!supabase)return;
+ const {data,error}=await supabase.from("reward_campaigns").select("id,title,description,image_url,reward_type,reward_details,campaign_kind,service_id,reward_product_count,services(title),group_id,starts_at,ends_at,min_days_member,min_posts,min_comments,min_messages,min_reactions,min_merit_points,weekly_enabled,weekly_entry_cap,weekly_draw_day").eq("status","published").order("created_at",{ascending:false}).limit(6);
+ if(error){host.textContent="Las recompensas estarán disponibles cuando el servicio se conecte.";return}
+ host.replaceChildren();
+ if(!data?.length){host.innerHTML='<p class="community-hint">Próximamente publicaremos los primeros paquetes de regalo.</p>';return}
+ const weekly=data.filter(x=>x.weekly_enabled),weekStart=joaRewardWeekStart();let entries=[],winners=[];
+ if(weekly.length){const ids=weekly.map(x=>x.id);const [er,wr]=await Promise.all([supabase.from("reward_entries").select("campaign_id,user_id,entries,week_start").in("campaign_id",ids).eq("week_start",weekStart),supabase.from("reward_winners").select("campaign_id,week_start,display_name_snapshot,username_snapshot,prize_snapshot").in("campaign_id",ids).order("drawn_at",{ascending:false}).limit(50)]);if(!er.error)entries=er.data||[];if(!wr.error)winners=wr.data||[]}
+ data.forEach(c=>{
+  const card=document.createElement("article");card.className="reward-campaign-card";appendRewardCoverGallery(card,c);
+  const body=document.createElement("div");body.className="reward-campaign-body";
+  const badge=document.createElement("span");badge.className="reward-state";badge.textContent=c.weekly_enabled?"JOA REWARDS · SORTEO SEMANAL":"RECOMPENSA ABIERTA";
+  const title=document.createElement("h4");title.textContent=c.title;
+  const desc=document.createElement("p");desc.textContent=c.description||"Únete a la comunidad y participa.";
+  const prize=document.createElement("b");prize.textContent="🎁 "+rewardPrizeLabel(c);
+  const bundle=readRewardBundle(c.reward_details);
+  if(bundle.items.length){const itemList=document.createElement("ul");itemList.className="reward-public-items";bundle.items.forEach(item=>{const li=document.createElement("li"),strong=document.createElement("b"),detail=document.createElement("small");strong.textContent=(item.quantity>1?item.quantity+" × ":"")+item.title;detail.textContent=[item.category,item.value,item.discount,item.description].filter(Boolean).join(" · ");li.append(strong);if(detail.textContent)li.append(detail);itemList.append(li)});body.append(itemList)}
+  const req=document.createElement("small");req.textContent=c.weekly_enabled?"Participa con actividades de la comunidad · Máximo "+(c.weekly_entry_cap||20)+" participaciones por semana":(isServiceReward(c)?"Servicio requerido: "+(c.services?.title||"servicio informático")+" · Paquete de "+c.reward_product_count+" productos":"Requisitos: "+rewardRequirements(c));
+  body.append(badge,title,desc,prize,req);
+  if(c.weekly_enabled){const list=entries.filter(x=>x.campaign_id===c.id),total=list.reduce((n,x)=>n+(x.entries||0),0),panel=document.createElement("div");panel.className="reward-weekly-public";const summary=document.createElement("b");summary.textContent="🎟 "+list.length+" participantes · "+total+" participaciones";const cycle=document.createElement("small");cycle.textContent="Reinicio automático cada lunes · Sorteo el domingo";panel.append(summary,cycle);const mine=list.find(x=>x.user_id===currentUser?.id);if(currentUser){const me=document.createElement("small");me.className="reward-weekly-mine";me.textContent="Tus participaciones: "+(mine?.entries||0);panel.append(me)}const recent=winners.filter(x=>x.campaign_id===c.id).slice(0,3);if(recent.length){const wh=document.createElement("small");wh.className="reward-weekly-winner-title";wh.textContent="🏆 Ganadores recientes: "+recent.map(x=>x.display_name_snapshot||x.username_snapshot||"Miembro JOA").join(" · ");panel.append(wh)}body.append(panel)}
+  const btn=document.createElement("button");btn.className="button button-primary";btn.textContent=isServiceReward(c)?"Elegir "+c.reward_product_count+" productos":(c.weekly_enabled?"Ver participación":"Entrar y participar");btn.addEventListener("click",()=>{if(isServiceReward(c)){openServiceRewardPicker(c);return}if(!currentUser){openAuth();return}openCommunity();if(communityProfile?.id===currentUser.id)activateCommunityTab("rewards")});body.append(btn);card.append(body);host.append(card);
+ });
+}
+async function loadPublicEvents(){
    const host=$("#joa-public-events-list");if(!host||!supabase)return;
    const {data,error}=await supabase.from("joa_events").select("id,title,description,image_url,starts_at,ends_at,status,animation,accent_color,cta_label,cta_url").in("status",["published","scheduled"]).order("starts_at",{ascending:true}).limit(12);
    if(error){host.textContent="Los eventos estarán disponibles cuando se conecte el servicio.";console.warn("JOA events:",error);return}
