@@ -1159,7 +1159,7 @@ function readRewardBundle(details){
     const ids=weekly.map(c=>c.id);
     const [er,wr]=await Promise.all([
       supabase.from("reward_entries").select("campaign_id,user_id,week_start,entries").in("campaign_id",ids).eq("week_start",weekStart).order("entries",{ascending:false}),
-      supabase.from("reward_winners").select("id,campaign_id,user_id,week_start,winner_rank,entries_snapshot,username_snapshot,display_name_snapshot,avatar_url_snapshot,prize_snapshot,delivery_status").in("campaign_id",ids).order("drawn_at",{ascending:false}).limit(100)
+      supabase.from("reward_winners").select("id,campaign_id,user_id,week_start,winner_rank,entries_snapshot,username_snapshot,display_name_snapshot,avatar_url_snapshot,prize_snapshot,delivery_status,drawn_at").in("campaign_id",ids).order("drawn_at",{ascending:false}).limit(100)
     ]);
     if(!er.error)entries=er.data||[];else console.warn("JOA REWARDS entries:",er.error);
     if(!wr.error)winners=wr.data||[];else console.warn("JOA REWARDS winners:",wr.error);
@@ -1186,7 +1186,7 @@ function readRewardBundle(details){
       list.slice(0,8).forEach(x=>{const p=profileMap.get(x.user_id)||{},row=document.createElement("div"),name=document.createElement("span"),count=document.createElement("b");name.textContent=p.display_name||p.username||"Participante JOA";count.textContent=(x.entries||0)+" 🎟";row.append(name,count);participants.append(row)});
       if(list.length)panel.append(participants);else{const empty=document.createElement("small");empty.textContent="Sé de los primeros en participar esta semana.";panel.append(empty)}
       const weeklyWinners=winners.filter(x=>x.campaign_id===c.id);
-      if(weeklyWinners.length){const winTitle=document.createElement("b");winTitle.className="reward-weekly-winner-title";winTitle.textContent="🏆 Ganadores de esta semana";panel.append(winTitle);weeklyWinners.forEach(w=>{const row=document.createElement("div"),nm=document.createElement("span");row.className="reward-weekly-winner";nm.textContent=w.display_name_snapshot||w.username_snapshot||"Ganador JOA";row.append(nm);panel.append(row)})}
+      if(weeklyWinners.length){const winTitle=document.createElement("b");winTitle.className="reward-weekly-winner-title";winTitle.textContent="🏆 Ganadores recientes";panel.append(winTitle);weeklyWinners.slice(0,5).forEach(w=>{const row=document.createElement("div"),nm=document.createElement("span"),date=document.createElement("small");row.className="reward-weekly-winner";nm.textContent=w.display_name_snapshot||w.username_snapshot||"Ganador JOA";date.textContent=w.week_start;row.append(nm,date);panel.append(row)})}
       b.append(panel);
     }
     if(c.status==="published"){const btn=document.createElement("button");btn.className="button button-primary";btn.textContent=isServiceReward(c)?"Elegir "+c.reward_product_count+" productos":(c.weekly_enabled?"Participar con actividades":"Participar");btn.addEventListener("click",()=>{if(isServiceReward(c)){openServiceRewardPicker(c);return}if(c.weekly_enabled){if(!currentUser){openAuth();return}toast("¡Ya estás participando! Tus actividades válidas se registran automáticamente durante esta semana.");loadRewardCampaigns();loadMyRewardClaims();return}claimReward(c.id,btn)});acts.append(btn)}
