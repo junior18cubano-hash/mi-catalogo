@@ -187,7 +187,7 @@
  function safeSessionRemove(key){try{window.sessionStorage?.removeItem(key)}catch(error){console.warn("JOA: no se pudo limpiar el estado temporal",error)}}
  $("#year").textContent=new Date().getFullYear();
  const openAuth=()=>{setCommunityIntent(true);if(currentUser){openCommunity();return}if(dialog&&!dialog.open)dialog.showModal();renderAuthMode()};
- $("#login-open").addEventListener("click",openAuth);
+ $("#login-open").addEventListener("click",event=>{if(!currentUser){event.preventDefault();openAuth()}});
  $("#community-join").addEventListener("click",openAuth);
  dialog.querySelector(".dialog-close").addEventListener("click",()=>dialog.close());
  $("#search-toggle").addEventListener("click",()=>{$("#search-panel").scrollIntoView({behavior:"smooth",block:"center"});$("#catalog-search").focus()});
@@ -2399,6 +2399,7 @@ async function renameJoaList(listId){
      const avatarUrl=communityProfile?.id===user.id?communityProfile.avatar_url:(meta.avatar_url||meta.picture);
      const accountLabel=communityProfile?.display_name||meta.full_name||meta.name||user.email||"Mi cuenta";
      const initials=communityInitials(accountLabel);
+     btn.href="mi-joa.html";
      btn.innerHTML='<span class="login-user-avatar" aria-hidden="true">'+initials+'</span><span class="login-user-indicator" aria-hidden="true"></span>';
      if(avatarUrl){
        const avatar=btn.querySelector(".login-user-avatar");
@@ -2407,12 +2408,13 @@ async function renameJoaList(listId){
        image.addEventListener("error",()=>image.remove(),{once:true});
        avatar.append(image);
      }
-     btn.title="Sesión iniciada: "+accountLabel+" · Abrir comunidad";
-     btn.setAttribute("aria-label","Sesión iniciada. Abrir cuenta y comunidad");
+     btn.title="MI JOA · "+accountLabel;
+     btn.setAttribute("aria-label","Abrir MI JOA · Sesión iniciada");
      btn.classList.add("is-logged-in");
      $("#community-join").textContent="Ir a mi comunidad";$("#community-join").querySelector("b")?.remove();
    }else{
      const adminTab=$("#community-admin-tab");if(adminTab)adminTab.hidden=true;
+     btn.href="#login";
      btn.classList.remove("is-logged-in");btn.removeAttribute("aria-label");
      btn.innerHTML='Entrar <span>↗</span>';btn.title="Iniciar sesión";
      $("#community-join").textContent="Entrar a la comunidad";closeCommunity();communityProfile=null;
@@ -2436,6 +2438,7 @@ async function renameJoaList(listId){
      if(!profile||currentUser?.id!==userId||communityProfilePromise!==profilePromise)return;
      communityProfile=profile;
      communityProfilePromise=null;communityProfilePromiseUserId=userId;
+     updateHeader(currentUser,currentSession);
      renderHeroPersonalization(currentUser);startNotificationRealtime();await loadNotifications();
      if(currentUser?.id===userId&&communityRequested)openCommunity();
    }).catch(error=>{
