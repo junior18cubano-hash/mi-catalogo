@@ -1159,7 +1159,7 @@ function readRewardBundle(details){
     const ids=weekly.map(c=>c.id);
     const [er,wr]=await Promise.all([
       supabase.from("reward_entries").select("campaign_id,user_id,week_start,entries").in("campaign_id",ids).eq("week_start",weekStart).order("entries",{ascending:false}),
-      supabase.from("reward_winners").select("id,campaign_id,user_id,week_start,winner_rank,entries_snapshot,username_snapshot,display_name_snapshot,avatar_url_snapshot,prize_snapshot,delivery_status").in("campaign_id",ids).eq("week_start",weekStart).order("winner_rank")
+      supabase.from("reward_winners").select("id,campaign_id,user_id,week_start,winner_rank,entries_snapshot,username_snapshot,display_name_snapshot,avatar_url_snapshot,prize_snapshot,delivery_status").in("campaign_id",ids).order("drawn_at",{ascending:false}).limit(100)
     ]);
     if(!er.error)entries=er.data||[];else console.warn("JOA REWARDS entries:",er.error);
     if(!wr.error)winners=wr.data||[];else console.warn("JOA REWARDS winners:",wr.error);
