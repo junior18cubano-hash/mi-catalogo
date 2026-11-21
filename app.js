@@ -2439,8 +2439,6 @@ async function renameJoaList(listId){
      communityProfile=profile;
      communityProfilePromise=null;communityProfilePromiseUserId=userId;
      updateHeader(currentUser,currentSession);
-     renderHeroPersonalization(currentUser);startNotificationRealtime();await loadNotifications();
-     if(currentUser?.id===userId&&communityRequested)openCommunity();
    }).catch(error=>{
      if(currentUser?.id!==userId||communityProfilePromise!==profilePromise)return;
      // Liberar el bloqueo: el próximo intento podrá consultar el perfil otra vez.
