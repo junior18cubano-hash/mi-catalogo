@@ -3873,3 +3873,6 @@ body:not(.catalog-page) .desktop-nav a[href="catalogo.html"]{color:var(--cyan)}
   .catalog-page #catalog-results>.catalog-toolbar{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;padding:10px}
   .catalog-page #catalog-results>.content-grid{gap:9px}
 }
+
+@media(min-width:901px){.catalog-page .catalog-mobile-filter-toggle{display:none!important}}
+@media(max-width:900px){.catalog-page .catalog-mobile-filter-toggle{display:inline-flex!important}}
