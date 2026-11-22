@@ -3972,3 +3972,51 @@ body:not(.catalog-page) .desktop-nav a[href="catalogo.html"]{color:var(--cyan)}
   .catalog-page #catalog-results>.catalog-toolbar{gap:8px;padding:10px}
   .catalog-page #catalog-results>.content-grid{gap:9px}
 }
+
+
+/* JOA · acceso a filtros desde la navegación inferior, solo móvil */
+@media(max-width:650px){
+  .catalog-page .mobile-nav{
+    grid-template-columns:repeat(4,minmax(0,1fr))!important;
+  }
+  .catalog-page .mobile-nav .mobile-filter-nav{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    gap:3px;
+    width:100%;
+    min-width:0;
+    min-height:43px;
+    padding:3px 1px;
+    border:0;
+    border-radius:8px;
+    background:transparent;
+    color:#c5d3eb;
+    font:600 9px Inter,sans-serif;
+    cursor:pointer;
+    transition:color .2s ease,background .2s ease;
+  }
+  .catalog-page .mobile-nav .mobile-filter-nav span{
+    display:block;
+    margin:0;
+    font-size:17px;
+    line-height:1;
+    color:#65eaff;
+  }
+  .catalog-page .mobile-nav .mobile-filter-nav.is-active{
+    color:#78efff;
+    background:#48e9ff12;
+    text-shadow:0 0 10px #48e9ff55;
+  }
+  .catalog-page #catalog-results>.catalog-toolbar{
+    display:none!important;
+  }
+  .catalog-page #catalog.filters-open #catalog-results>.catalog-toolbar{
+    display:grid!important;
+    animation:joaFiltersDrop .22s ease-out both;
+  }
+}
+@media(min-width:651px){
+  .catalog-page .mobile-nav .mobile-filter-nav{display:none!important}
+}
