@@ -945,7 +945,7 @@ function readRewardBundle(details){
  async function loadPublicRewardShowcase(){
  const host=$("#reward-public-campaign-list");if(!host||!supabase)return;
  const {data,error}=await supabase.from("reward_campaigns").select("id,title,description,image_url,reward_type,reward_details,campaign_kind,service_id,reward_product_count,services(title),group_id,starts_at,ends_at,min_days_member,min_posts,min_comments,min_messages,min_reactions,min_merit_points,weekly_enabled,weekly_entry_cap,weekly_draw_day").eq("status","published").order("created_at",{ascending:false}).limit(6);
- if(error){host.textContent="Las recompensas estarán disponibles cuando el servicio se conecte.";return}
+ if(error){console.warn("JOA rewards public:",error);host.textContent="No se pudieron cargar las recompensas. Inténtalo de nuevo más tarde.";return}
  host.replaceChildren();
  if(!data?.length){host.innerHTML='<p class="community-hint">Próximamente publicaremos los primeros paquetes de regalo.</p>';return}
  const weekly=data.filter(x=>x.weekly_enabled),weekStart=joaRewardWeekStart();let entries=[],winners=[];
@@ -2559,9 +2559,16 @@ async function renameJoaList(listId){
      document.documentElement.dataset.supabase="ready";
       loadCatalogReviewSummaries(sortedItems().slice((currentPage-1)*pageSize,currentPage*pageSize));
      if(!session?.user&&!callbackCode)$("#auth-message").textContent="Servicio de acceso listo. Puedes iniciar sesión o crear una cuenta.";
-     await loadPublicRewardShowcase();
-     await loadPublicEvents();
-     await loadPublicServices();
+     // El login y la recuperación de sesión no deben depender de que las
+     // consultas públicas de eventos, recompensas o servicios respondan.
+     const publicLoads=await Promise.allSettled([
+       loadPublicRewardShowcase(),
+       loadPublicEvents(),
+       loadPublicServices()
+     ]);
+     publicLoads.forEach((result,index)=>{
+       if(result.status==="rejected")console.warn("JOA: fallo al cargar el módulo público",["recompensas","eventos","servicios"][index],result.reason);
+     });
      return true;
    })().catch(error=>{
      if(/[?&](code|error|error_description)=/.test(window.location.search)){
