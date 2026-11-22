@@ -3429,3 +3429,27 @@ body:not(.catalog-page) .desktop-nav a[href="catalogo.html"]{color:var(--cyan)}
  .catalog-page #catalog{grid-template-areas:"heading" "search" "filters-toggle" "resultshead" "content" "pagination"}
  .catalog-page .catalog-mobile-filter-toggle{grid-area:filters-toggle}
 }
+
+/* Catálogo de escritorio: categorías y todos los filtros agrupados en la barra lateral */
+@media(min-width:901px){
+ .catalog-page #catalog{
+  grid-template-areas:
+   "heading heading"
+   "search search"
+   "categories resultshead"
+   "filters content"
+   "filters pagination";
+ }
+ .catalog-page #catalog-results>.catalog-toolbar{
+  grid-area:filters;
+  grid-template-columns:minmax(0,1fr);
+  align-self:start;
+  position:sticky;
+  top:100px;
+  margin-top:0;
+  background:linear-gradient(155deg,#111a30f5,#0c1223f5);
+  border:1px solid #48e9ff2c;
+  box-shadow:0 15px 40px #0003;
+ }
+ .catalog-page #catalog-grid{position:static}
+}
