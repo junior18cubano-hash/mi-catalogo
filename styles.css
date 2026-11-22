@@ -3713,3 +3713,55 @@ body:not(.catalog-page) .desktop-nav a[href="catalogo.html"]{color:var(--cyan)}
  .catalog-page #catalog-results>.content-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
  .catalog-page #catalog-results>.catalog-toolbar #catalog-platform-wrap[hidden]{display:none!important}
 }
+
+
+/* JOA MULTIVERSO · aprovechamiento real del espacio del catálogo */
+.catalog-page #catalog{
+  width:min(1600px,calc(100% - 48px));
+  row-gap:12px;
+}
+.catalog-page #catalog-results>.catalog-toolbar{
+  grid-template-columns:repeat(auto-fit,minmax(185px,1fr));
+  gap:10px;
+  padding:14px;
+}
+.catalog-page #catalog-results>.catalog-toolbar #catalog-platform-wrap[hidden]{
+  display:none!important;
+}
+.catalog-page #catalog-results>.content-grid{
+  grid-template-columns:repeat(auto-fit,minmax(min(100%,235px),1fr));
+  align-items:stretch;
+  gap:14px;
+}
+.catalog-page #catalog-results>.content-grid>.catalog-card-wrap{
+  min-width:0;
+  height:100%;
+}
+@media(min-width:901px){
+  .catalog-page #catalog{padding-top:24px}
+  .catalog-page #catalog-results>.catalog-toolbar label{gap:6px}
+}
+@media(max-width:900px){
+  .catalog-page #catalog{
+    width:calc(100% - 32px);
+    row-gap:11px;
+  }
+  .catalog-page #catalog-results>.catalog-toolbar{
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:10px;
+    padding:12px;
+  }
+  .catalog-page #catalog-results>.content-grid{
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:11px;
+  }
+}
+@media(max-width:560px){
+  .catalog-page #catalog{
+    width:calc(100% - 24px);
+    padding-top:18px;
+    row-gap:10px;
+  }
+  .catalog-page #catalog-results>.catalog-toolbar{gap:8px;padding:10px}
+  .catalog-page #catalog-results>.content-grid{gap:9px}
+}
