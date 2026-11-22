@@ -3423,3 +3423,9 @@ body:not(.catalog-page) .desktop-nav a[href="catalogo.html"]{color:var(--cyan)}
  .catalog-page #catalog-grid .category-card{min-height:100px}
  .catalog-page .mobile-nav a:nth-of-type(n+4){display:none}
 }
+
+/* Ajuste de colocación del acceso a filtros en móvil */
+@media(max-width:900px){
+ .catalog-page #catalog{grid-template-areas:"heading" "search" "filters-toggle" "resultshead" "content" "pagination"}
+ .catalog-page .catalog-mobile-filter-toggle{grid-area:filters-toggle}
+}
