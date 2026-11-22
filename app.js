@@ -802,6 +802,16 @@ function renderPagination(totalPages){
    activeCategory=card.dataset.category||"";activeSubcategory="";activePlatform="";currentPage=1;$("#catalog-type-filter").value=activeCategory;updateSubcategoryControls();renderCatalog();
    $("#catalog-results").scrollIntoView({behavior:"smooth",block:"nearest"});
  }));
+ const mobileCatalogFilter=$("#mobile-catalog-filter");
+ if(mobileCatalogFilter){
+   mobileCatalogFilter.addEventListener("click",()=>{
+     const catalog=$("#catalog");
+     if(!catalog)return;
+     const isOpen=catalog.classList.toggle("filters-open");
+     mobileCatalogFilter.setAttribute("aria-expanded",String(isOpen));
+     mobileCatalogFilter.classList.toggle("is-active",isOpen);
+   });
+ }
  $("#catalog-search").addEventListener("input",e=>{
    searchTerm=e.target.value.trim().toLocaleLowerCase("es");currentPage=1;renderCatalog();
    if(!catalogItems.length){const q=searchTerm;cards.forEach(card=>{card.hidden=!!q&&!card.innerText.toLocaleLowerCase("es").includes(q)})}
