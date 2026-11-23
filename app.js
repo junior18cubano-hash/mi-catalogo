@@ -612,16 +612,22 @@ function renderPagination(totalPages){
      grid.style.setProperty("column-gap","10px","important");
      return;
    }
-   const minCardWidth=170;
-   const columns=Math.max(2,Math.min(9,Math.floor(grid.clientWidth/minCardWidth)));
+   const columns=Math.max(2,Math.min(9,Math.floor(grid.clientWidth/170)));
    grid.style.setProperty("grid-template-columns","repeat("+columns+",minmax(0,1fr))","important");
    grid.style.setProperty("column-gap","clamp(14px,1.15vw,24px)","important");
-   const empty=(columns-(cards.length%columns))%columns;
-   for(let i=0;i<empty;i++){
-     const spacer=document.createElement("div");
-     spacer.className="catalog-grid-spacer";
-     spacer.setAttribute("aria-hidden","true");
-     grid.append(spacer);
+   const rows=Math.ceil(cards.length/columns);
+   const perRow=Math.floor(cards.length/rows);
+   const remainder=cards.length%rows;
+   let index=0;
+   for(let row=0;row<rows;row++){
+     const count=perRow+(row<remainder?1:0);
+     const offset=Math.floor((columns-count)/2);
+     for(let col=0;col<count;col++){
+       const card=cards[index++];
+       const column=offset+col+1;
+       card.style.gridColumn=column+" / span 1";
+       card.style.gridRow=String(row+1);
+     }
    }
  }
  let catalogGridResizeTimer=0;
