@@ -4358,3 +4358,19 @@ body:not(.catalog-page) .desktop-nav a[href="catalogo.html"]{color:var(--cyan)}
   #catalog-detail-content .catalog-media-section iframe,
   #catalog-detail-content .catalog-media-section video{max-height:220px}
 }
+
+
+/* JOA GRID FIX · aprovechar columnas y evitar huecos en la última fila */
+@media (min-width:651px){
+  .catalog-page #catalog-results>.content-grid{
+    grid-template-columns:repeat(auto-fit,minmax(min(100%,210px),1fr))!important;
+    grid-auto-flow:row dense;
+    align-items:stretch;
+  }
+}
+@media (max-width:650px){
+  .catalog-page #catalog-results>.content-grid{
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;
+    grid-auto-flow:row dense;
+  }
+}
