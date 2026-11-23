@@ -4379,3 +4379,26 @@ body:not(.catalog-page) .desktop-nav a[href="catalogo.html"]{color:var(--cyan)}
     margin-inline:7px;
   }
 }
+
+/* Keep a fixed poster size and leave empty cells at the end of the final row */
+@media(min-width:651px){
+  .catalog-page #catalog-results>.content-grid{
+    align-items:stretch!important;
+    justify-content:start!important;
+    column-gap:clamp(14px,1.15vw,24px)!important;
+    row-gap:clamp(18px,1.4vw,26px)!important;
+  }
+  .catalog-page #catalog-results>.content-grid>.catalog-card-wrap{
+    width:auto!important;
+    max-width:none!important;
+    min-width:0!important;
+    margin:0!important;
+  }
+  .catalog-page #catalog-results>.content-grid>.catalog-grid-spacer{
+    display:block!important;
+    visibility:hidden!important;
+    pointer-events:none!important;
+    min-width:0!important;
+    height:1px!important;
+  }
+}
