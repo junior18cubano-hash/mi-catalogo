@@ -603,26 +603,31 @@ function renderPagination(totalPages){
  }
  function balanceCatalogGrid(grid){
    if(!grid)return;
-   const cards=Array.from(grid.querySelectorAll(":scope > .catalog-card-wrap"));
+   grid.querySelectorAll(":scope > .catalog-grid-spacer").forEach(node=>node.remove());
+   const cards=Array.from(grid.querySelectorAll(":scope > .catalog-card-wrap:not(.catalog-grid-spacer)"));
    if(!cards.length)return;
    if(window.matchMedia("(max-width:650px)").matches){
      grid.style.setProperty("grid-template-columns","repeat(2,minmax(0,1fr))","important");
      cards.forEach(card=>card.style.gridColumn="auto");
      return;
    }
-   const columns=Math.max(1,Math.min(9,Math.floor(grid.clientWidth/210)));
-   const rows=Math.ceil(cards.length/columns);
-   const base=Math.floor(cards.length/rows),extra=cards.length%rows;
-   const rowSizes=Array.from({length:rows},(_,index)=>base+(index<extra?1:0));
-   const gcd=(a,b)=>b?gcd(b,a%b):a;
-   const lcm=(a,b)=>a/gcd(a,b)*b;
-   const tracks=rowSizes.reduce((value,count)=>lcm(value,count),1);
-   grid.style.setProperty("grid-template-columns","repeat("+tracks+",minmax(0,1fr))","important");
-   let index=0;
-   rowSizes.forEach(count=>{
-     const span=tracks/count;
-     for(let item=0;item<count;item++)cards[index++].style.gridColumn="span "+span;
-   });
+   const targetColumns=Math.max(2,Math.min(9,Math.floor(grid.clientWidth/210)));
+   if(cards.length===1){grid.style.setProperty("grid-template-columns","minmax(0,1fr)","important");return}
+   const maxColumns=Math.min(targetColumns,Math.max(2,Math.floor(cards.length/2)));
+   let best={columns:2,rows:Math.ceil(cards.length/2),empty:Infinity,distance:Infinity};
+   for(let columns=2;columns<=maxColumns;columns++){
+     const rows=Math.ceil(cards.length/columns),empty=columns*rows-cards.length;
+     const distance=Math.abs(columns-targetColumns);
+     if(empty<best.empty||(empty===best.empty&&distance<best.distance))best={columns,rows,empty,distance};
+   }
+   grid.style.setProperty("grid-template-columns","repeat("+best.columns+",minmax(0,1fr))","important");
+   cards.forEach(card=>card.style.gridColumn="auto");
+   for(let i=0;i<best.empty;i++){
+     const spacer=document.createElement("div");
+     spacer.className="catalog-grid-spacer";
+     spacer.setAttribute("aria-hidden","true");
+     grid.append(spacer);
+   }
  }
  let catalogGridResizeTimer=0;
  window.addEventListener("resize",()=>{
