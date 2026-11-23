@@ -601,6 +601,34 @@ function renderPagination(totalPages){
    if(group==="musica")return "MÚSICA";
    return "OTROS";
  }
+ function balanceCatalogGrid(grid){
+   if(!grid)return;
+   const cards=Array.from(grid.querySelectorAll(":scope > .catalog-card-wrap"));
+   if(!cards.length)return;
+   if(window.matchMedia("(max-width:650px)").matches){
+     grid.style.setProperty("grid-template-columns","repeat(2,minmax(0,1fr))","important");
+     cards.forEach(card=>card.style.gridColumn="auto");
+     return;
+   }
+   const columns=Math.max(1,Math.min(9,Math.floor(grid.clientWidth/210)));
+   const rows=Math.ceil(cards.length/columns);
+   const base=Math.floor(cards.length/rows),extra=cards.length%rows;
+   const rowSizes=Array.from({length:rows},(_,index)=>base+(index<extra?1:0));
+   const gcd=(a,b)=>b?gcd(b,a%b):a;
+   const lcm=(a,b)=>a/gcd(a,b)*b;
+   const tracks=rowSizes.reduce((value,count)=>lcm(value,count),1);
+   grid.style.setProperty("grid-template-columns","repeat("+tracks+",minmax(0,1fr))","important");
+   let index=0;
+   rowSizes.forEach(count=>{
+     const span=tracks/count;
+     for(let item=0;item<count;item++)cards[index++].style.gridColumn="span "+span;
+   });
+ }
+ let catalogGridResizeTimer=0;
+ window.addEventListener("resize",()=>{
+   clearTimeout(catalogGridResizeTimer);
+   catalogGridResizeTimer=setTimeout(()=>balanceCatalogGrid($("#content-grid")),120);
+ },{passive:true});
  function renderCatalog(){
    const grid=$("#content-grid");if(!grid)return;
    const filtered=sortedItems(),totalPages=Math.max(1,Math.ceil(filtered.length/pageSize));
@@ -623,6 +651,7 @@ function renderPagination(totalPages){
      const favorite=document.createElement("button");favorite.type="button";favorite.className="favorite-toggle";favorite.dataset.favoriteKey=reviewItemKey(item);favorite.dataset.ambiguous=String(ambiguous);favorite.disabled=ambiguous;favorite.title=ambiguous?"No se puede guardar hasta identificar este contenido de forma única":"";favorite.setAttribute("aria-label","Añadir a favoritos");favorite.textContent="♡";favorite.addEventListener("click",event=>{event.preventDefault();event.stopPropagation();toggleCatalogFavorite(item,favorite)});
      const addToList=document.createElement("button");addToList.type="button";addToList.className="list-add-toggle";addToList.textContent="▤+";addToList.title="Añadir a una lista";addToList.setAttribute("aria-label","Añadir "+itemTitle(item)+" a una lista");addToList.addEventListener("click",event=>{event.preventDefault();event.stopPropagation();openListPicker(item)});
      poster.append(addToList,favorite);wrap.append(article);grid.append(wrap);
+   balanceCatalogGrid(grid);
    });
    const labels={juego:"Juegos",pelicula:"Películas",serie:"Series TV",anime:"Anime",novela:"Telenovelas",software:"Software",musica:"Música",otros:"Otros"};
    $("#results-title").textContent=activeCategory?(labels[activeCategory]||"Catálogo"):searchTerm?"Resultados de búsqueda":"Catálogo JOA";
