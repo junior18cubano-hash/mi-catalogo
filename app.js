@@ -348,13 +348,23 @@
    p.append(strong,document.createTextNode(Array.isArray(value)?value.join(", "):String(value)));parent.append(p);
  }
  function normalizeCatalogMedia(value){
-   if(!value)return [];
-   const source=Array.isArray(value)?value:(typeof value==="string"?[value]:[value]);
+   if(value===null||value===undefined||value==="")return [];
+   // El exportador del SAM puede entregar las columnas JSON como texto.
+   // Si es JSON, se interpreta antes de tratarlo como una URL.
+   if(typeof value==="string"){
+     const raw=value.trim();
+     if((raw.startsWith("[")&&raw.endsWith("]"))||(raw.startsWith("{")&&raw.endsWith("}"))){
+       try{return normalizeCatalogMedia(JSON.parse(raw))}catch(error){}
+     }
+     return /^https?:\/\//i.test(raw)?[{url:raw,title:""}]:[];
+   }
+   const source=Array.isArray(value)?value:[value];
    return source.map(entry=>{
-     if(typeof entry==="string")return {url:entry,title:""};
+     if(typeof entry==="string")return normalizeCatalogMedia(entry)[0]||null;
      if(!entry||typeof entry!=="object")return null;
-     const url=entry.url||entry.src||entry.image||entry.original||entry.href||entry.embed_url||entry.video_url||entry.screenshot_url||"";
-     return url?{url,title:entry.name||entry.title||entry.caption||""}:null;
+     const videoId=entry.video_id||entry.youtube_id||((String(entry.type||"").toLowerCase()==="youtube"||String(entry.type||"").toLowerCase()==="youtube_video")?entry.id:"");
+     const url=entry.url||entry.src||entry.image||entry.original||entry.href||entry.embed_url||entry.video_url||entry.screenshot_url||(videoId?"https://www.youtube.com/watch?v="+encodeURIComponent(videoId):"");
+     return url?{url,title:entry.name||entry.title||entry.caption||"Tráiler oficial"}:null;
    }).filter(Boolean);
  }
  function catalogScreenshotEntries(item){
