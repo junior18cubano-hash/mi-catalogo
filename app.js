@@ -651,8 +651,8 @@ function renderPagination(totalPages){
      const favorite=document.createElement("button");favorite.type="button";favorite.className="favorite-toggle";favorite.dataset.favoriteKey=reviewItemKey(item);favorite.dataset.ambiguous=String(ambiguous);favorite.disabled=ambiguous;favorite.title=ambiguous?"No se puede guardar hasta identificar este contenido de forma única":"";favorite.setAttribute("aria-label","Añadir a favoritos");favorite.textContent="♡";favorite.addEventListener("click",event=>{event.preventDefault();event.stopPropagation();toggleCatalogFavorite(item,favorite)});
      const addToList=document.createElement("button");addToList.type="button";addToList.className="list-add-toggle";addToList.textContent="▤+";addToList.title="Añadir a una lista";addToList.setAttribute("aria-label","Añadir "+itemTitle(item)+" a una lista");addToList.addEventListener("click",event=>{event.preventDefault();event.stopPropagation();openListPicker(item)});
      poster.append(addToList,favorite);wrap.append(article);grid.append(wrap);
-   balanceCatalogGrid(grid);
    });
+   balanceCatalogGrid(grid);
    const labels={juego:"Juegos",pelicula:"Películas",serie:"Series TV",anime:"Anime",novela:"Telenovelas",software:"Software",musica:"Música",otros:"Otros"};
    $("#results-title").textContent=activeCategory?(labels[activeCategory]||"Catálogo"):searchTerm?"Resultados de búsqueda":"Catálogo JOA";
    const tag=$(".demo-tag");if(tag)tag.textContent=filtered.length.toLocaleString("es")+" ELEMENTOS";
