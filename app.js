@@ -392,7 +392,7 @@
      const parsed=new URL(url,window.location.href),host=parsed.hostname.replace(/^www\./,"");
      if(host==="youtu.be")return "https://www.youtube-nocookie.com/embed/"+parsed.pathname.slice(1).split("/")[0];
      if(host==="youtube.com"||host==="m.youtube.com"||host==="youtube-nocookie.com"){
-       const id=parsed.searchParams.get("v")||parsed.pathname.match(/\/(?:embed|shorts)\/([^/?]+)/)?.[1];
+       const id=parsed.searchParams.get("v")||parsed.pathname.match(/\/(?:embed|shorts|live|v)\/([^/?]+)/)?.[1];
        return id?"https://www.youtube-nocookie.com/embed/"+id:"";
      }
      if(host==="vimeo.com"||host==="player.vimeo.com"){
