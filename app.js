@@ -603,32 +603,25 @@ function renderPagination(totalPages){
  }
  function balanceCatalogGrid(grid){
    if(!grid)return;
-   const cards=Array.from(grid.querySelectorAll(":scope > .catalog-card-wrap:not(.catalog-grid-spacer)"));
    grid.querySelectorAll(":scope > .catalog-grid-spacer").forEach(node=>node.remove());
+   const cards=Array.from(grid.querySelectorAll(":scope > .catalog-card-wrap:not(.catalog-grid-spacer)"));
    if(!cards.length)return;
+   cards.forEach(card=>{card.style.gridColumn="";card.style.gridRow="";card.style.marginInline="";});
    if(window.matchMedia("(max-width:650px)").matches){
      grid.style.setProperty("grid-template-columns","repeat(2,minmax(0,1fr))","important");
      grid.style.setProperty("column-gap","10px","important");
-     cards.forEach(card=>{card.style.gridColumn="auto";card.style.gridRow="auto";card.style.marginInline="0";});
      return;
    }
-   const columns=Math.max(2,Math.min(9,Math.floor(grid.clientWidth/170)));
-   const rows=Math.ceil(cards.length/columns);
-   const base=Math.floor(cards.length/rows);
-   const extra=cards.length%rows;
-   grid.style.setProperty("grid-template-columns","repeat(1000,minmax(0,1fr))","important");
-   grid.style.setProperty("column-gap","0px","important");
-   let index=0;
-   for(let row=0;row<rows;row++){
-     const count=base+(row<extra?1:0);
-     for(let col=0;col<count;col++){
-       const card=cards[index++];
-       const first=Math.floor(col*1000/count)+1;
-       const last=Math.floor((col+1)*1000/count)+1;
-       card.style.gridColumn=first+" / "+last;
-       card.style.gridRow=String(row+1);
-       card.style.marginInline="7px";
-     }
+   const minCardWidth=170;
+   const columns=Math.max(2,Math.min(9,Math.floor(grid.clientWidth/minCardWidth)));
+   grid.style.setProperty("grid-template-columns","repeat("+columns+",minmax(0,1fr))","important");
+   grid.style.setProperty("column-gap","clamp(14px,1.15vw,24px)","important");
+   const empty=(columns-(cards.length%columns))%columns;
+   for(let i=0;i<empty;i++){
+     const spacer=document.createElement("div");
+     spacer.className="catalog-grid-spacer";
+     spacer.setAttribute("aria-hidden","true");
+     grid.append(spacer);
    }
  }
  let catalogGridResizeTimer=0;
