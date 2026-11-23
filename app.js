@@ -383,7 +383,7 @@
    const keys=["trailers","trailer","trailer_url","trailer_youtube_id","video_url","videos","video","youtube_trailer","youtube_url","youtube","youtube_id","youtube_video_id","youtube_key","tmdb_videos","igdb_videos","rawg_trailers","trailers_json","videos_json","official_trailer"];
    return keys.flatMap(key=>{
      const value=item?.[key];if(!value)return [];
-     if(typeof value==="string"&&["youtube_id","youtube_video_id","youtube_key","trailer_youtube_id"].includes(key))return [{url:/^https?:\\/\\//i.test(value)?value:"https://www.youtube.com/watch?v="+value.trim(),title:"Tráiler oficial"}];
+     if(typeof value==="string"&&["youtube_id","youtube_video_id","youtube_key","trailer_youtube_id"].includes(key))return [{url:/^https?:\/\//i.test(value)?value:"https://www.youtube.com/watch?v="+value.trim(),title:"Tráiler oficial"}];
      return normalizeCatalogMedia(value);
    }).filter((entry,index,all)=>all.findIndex(x=>x.url===entry.url)===index).slice(0,6);
  }
