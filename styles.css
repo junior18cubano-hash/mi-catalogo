@@ -4368,3 +4368,14 @@ body:not(.catalog-page) .desktop-nav a[href="catalogo.html"]{color:var(--cyan)}
 
 /* JOA GRID MATRIX · celdas uniformes para completar filas y columnas */
 .catalog-page #catalog-results>.content-grid>.catalog-grid-spacer{visibility:hidden;pointer-events:none;min-width:0;height:100%;}
+\n
+/* Reparto uniforme de tarjetas por fila en escritorio */
+@media(min-width:651px){
+  .catalog-page #catalog-results>.content-grid{
+    column-gap:0!important;
+  }
+  .catalog-page #catalog-results>.content-grid>.catalog-card-wrap{
+    min-width:0;
+    margin-inline:7px;
+  }
+}
