@@ -362,8 +362,16 @@
    return source.map(entry=>{
      if(typeof entry==="string")return normalizeCatalogMedia(entry)[0]||null;
      if(!entry||typeof entry!=="object")return null;
-     const videoId=entry.video_id||entry.youtube_id||((String(entry.type||"").toLowerCase()==="youtube"||String(entry.type||"").toLowerCase()==="youtube_video")?entry.id:"");
-     const url=entry.url||entry.src||entry.image||entry.original||entry.href||entry.embed_url||entry.video_url||entry.screenshot_url||(videoId?"https://www.youtube.com/watch?v="+encodeURIComponent(videoId):"");
+     const site=String(entry.site||entry.provider||entry.source||"").toLowerCase();
+     const type=String(entry.type||"").toLowerCase();
+     const videoId=entry.video_id||entry.youtube_id||entry.youtube_video_id||entry.youtube_key||entry.key||((site.includes("youtube")||type==="youtube"||type==="youtube_video")?entry.id:"");
+     let url=entry.url||entry.src||entry.image||entry.original||entry.href||entry.embed_url||entry.video_url||entry.screenshot_url||entry.link||entry.uri||"";
+     if(!url&&videoId){
+       const id=String(videoId).trim();
+       if(/^https?:\/\//i.test(id)||id.startsWith("//"))url=id;
+       else if(site.includes("vimeo"))url="https://vimeo.com/"+encodeURIComponent(id);
+       else if(site.includes("youtube")||entry.video_id||entry.youtube_id||entry.youtube_video_id||entry.youtube_key||entry.key||type==="youtube"||type==="youtube_video")url="https://www.youtube.com/watch?v="+encodeURIComponent(id);
+     }
      return url?{url,title:entry.name||entry.title||entry.caption||"Tráiler oficial"}:null;
    }).filter(Boolean);
  }
@@ -372,10 +380,10 @@
    return keys.flatMap(key=>normalizeCatalogMedia(item?.[key])).filter((entry,index,all)=>all.findIndex(x=>x.url===entry.url)===index).slice(0,18);
  }
  function catalogTrailerEntries(item){
-   const keys=["trailers","trailer","trailer_url","video_url","videos","video","youtube_trailer","youtube_url","youtube","youtube_id"];
+   const keys=["trailers","trailer","trailer_url","trailer_youtube_id","video_url","videos","video","youtube_trailer","youtube_url","youtube","youtube_id","youtube_video_id","youtube_key","tmdb_videos","igdb_videos","rawg_trailers","trailers_json","videos_json","official_trailer"];
    return keys.flatMap(key=>{
      const value=item?.[key];if(!value)return [];
-     if(typeof value==="string"&&key==="youtube_id")return [{url:"https://www.youtube.com/watch?v="+value,title:"Tráiler oficial"}];
+     if(typeof value==="string"&&["youtube_id","youtube_video_id","youtube_key","trailer_youtube_id"].includes(key))return [{url:/^https?:\\/\\//i.test(value)?value:"https://www.youtube.com/watch?v="+value.trim(),title:"Tráiler oficial"}];
      return normalizeCatalogMedia(value);
    }).filter((entry,index,all)=>all.findIndex(x=>x.url===entry.url)===index).slice(0,6);
  }
