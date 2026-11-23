@@ -356,7 +356,7 @@
      if((raw.startsWith("[")&&raw.endsWith("]"))||(raw.startsWith("{")&&raw.endsWith("}"))){
        try{return normalizeCatalogMedia(JSON.parse(raw))}catch(error){}
      }
-     return /^https?:\/\//i.test(raw)?[{url:raw,title:""}]:[];
+     return [{url:raw,title:""}];
    }
    const source=Array.isArray(value)?value:[value];
    return source.map(entry=>{
