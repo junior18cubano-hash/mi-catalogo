@@ -608,18 +608,23 @@ function renderPagination(totalPages){
    if(!cards.length)return;
    if(window.matchMedia("(max-width:650px)").matches){
      grid.style.setProperty("grid-template-columns","repeat(2,minmax(0,1fr))","important");
-     cards.forEach(card=>card.style.gridColumn="auto");
+     cards.forEach(card=>{card.style.gridColumn="auto";card.style.gridRow="auto";});
      return;
    }
    const columns=Math.max(2,Math.min(9,Math.floor(grid.clientWidth/170)));
    grid.style.setProperty("grid-template-columns","repeat("+columns+",minmax(0,1fr))","important");
-   cards.forEach(card=>card.style.gridColumn="auto");
-   const empty=(columns-(cards.length%columns))%columns;
-   for(let i=0;i<empty;i++){
-     const spacer=document.createElement("div");
-     spacer.className="catalog-grid-spacer";
-     spacer.setAttribute("aria-hidden","true");
-     grid.append(spacer);
+   const rows=Math.ceil(cards.length/columns);
+   const base=Math.floor(cards.length/rows);
+   const extra=cards.length%rows;
+   let index=0;
+   for(let row=0;row<rows;row++){
+     const count=base+(row<extra?1:0);
+     for(let col=0;col<count;col++){
+       const card=cards[index++];
+       const column=Math.round((col+0.5)*columns/count);
+       card.style.gridColumn=String(column)+" / span 1";
+       card.style.gridRow=String(row+1);
+     }
    }
  }
  let catalogGridResizeTimer=0;
