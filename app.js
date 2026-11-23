@@ -611,18 +611,11 @@ function renderPagination(totalPages){
      cards.forEach(card=>card.style.gridColumn="auto");
      return;
    }
-   const targetColumns=Math.max(2,Math.min(9,Math.floor(grid.clientWidth/210)));
-   if(cards.length===1){grid.style.setProperty("grid-template-columns","minmax(0,1fr)","important");return}
-   const maxColumns=Math.min(targetColumns,Math.max(2,Math.floor(cards.length/2)));
-   let best={columns:2,rows:Math.ceil(cards.length/2),empty:Infinity,distance:Infinity};
-   for(let columns=2;columns<=maxColumns;columns++){
-     const rows=Math.ceil(cards.length/columns),empty=columns*rows-cards.length;
-     const distance=Math.abs(columns-targetColumns);
-     if(empty<best.empty||(empty===best.empty&&distance<best.distance))best={columns,rows,empty,distance};
-   }
-   grid.style.setProperty("grid-template-columns","repeat("+best.columns+",minmax(0,1fr))","important");
+   const columns=Math.max(2,Math.min(9,Math.floor(grid.clientWidth/170)));
+   grid.style.setProperty("grid-template-columns","repeat("+columns+",minmax(0,1fr))","important");
    cards.forEach(card=>card.style.gridColumn="auto");
-   for(let i=0;i<best.empty;i++){
+   const empty=(columns-(cards.length%columns))%columns;
+   for(let i=0;i<empty;i++){
      const spacer=document.createElement("div");
      spacer.className="catalog-grid-spacer";
      spacer.setAttribute("aria-hidden","true");
