@@ -4037,3 +4037,15 @@ body:not(.catalog-page) .desktop-nav a[href="catalogo.html"]{color:var(--cyan)}
   .catalog-page .mobile-filter-nav,
   .catalog-page .mobile-nav-spacer{display:none!important}
 }
+
+/* JOA FIX · dock móvil: mantener solo tres accesos + separador + filtros */
+@media(max-width:650px){
+  .catalog-page .mobile-nav>a:nth-of-type(n+4){display:none!important}
+  .catalog-page .mobile-nav{
+    grid-template-columns:repeat(3,minmax(0,1fr)) minmax(12px,.42fr) minmax(76px,auto)!important;
+    grid-auto-flow:row;
+    grid-template-rows:minmax(43px,auto);
+  }
+  .catalog-page .mobile-nav>.mobile-nav-spacer{display:block!important}
+  .catalog-page .mobile-nav>#mobile-catalog-filter{display:flex!important}
+}
