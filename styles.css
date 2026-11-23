@@ -4291,3 +4291,70 @@ body:not(.catalog-page) .desktop-nav a[href="catalogo.html"]{color:var(--cyan)}
   #catalog-detail-content{padding:13px 12px 17px}
   #catalog-detail-content .catalog-screenshot-grid{grid-template-columns:minmax(0,1fr)}
 }
+
+
+/* JOA DETAIL REFINEMENT · escala equilibrada, medios contenidos */
+#catalog-detail-dialog[open]{
+  width:min(90vw,1640px);
+  max-height:90dvh;
+  border-radius:20px;
+}
+#catalog-detail-content{
+  grid-template-columns:clamp(210px,18vw,330px) minmax(0,1fr);
+  gap:clamp(18px,1.7vw,30px);
+  padding:clamp(20px,1.8vw,32px);
+}
+#catalog-detail-content>.detail-hero{
+  width:100%;
+  max-height:min(56dvh,560px);
+}
+#catalog-detail-content>.detail-info{padding:4px 0}
+#catalog-detail-content .detail-info h2{font-size:clamp(23px,1.65vw,34px)}
+#catalog-detail-content .detail-description{
+  max-width:76ch;
+  font-size:clamp(12px,.72vw,14px);
+  line-height:1.72;
+}
+#catalog-detail-content .catalog-screenshot-grid{
+  grid-template-columns:repeat(auto-fit,minmax(min(100%,170px),230px));
+  justify-content:start;
+  gap:12px;
+}
+#catalog-detail-content .catalog-screenshot{
+  max-height:145px;
+  object-fit:cover;
+}
+#catalog-detail-content .catalog-media-section:has(iframe),
+#catalog-detail-content .catalog-media-section:has(video){
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),480px));
+  justify-content:start;
+  gap:12px 16px;
+}
+#catalog-detail-content .catalog-media-section iframe,
+#catalog-detail-content .catalog-media-section video{
+  width:100%;
+  max-width:480px;
+  max-height:270px;
+  aspect-ratio:16/9;
+}
+@media(min-width:1600px){
+  #catalog-detail-dialog[open]{width:min(88vw,1720px);max-height:92dvh}
+  #catalog-detail-content{grid-template-columns:clamp(250px,17vw,360px) minmax(0,1fr)}
+  #catalog-detail-content>.detail-hero{max-height:min(60dvh,620px)}
+}
+@media(min-width:651px) and (max-width:1000px){
+  #catalog-detail-dialog[open]{width:92vw}
+  #catalog-detail-content{grid-template-columns:minmax(185px,27%) minmax(0,1fr);gap:16px;padding:18px}
+  #catalog-detail-content>.detail-hero{max-height:48dvh}
+  #catalog-detail-content .catalog-screenshot-grid{grid-template-columns:repeat(auto-fit,minmax(140px,1fr))}
+  #catalog-detail-content .catalog-media-section:has(iframe),
+  #catalog-detail-content .catalog-media-section:has(video){grid-template-columns:minmax(0,1fr)}
+}
+@media(max-width:650px){
+  #catalog-detail-content>.detail-hero{width:min(100%,210px);max-height:29dvh}
+  #catalog-detail-content .catalog-screenshot-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  #catalog-detail-content .catalog-screenshot{max-height:120px}
+  #catalog-detail-content .catalog-media-section iframe,
+  #catalog-detail-content .catalog-media-section video{max-height:220px}
+}
